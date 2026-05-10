@@ -310,9 +310,12 @@ async function fetchAllPages(args) {
 }
 
 function dateFilter(prop, gte, lte) {
+  // HubSpot CRM Search requires Unix timestamps in milliseconds for date filters
+  const gteMs = new Date(gte + 'T00:00:00.000Z').getTime();
+  const lteMs = new Date(lte + 'T23:59:59.999Z').getTime();
   return [
-    { propertyName: prop, operator: 'GTE', value: gte + 'T00:00:00.000Z' },
-    { propertyName: prop, operator: 'LTE', value: lte + 'T23:59:59.999Z' }
+    { propertyName: prop, operator: 'GTE', value: String(gteMs) },
+    { propertyName: prop, operator: 'LTE', value: String(lteMs) }
   ];
 }
 
