@@ -5,22 +5,46 @@ const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ---- HubSpot Rate-Limited Queue ----
+// HubSpot CRM Search allows ~4 req/sec; queue ensures we stay under
+const HS_DELAY_MS = 350; // ms between HubSpot calls
+let hsQueue = Promise.resolve();
+
+function enqueueHubSpot(fn) {
+  const p = hsQueue.then(() => fn()).then(
+    result => { return new Promise(r => setTimeout(() => r(result), HS_DELAY_MS)); },
+    err   => { return new Promise((_, rj) => setTimeout(() => rj(err), HS_DELAY_MS)); }
+  );
+  hsQueue = p.catch(() => {}); // prevent unhandled rejection chain breakage
+  return p;
+}
+
+async function hubspotFetch(objectType, body, retries = 2) {
+  const r = await fetch(`https://api.hubapi.com/crm/v3/objects/${objectType}/search`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (r.status === 429 && retries > 0) {
+    const wait = parseInt(r.headers.get('retry-after') || '2', 10) * 1000;
+    console.log(`[HubSpot] 429 rate-limited, retrying in ${wait}ms (${retries} left)`);
+    await new Promise(resolve => setTimeout(resolve, wait));
+    return hubspotFetch(objectType, body, retries - 1);
+  }
+  return r;
+}
+
 // ---- HubSpot CRM Search Proxy ----
-// Frontend sends the same payload HubSpot expects, plus objectType
 app.post('/api/hubspot/search', async (req, res) => {
   const { objectType, ...body } = req.body;
   if (!['deals', 'contacts'].includes(objectType)) {
     return res.status(400).json({ error: 'Invalid objectType — must be deals or contacts' });
   }
   try {
-    const r = await fetch(`https://api.hubapi.com/crm/v3/objects/${objectType}/search`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
+    const r = await enqueueHubSpot(() => hubspotFetch(objectType, body));
     const data = await r.json();
     res.status(r.status).json(data);
   } catch (e) {
