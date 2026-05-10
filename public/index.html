@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IHG Master Marketing Dashboard 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --dark: #4A2C2A;
+  --dark2: #3A1C1A;
+  --gold: #C9A96E;
+  --gold-light: #E8D5A8;
+  --bg: #F5F3EF;
+  --white: #FFFFFF;
+  --text: #333333;
+  --text-light: #777777;
+  --border: #E0DCD5;
+  --tbb: #2E86C1;
+  --tbt: #8E44AD;
+  --ecd: #E67E22;
+  --swf: #27AE60;
+  --os: #E74C3C;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+header { background: linear-gradient(135deg, var(--dark2), var(--dark)); color: var(--white); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+header h1 { font-size: 16px; letter-spacing: 2.5px; font-weight: 600; color: var(--gold); }
+.header-controls { display: flex; align-items: center; gap: 12px; }
+.header-controls select { padding: 6px 12px; border-radius: 4px; border: 1px solid var(--gold); background: var(--dark2); color: var(--gold-light); font-size: 13px; cursor: pointer; }
+.btn { padding: 6px 16px; border-radius: 4px; border: 1px solid var(--gold); background: transparent; color: var(--gold); font-size: 13px; cursor: pointer; transition: all .2s; }
+.btn:hover { background: var(--gold); color: var(--dark); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.status-bar { background: var(--dark2); color: var(--gold-light); font-size: 12px; padding: 6px 32px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.status-bar .error { color: #FF6B6B; }
+.status-bar span { white-space: nowrap; }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.section { margin-bottom: 28px; }
+.section-title { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 14px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--gold); padding-bottom: 6px; display: inline-block; }
+
+/* Revenue Goal Bar */
+.goal-bar-wrap { background: var(--white); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); }
+.goal-labels { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.goal-track { position: relative; height: 32px; background: #EDE8E0; border-radius: 16px; overflow: visible; }
+.goal-fill { height: 100%; border-radius: 16px; background: linear-gradient(90deg, var(--gold), #D4AF37); transition: width .6s; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; font-size: 12px; font-weight: 700; color: var(--dark); min-width: 40px; }
+.goal-pace { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--gold); border-radius: 2px; z-index: 2; }
+.goal-pace::after { content: attr(data-label); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--gold); white-space: nowrap; }
+
+/* KPI Cards */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.kpi-card { background: var(--white); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); text-align: center; }
+.kpi-card .label { font-size: 11px; text-transform: uppercase; color: var(--text-light); letter-spacing: .8px; margin-bottom: 8px; }
+.kpi-card .value { font-size: 22px; font-weight: 700; color: var(--dark); }
+.kpi-card .sub { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+.kpi-card.loading .value { color: var(--text-light); font-size: 14px; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--dark); color: var(--gold-light); padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; cursor: pointer; }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tr.total-row { background: #F9F6F0; font-weight: 700; }
+tr.venue-tbb td:first-child { border-left: 4px solid var(--tbb); }
+tr.venue-tbt td:first-child { border-left: 4px solid var(--tbt); }
+tr.venue-ecd td:first-child { border-left: 4px solid var(--ecd); }
+tr.venue-swf td:first-child { border-left: 4px solid var(--swf); }
+tr.venue-os td:first-child { border-left: 4px solid var(--os); }
+
+/* AI narrative */
+.ai-box { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; font-size: 14px; line-height: 1.7; color: var(--text); border-left: 4px solid var(--gold); }
+.ai-box p { margin-bottom: 12px; }
+.ai-box p:last-child { margin-bottom: 0; }
+
+/* Chart */
+.chart-wrap { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+canvas { max-height: 360px; }
+
+/* Export buttons row */
+.export-row { display: flex; gap: 10px; margin-bottom: 20px; }
+
+/* Spinner */
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-msg { color: var(--text-light); font-size: 13px; padding: 20px; text-align: center; }
+
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  header { padding: 14px 16px; }
+  header h1 { font-size: 13px; }
+  .container { padding: 14px; }
+  .status-bar { padding: 6px 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>INFINITY HOSPITALITY GROUP &nbsp;|&nbsp; MASTER MARKETING DASHBOARD &nbsp;|&nbsp; 2026</h1>
+  <div class="header-controls">
+    <select id="periodSelect">
+      <option value="ytd">2026 YTD</option>
+      <option value="mtd">MTD</option>
+      <option value="0">Jan 2026</option>
+      <option value="1">Feb 2026</option>
+      <option value="2">Mar 2026</option>
+      <option value="3">Apr 2026</option>
+      <option value="4">May 2026</option>
+    </select>
+    <button class="btn" id="refreshBtn">Refresh</button>
+  </div>
+</header>
+<div class="status-bar" id="statusBar">
+  <span id="statusPeriod">Period: 2026 YTD</span>
+  <span id="statusLeads">Leads: --</span>
+  <span id="statusTours">Tours: --</span>
+  <span id="statusBookings">Bookings: --</span>
+  <span id="statusEvents">Events: --</span>
+  <span id="statusRefresh">Last refresh: --</span>
+  <span id="statusError" class="error" style="display:none"></span>
+</div>
+
+<div class="container">
+
+  <!-- 1. Revenue Goal Bar -->
+  <div class="section">
+    <div class="section-title">Revenue Goal Progress &mdash; 2026 YTD</div>
+    <div class="goal-bar-wrap" id="goalBarSection">
+      <div class="goal-labels">
+        <span id="goalCurrent">$0</span>
+        <span>Goal: $19,600,000</span>
+      </div>
+      <div class="goal-track">
+        <div class="goal-fill" id="goalFill" style="width:0%">0%</div>
+        <div class="goal-pace" id="goalPace" style="left:0%" data-label="Pace"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. KPI Cards -->
+  <div class="section">
+    <div class="section-title">Key Performance Indicators</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+  </div>
+
+  <!-- 3. AI Analysis -->
+  <div class="section">
+    <div class="section-title">AI Analysis</div>
+    <div class="ai-box" id="aiNarrative"><div class="loading-msg"><span class="spinner"></span>Generating analysis...</div></div>
+  </div>
+
+  <!-- 4. Full Funnel by Venue -->
+  <div class="section">
+    <div class="section-title">Full Funnel by Venue</div>
+    <div class="table-wrap" id="funnelTableWrap"><div class="loading-msg"><span class="spinner"></span>Loading...</div></div>
+  </div>
+
+  <!-- 5. Leads by Source -->
+  <div class="section">
+    <div class="section-title">Leads by Source</div>
+    <div class="table-wrap" id="leadSourceWrap"><div class="loading-msg"><span class="spinner"></span>Loading...</div></div>
+  </div>
+
+  <!-- 6. Bookings by Event Type -->
+  <div class="section">
+    <div class="section-title">Bookings by Event Type</div>
+    <div class="table-wrap" id="eventTypeWrap"><div class="loading-msg"><span class="spinner"></span>Loading...</div></div>
+  </div>
+
+  <!-- 7. Spend Breakdown by Channel -->
+  <div class="section">
+    <div class="section-title">Spend Breakdown by Channel</div>
+    <div class="table-wrap" id="channelSpendWrap"><div class="loading-msg"><span class="spinner"></span>Loading...</div></div>
+  </div>
+
+  <!-- 8. Fixed Marketing Costs -->
+  <div class="section">
+    <div class="section-title">Fixed Marketing Costs</div>
+    <div class="table-wrap" id="fixedCostWrap"><div class="loading-msg"><span class="spinner"></span>Loading...</div></div>
+  </div>
+
+  <!-- 9. Revenue Detail Table -->
+  <div class="section">
+    <div class="section-title">Revenue Detail</div>
+    <div class="table-wrap" id="revenueDetailWrap"><div class="loading-msg"><span class="spinner"></span>Loading...</div></div>
+  </div>
+
+  <!-- 10. Monthly Trend Chart -->
+  <div class="section">
+    <div class="section-title">Monthly Trend</div>
+    <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+  </div>
+
+  <!-- 11. CSV Export -->
+  <div class="section">
+    <div class="export-row">
+      <button class="btn btn-sm" id="exportTours">Export Tours CSV</button>
+      <button class="btn btn-sm" id="exportBookings">Export Bookings CSV</button>
+      <button class="btn btn-sm" id="exportRevenue">Export Revenue CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ===== CONSTANTS ===== */
+const REVENUE_GOAL = 19600000;
+const NET_TAX = 0.95;
+const VENUES = ['TBB','TBT','ECD','SWF','OS'];
+const VENUE_COLORS = { TBB:'#2E86C1', TBT:'#8E44AD', ECD:'#E67E22', SWF:'#27AE60', OS:'#E74C3C' };
+const SALES_PIPELINE = '746391920';
+const EP_PIPELINE = 'default';
+const EVENT_COMPLETED_STAGE = '1071914498';
+
+const SPEND_2026 = {
+  months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  totalAdSpend: [19419,22419,22419,21119,19419,19419,19419,19419,19419,19419,19419,19419],
+  totalFullyLoaded: [42766,45942,49572,49661,46053,41521,41521,41521,41521,41521,41521,41521],
+  perVenueAdSpend: {
+    TBB:[5840.67,6590.67,6590.67,6340.67,5840.67,5840.67,5840.67,5840.67,5840.67,5840.67,5840.67,5840.67],
+    TBT:[3711.92,4461.92,4461.92,4211.92,3711.92,3711.92,3711.92,3711.92,3711.92,3711.92,3711.92,3711.92],
+    ECD:[4417.83,5167.83,5167.83,4767.83,4417.83,4417.83,4417.83,4417.83,4417.83,4417.83,4417.83,4417.83],
+    SWF:[5448.58,6198.58,6198.58,5798.58,5448.58,5448.58,5448.58,5448.58,5448.58,5448.58,5448.58,5448.58]
+  },
+  channels: {
+    'Google Ads':{TBB:[1500,1500,1500,2000,1500,1500,1500,1500,1500,1500,1500,1500],TBT:[1500,1500,1500,2000,1500,1500,1500,1500,1500,1500,1500,1500],ECD:[1800,1800,1800,1800,1800,1800,1800,1800,1800,1800,1800,1800],SWF:[1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500]},
+    'TikTok':{TBB:[0,750,750,0,0,0,0,0,0,0,0,0],TBT:[0,750,750,0,0,0,0,0,0,0,0,0],ECD:[0,750,750,350,0,0,0,0,0,0,0,0],SWF:[0,750,750,350,0,0,0,0,0,0,0,0]},
+    'Here Comes the Guide':{TBB:[153,153,153,153,153,153,153,153,153,153,153,153],TBT:[85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5],ECD:[85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5,85.5],SWF:[153,153,153,153,153,153,153,153,153,153,153,153]},
+    'WedSociety':{TBB:[375,375,375,375,375,375,375,375,375,375,375,375],TBT:[375,375,375,375,375,375,375,375,375,375,375,375],ECD:[375,375,375,375,375,375,375,375,375,375,375,375],SWF:[375,375,375,375,375,375,375,375,375,375,375,375]},
+    'Zola':{TBB:[160,160,160,160,160,160,160,160,160,160,160,160],TBT:[0,0,0,0,0,0,0,0,0,0,0,0],ECD:[0,0,0,0,0,0,0,0,0,0,0,0],SWF:[120,120,120,120,120,120,120,120,120,120,120,120]},
+    'CVent':{TBB:[541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42],TBT:[541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42,541.42],ECD:[0,0,0,0,0,0,0,0,0,0,0,0],SWF:[0,0,0,0,0,0,0,0,0,0,0,0]},
+    'The Knot':{TBB:[1550.08,1550.08,1550.08,1550.08,1550.08,1550.08,1550.08,1550.08,1550.08,1550.08,1550.08,1550.08],TBT:[605,605,605,605,605,605,605,605,605,605,605,605],ECD:[1480.25,1480.25,1480.25,1480.25,1480.25,1480.25,1480.25,1480.25,1480.25,1480.25,1480.25,1480.25],SWF:[1650.33,1650.33,1650.33,1650.33,1650.33,1650.33,1650.33,1650.33,1650.33,1650.33,1650.33,1650.33]},
+    'WeddingWire':{TBB:[1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17],TBT:[605,605,605,605,605,605,605,605,605,605,605,605],ECD:[677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08],SWF:[1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25]}
+  },
+  fixed: {
+    'Katherine Salary':[6200,6200,6200,6200,6200,6200,6200,6200,6200,6200,6200,6200],
+    'K+M Agency':[15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000],
+    'Content Creator':[0,0,3750,3000,3000,0,0,0,0,0,0,0],
+    'Software & Tools':[1245,1421,1301,1268,1532,0,0,0,0,0,0,0],
+    'Website':[902,902,902,3074,902,902,902,902,902,902,902,902]
+  }
+};
+
+/* ===== FORMATTING ===== */
+function fmtMoney(n) {
+  if (n == null || isNaN(n)) return '$0';
+  if (Math.abs(n) >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+function fmtMoneyExact(n) {
+  if (n == null || isNaN(n)) return '$0';
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtPct(n) {
+  if (n == null || isNaN(n) || !isFinite(n)) return '0.0%';
+  return n.toFixed(1) + '%';
+}
+
+/* ===== DATE HELPERS ===== */
+function today() { return new Date(); }
+function dateStr(y,m,d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+function getPeriodWindow(periodVal) {
+  const now = today();
+  const y = 2026;
+  if (periodVal === 'ytd') return { start: dateStr(y,0,1), end: dateStr(now.getFullYear(), now.getMonth(), now.getDate()), label: '2026 YTD' };
+  if (periodVal === 'mtd') return { start: dateStr(now.getFullYear(), now.getMonth(), 1), end: dateStr(now.getFullYear(), now.getMonth(), now.getDate()), label: 'MTD (' + SPEND_2026.months[now.getMonth()] + ' ' + now.getFullYear() + ')' };
+  const m = parseInt(periodVal);
+  const lastDay = new Date(y, m+1, 0).getDate();
+  return { start: dateStr(y,m,1), end: dateStr(y,m,lastDay), label: SPEND_2026.months[m] + ' 2026' };
+}
+
+function getMonthIndices(periodVal) {
+  if (periodVal === 'ytd') {
+    const cm = Math.min(today().getMonth(), 11);
+    return Array.from({length: cm+1}, (_,i) => i);
+  }
+  if (periodVal === 'mtd') return [today().getMonth()];
+  return [parseInt(periodVal)];
+}
+
+/* ===== HUBSPOT HELPERS ===== */
+async function callHs(args) {
+  const res = await fetch('/api/hubspot/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  if (!res.ok) throw new Error('HubSpot proxy error: ' + res.status);
+  return res.json();
+}
+
+async function fetchAllPages(args) {
+  let all = [];
+  let after = undefined;
+  for (let page = 0; page < 20; page++) {
+    const body = { ...args };
+    if (after) body.after = after;
+    const data = await callHs(body);
+    if (data.results) all = all.concat(data.results);
+    if (data.paging && data.paging.next && data.paging.next.after) {
+      after = data.paging.next.after;
+    } else {
+      break;
+    }
+  }
+  return all;
+}
+
+function dateFilter(prop, gte, lte) {
+  return [
+    { propertyName: prop, operator: 'GTE', value: gte + 'T00:00:00.000Z' },
+    { propertyName: prop, operator: 'LTE', value: lte + 'T23:59:59.999Z' }
+  ];
+}
+
+function venueFromProp(v) {
+  if (!v) return null;
+  const first = v.split(';')[0].trim().toUpperCase();
+  return VENUES.includes(first) ? first : null;
+}
+
+function normDealName(n) {
+  if (!n) return '';
+  return n.toLowerCase().replace(/\s+/g,' ').trim().replace(/\s*\(sales deal\)\s*$/i,'');
+}
+
+/* Deduplicate deals across pipelines: sales pipeline copy wins */
+function dedupeDeals(deals) {
+  const map = {};
+  for (const d of deals) {
+    const key = normDealName(d.properties.dealname);
+    if (!key) continue;
+    const existing = map[key];
+    if (!existing) { map[key] = d; continue; }
+    if (d.properties.pipeline === SALES_PIPELINE) map[key] = d;
+  }
+  return Object.values(map);
+}
+
+/* ===== SPEND HELPERS ===== */
+function sumSpend(arr, months) { return months.reduce((s,i) => s + (arr[i]||0), 0); }
+
+function getAdSpendForPeriod(months) { return sumSpend(SPEND_2026.totalAdSpend, months); }
+function getFullyLoadedForPeriod(months) { return sumSpend(SPEND_2026.totalFullyLoaded, months); }
+function getVenueAdSpend(venue, months) {
+  const arr = SPEND_2026.perVenueAdSpend[venue];
+  return arr ? sumSpend(arr, months) : 0;
+}
+
+/* ===== DATA STORE ===== */
+let DATA = {};
+let RAW = {};
+let trendChart = null;
+
+/* ===== MAIN FETCH ===== */
+async function loadDashboard() {
+  const periodVal = document.getElementById('periodSelect').value;
+  const period = getPeriodWindow(periodVal);
+  const months = getMonthIndices(periodVal);
+  const isYtd = (periodVal === 'ytd');
+
+  document.getElementById('statusPeriod').textContent = 'Period: ' + period.label;
+  document.getElementById('statusError').style.display = 'none';
+  showLoading();
+
+  try {
+    const contactProps = ['venue_s_','lead_source','createdate'];
+    const dealProps = ['venue','event_type_sales','initial_tour_date','contract_signed_date','actual_event_date','final_event_total_accounting','booked_cancelled__reporting_use_only_','pipeline','dealstage','dealname'];
+
+    // Build queries
+    const leadsQuery = {
+      objectType: 'contacts',
+      filterGroups: VENUES.map(v => ({
+        filters: [
+          { propertyName: 'venue_s_', operator: 'CONTAINS_TOKEN', value: v },
+          ...dateFilter('createdate', period.start, period.end)
+        ]
+      })),
+      properties: contactProps,
+      limit: 200
+    };
+
+    const toursSalesQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'pipeline', operator: 'EQ', value: SALES_PIPELINE },
+          ...dateFilter('initial_tour_date', period.start, period.end)
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+    const toursEPQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'pipeline', operator: 'EQ', value: EP_PIPELINE },
+          ...dateFilter('initial_tour_date', period.start, period.end)
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+
+    const bookingsSalesQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'pipeline', operator: 'EQ', value: SALES_PIPELINE },
+          ...dateFilter('contract_signed_date', period.start, period.end)
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+    const bookingsEPQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'pipeline', operator: 'EQ', value: EP_PIPELINE },
+          ...dateFilter('contract_signed_date', period.start, period.end)
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+
+    // Completed events: YTD = unscoped by date, Month = scoped
+    let completedQuery;
+    if (isYtd) {
+      completedQuery = {
+        objectType: 'deals',
+        filterGroups: [{
+          filters: [
+            { propertyName: 'pipeline', operator: 'EQ', value: EP_PIPELINE },
+            { propertyName: 'dealstage', operator: 'EQ', value: EVENT_COMPLETED_STAGE }
+          ]
+        }],
+        properties: dealProps,
+        limit: 200
+      };
+    } else {
+      completedQuery = {
+        objectType: 'deals',
+        filterGroups: [{
+          filters: [
+            { propertyName: 'pipeline', operator: 'EQ', value: EP_PIPELINE },
+            { propertyName: 'dealstage', operator: 'EQ', value: EVENT_COMPLETED_STAGE },
+            ...dateFilter('actual_event_date', period.start, period.end)
+          ]
+        }],
+        properties: dealProps,
+        limit: 200
+      };
+    }
+
+    // Revenue: deals with actual_event_date in window + final_event_total_accounting populated
+    const revenueQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
+          ...dateFilter('actual_event_date', period.start, period.end)
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+
+    // Goal bar: always full year 2026 up to today
+    const goalEnd = dateStr(today().getFullYear(), today().getMonth(), today().getDate());
+    const goalQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
+          ...dateFilter('actual_event_date', '2026-01-01', goalEnd)
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+
+    // Fire all queries in parallel
+    const [leadsRaw, toursSalesRaw, toursEPRaw, bookingsSalesRaw, bookingsEPRaw, completedRaw, revenueRaw, goalRaw] = await Promise.all([
+      fetchAllPages(leadsQuery),
+      fetchAllPages(toursSalesQuery),
+      fetchAllPages(toursEPQuery),
+      fetchAllPages(bookingsSalesQuery),
+      fetchAllPages(bookingsEPQuery),
+      fetchAllPages(completedQuery),
+      fetchAllPages(revenueQuery),
+      fetchAllPages(goalQuery)
+    ]);
+
+    // Dedupe tours & bookings
+    const tours = dedupeDeals([...toursSalesRaw, ...toursEPRaw]);
+    const bookings = dedupeDeals([...bookingsSalesRaw, ...bookingsEPRaw]);
+    const completed = completedRaw;
+    const revenue = revenueRaw;
+    const goalDeals = goalRaw;
+
+    // Store raw for CSV export
+    RAW.tours = tours;
+    RAW.bookings = bookings;
+    RAW.revenue = revenue;
+
+    // Compute per-venue metrics
+    const venueData = {};
+    for (const v of VENUES) venueData[v] = { leads:0, tours:0, bookings:0, completed:0, revenue:0 };
+
+    // Leads by venue
+    const leadsBySource = {};
+    for (const c of leadsRaw) {
+      const v = venueFromProp(c.properties.venue_s_);
+      if (v) venueData[v].leads++;
+      const src = c.properties.lead_source || 'Unknown';
+      leadsBySource[src] = (leadsBySource[src]||0) + 1;
+    }
+
+    // Tours by venue
+    for (const d of tours) {
+      const v = venueFromProp(d.properties.venue);
+      if (v) venueData[v].tours++;
+    }
+
+    // Bookings by venue + event type
+    const bookingsByType = {};
+    for (const d of bookings) {
+      const v = venueFromProp(d.properties.venue);
+      if (v) venueData[v].bookings++;
+      const et = d.properties.event_type_sales || 'Unknown';
+      bookingsByType[et] = (bookingsByType[et]||0) + 1;
+    }
+
+    // Completed by venue
+    for (const d of completed) {
+      const v = venueFromProp(d.properties.venue);
+      if (v) venueData[v].completed++;
+    }
+
+    // Revenue by venue
+    for (const d of revenue) {
+      const v = venueFromProp(d.properties.venue);
+      const amt = parseFloat(d.properties.final_event_total_accounting) || 0;
+      if (v) venueData[v].revenue += amt * NET_TAX;
+    }
+
+    // Totals
+    const totals = { leads:0, tours:0, bookings:0, completed:0, revenue:0 };
+    for (const v of VENUES) {
+      totals.leads += venueData[v].leads;
+      totals.tours += venueData[v].tours;
+      totals.bookings += venueData[v].bookings;
+      totals.completed += venueData[v].completed;
+      totals.revenue += venueData[v].revenue;
+    }
+
+    // Goal bar revenue
+    let goalRevenue = 0;
+    for (const d of goalDeals) {
+      goalRevenue += (parseFloat(d.properties.final_event_total_accounting) || 0) * NET_TAX;
+    }
+
+    // Spend for period
+    const adSpend = getAdSpendForPeriod(months);
+    const fullyLoaded = getFullyLoadedForPeriod(months);
+
+    // Derived KPIs
+    const ltPct = totals.leads > 0 ? (totals.tours / totals.leads * 100) : 0;
+    const tbPct = totals.tours > 0 ? (totals.bookings / totals.tours * 100) : 0;
+    const lbPct = totals.leads > 0 ? (totals.bookings / totals.leads * 100) : 0;
+    const cplPaid = totals.leads > 0 ? adSpend / totals.leads : 0;
+    const cplFull = totals.leads > 0 ? fullyLoaded / totals.leads : 0;
+    const cpbPaid = totals.bookings > 0 ? adSpend / totals.bookings : 0;
+    const cpbFull = totals.bookings > 0 ? fullyLoaded / totals.bookings : 0;
+    const roas = adSpend > 0 ? totals.revenue / adSpend : 0;
+
+    DATA = { venueData, totals, goalRevenue, adSpend, fullyLoaded, ltPct, tbPct, lbPct, cplPaid, cplFull, cpbPaid, cpbFull, roas, leadsBySource, bookingsByType, revenue, months, period, periodVal };
+
+    // Render all sections
+    renderGoalBar(goalRevenue);
+    renderKPIs();
+    renderFunnelTable();
+    renderLeadSource();
+    renderEventType();
+    renderChannelSpend();
+    renderFixedCosts();
+    renderRevenueDetail();
+    renderTrendChart();
+
+    // Status bar
+    document.getElementById('statusLeads').textContent = 'Leads: ' + totals.leads;
+    document.getElementById('statusTours').textContent = 'Tours: ' + totals.tours;
+    document.getElementById('statusBookings').textContent = 'Bookings: ' + totals.bookings;
+    document.getElementById('statusEvents').textContent = 'Events: ' + totals.completed;
+    document.getElementById('statusRefresh').textContent = 'Last refresh: ' + new Date().toLocaleTimeString();
+
+    // AI narrative (async, don't block)
+    loadAINarrative();
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('statusError').textContent = 'Error: ' + err.message;
+    document.getElementById('statusError').style.display = 'inline';
+  }
+}
+
+function showLoading() {
+  const kpiNames = ['Paid Ad Spend','Fully Loaded Spend','Leads','Tours','Bookings','Completed Events','Event Revenue','Lead→Tour %','Tour→Book %','Lead→Book %','CPL (Paid)','CPL (Fully Loaded)','CPB (Paid)','CPB (Fully Loaded)','ROAS'];
+  document.getElementById('kpiGrid').innerHTML = kpiNames.map(n =>
+    `<div class="kpi-card loading"><div class="label">${n}</div><div class="value"><span class="spinner"></span></div></div>`
+  ).join('');
+}
+
+/* ===== RENDER: Goal Bar ===== */
+function renderGoalBar(rev) {
+  const pct = Math.min(rev / REVENUE_GOAL * 100, 100);
+  document.getElementById('goalCurrent').textContent = fmtMoney(rev);
+  const fill = document.getElementById('goalFill');
+  fill.style.width = pct + '%';
+  fill.textContent = pct.toFixed(1) + '%';
+
+  // Pace marker: day of year / 365
+  const now = today();
+  const startOfYear = new Date(2026, 0, 1);
+  const dayOfYear = Math.floor((now - startOfYear) / 86400000) + 1;
+  const pacePct = Math.min(dayOfYear / 365 * 100, 100);
+  const paceVal = dayOfYear / 365 * REVENUE_GOAL;
+  const pace = document.getElementById('goalPace');
+  pace.style.left = pacePct + '%';
+  pace.setAttribute('data-label', 'Pace: ' + fmtMoney(paceVal));
+}
+
+/* ===== RENDER: KPI Cards ===== */
+function renderKPIs() {
+  const d = DATA;
+  const kpis = [
+    { label: 'Paid Ad Spend', value: fmtMoney(d.adSpend) },
+    { label: 'Fully Loaded Spend', value: fmtMoney(d.fullyLoaded) },
+    { label: 'Leads', value: d.totals.leads.toLocaleString() },
+    { label: 'Tours', value: d.totals.tours.toLocaleString() },
+    { label: 'Bookings', value: d.totals.bookings.toLocaleString() },
+    { label: 'Completed Events', value: d.totals.completed.toLocaleString() },
+    { label: 'Event Revenue', value: fmtMoney(d.totals.revenue) },
+    { label: 'Lead→Tour %', value: fmtPct(d.ltPct) },
+    { label: 'Tour→Book %', value: fmtPct(d.tbPct) },
+    { label: 'Lead→Book %', value: fmtPct(d.lbPct) },
+    { label: 'CPL (Paid)', value: fmtMoney(d.cplPaid) },
+    { label: 'CPL (Fully Loaded)', value: fmtMoney(d.cplFull) },
+    { label: 'CPB (Paid)', value: fmtMoney(d.cpbPaid) },
+    { label: 'CPB (Fully Loaded)', value: fmtMoney(d.cpbFull) },
+    { label: 'ROAS', value: d.roas.toFixed(1) + 'x' }
+  ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k =>
+    `<div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`
+  ).join('');
+}
+
+/* ===== RENDER: Funnel Table ===== */
+function renderFunnelTable() {
+  const d = DATA;
+  const months = d.months;
+  let html = '<table><thead><tr><th>Venue</th><th>Paid Spend</th><th>Leads</th><th>Tours</th><th>Bookings</th><th>Completed</th><th>Revenue</th><th>L→T%</th><th>T→B%</th><th>L→B%</th><th>CPL</th><th>CPB</th></tr></thead><tbody>';
+  const rows = VENUES.map(v => {
+    const vd = d.venueData[v];
+    const spend = getVenueAdSpend(v, months);
+    const lt = vd.leads > 0 ? vd.tours/vd.leads*100 : 0;
+    const tb = vd.tours > 0 ? vd.bookings/vd.tours*100 : 0;
+    const lb = vd.leads > 0 ? vd.bookings/vd.leads*100 : 0;
+    const cpl = vd.leads > 0 ? spend/vd.leads : 0;
+    const cpb = vd.bookings > 0 ? spend/vd.bookings : 0;
+    return `<tr class="venue-${v.toLowerCase()}"><td><strong>${v}</strong></td><td>${fmtMoney(spend)}</td><td>${vd.leads}</td><td>${vd.tours}</td><td>${vd.bookings}</td><td>${vd.completed}</td><td>${fmtMoney(vd.revenue)}</td><td>${fmtPct(lt)}</td><td>${fmtPct(tb)}</td><td>${fmtPct(lb)}</td><td>${fmtMoney(cpl)}</td><td>${fmtMoney(cpb)}</td></tr>`;
+  });
+  html += rows.join('');
+  // Total row
+  const totalSpend = d.adSpend;
+  const t = d.totals;
+  html += `<tr class="total-row"><td><strong>TOTAL</strong></td><td>${fmtMoney(totalSpend)}</td><td>${t.leads}</td><td>${t.tours}</td><td>${t.bookings}</td><td>${t.completed}</td><td>${fmtMoney(t.revenue)}</td><td>${fmtPct(d.ltPct)}</td><td>${fmtPct(d.tbPct)}</td><td>${fmtPct(d.lbPct)}</td><td>${fmtMoney(d.cplPaid)}</td><td>${fmtMoney(d.cpbPaid)}</td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('funnelTableWrap').innerHTML = html;
+}
+
+/* ===== RENDER: Lead Source ===== */
+function renderLeadSource() {
+  const src = DATA.leadsBySource;
+  const sorted = Object.entries(src).sort((a,b) => b[1]-a[1]);
+  let html = '<table><thead><tr><th>Lead Source</th><th>Count</th><th>Share</th><th></th></tr></thead><tbody>';
+  const total = sorted.reduce((s,e) => s+e[1], 0);
+  for (const [name, count] of sorted) {
+    const pct = total > 0 ? count/total*100 : 0;
+    html += `<tr><td>${name}</td><td>${count}</td><td>${fmtPct(pct)}</td><td><div style="background:var(--gold);height:10px;border-radius:5px;width:${Math.max(pct,1)}%"></div></td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('leadSourceWrap').innerHTML = html;
+}
+
+/* ===== RENDER: Event Type ===== */
+function renderEventType() {
+  const types = DATA.bookingsByType;
+  const sorted = Object.entries(types).sort((a,b) => b[1]-a[1]);
+  let html = '<table><thead><tr><th>Event Type</th><th>Bookings</th><th>Share</th><th></th></tr></thead><tbody>';
+  const total = sorted.reduce((s,e) => s+e[1], 0);
+  for (const [name, count] of sorted) {
+    const pct = total > 0 ? count/total*100 : 0;
+    html += `<tr><td>${name}</td><td>${count}</td><td>${fmtPct(pct)}</td><td><div style="background:var(--gold);height:10px;border-radius:5px;width:${Math.max(pct,1)}%"></div></td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('eventTypeWrap').innerHTML = html;
+}
+
+/* ===== RENDER: Channel Spend ===== */
+function renderChannelSpend() {
+  const months = DATA.months;
+  const channels = SPEND_2026.channels;
+  const venueList = ['TBB','TBT','ECD','SWF'];
+  let html = '<table><thead><tr><th>Channel</th>';
+  for (const v of venueList) html += `<th>${v}</th>`;
+  html += '<th>Total</th></tr></thead><tbody>';
+  let grandTotals = {};
+  for (const v of venueList) grandTotals[v] = 0;
+  let grandTotal = 0;
+  for (const [ch, venues] of Object.entries(channels)) {
+    html += `<tr><td>${ch}</td>`;
+    let rowTotal = 0;
+    for (const v of venueList) {
+      const val = sumSpend(venues[v]||[], months);
+      html += `<td>${fmtMoney(val)}</td>`;
+      rowTotal += val;
+      grandTotals[v] += val;
+    }
+    html += `<td><strong>${fmtMoney(rowTotal)}</strong></td></tr>`;
+    grandTotal += rowTotal;
+  }
+  html += `<tr class="total-row"><td><strong>TOTAL</strong></td>`;
+  for (const v of venueList) html += `<td><strong>${fmtMoney(grandTotals[v])}</strong></td>`;
+  html += `<td><strong>${fmtMoney(grandTotal)}</strong></td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('channelSpendWrap').innerHTML = html;
+}
+
+/* ===== RENDER: Fixed Costs ===== */
+function renderFixedCosts() {
+  const months = DATA.months;
+  let html = '<table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>';
+  let total = 0;
+  for (const [cat, arr] of Object.entries(SPEND_2026.fixed)) {
+    const val = sumSpend(arr, months);
+    total += val;
+    html += `<tr><td>${cat}</td><td>${fmtMoney(val)}</td></tr>`;
+  }
+  html += `<tr class="total-row"><td><strong>TOTAL FIXED</strong></td><td><strong>${fmtMoney(total)}</strong></td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('fixedCostWrap').innerHTML = html;
+}
+
+/* ===== RENDER: Revenue Detail ===== */
+function renderRevenueDetail() {
+  const deals = DATA.revenue || [];
+  const rows = deals.map(d => ({
+    date: d.properties.actual_event_date || '',
+    venue: venueFromProp(d.properties.venue) || '?',
+    type: d.properties.event_type_sales || '',
+    name: d.properties.dealname || '',
+    total: (parseFloat(d.properties.final_event_total_accounting) || 0) * NET_TAX
+  })).sort((a,b) => b.date.localeCompare(a.date));
+
+  let html = '<table id="revenueTable"><thead><tr><th onclick="sortRevenueTable(0)">Event Date</th><th onclick="sortRevenueTable(1)">Venue</th><th onclick="sortRevenueTable(2)">Type</th><th onclick="sortRevenueTable(3)">Deal Name</th><th onclick="sortRevenueTable(4)">Net Total</th></tr></thead><tbody>';
+  for (const r of rows) {
+    const cls = r.venue !== '?' ? 'venue-' + r.venue.toLowerCase() : '';
+    html += `<tr class="${cls}"><td>${r.date}</td><td>${r.venue}</td><td>${r.type}</td><td>${r.name}</td><td>${fmtMoneyExact(r.total)}</td></tr>`;
+  }
+  if (rows.length === 0) html += '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">No revenue data for this period</td></tr>';
+  html += '</tbody></table>';
+  document.getElementById('revenueDetailWrap').innerHTML = html;
+}
+
+let revSortCol = -1, revSortAsc = true;
+function sortRevenueTable(col) {
+  if (revSortCol === col) revSortAsc = !revSortAsc; else { revSortCol = col; revSortAsc = true; }
+  const table = document.getElementById('revenueTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a,b) => {
+    let av = a.cells[col].textContent, bv = b.cells[col].textContent;
+    if (col === 4) { av = parseFloat(av.replace(/[$,]/g,''))||0; bv = parseFloat(bv.replace(/[$,]/g,''))||0; }
+    if (av < bv) return revSortAsc ? -1 : 1;
+    if (av > bv) return revSortAsc ? 1 : -1;
+    return 0;
+  });
+  for (const r of rows) tbody.appendChild(r);
+}
+
+/* ===== RENDER: Trend Chart ===== */
+async function renderTrendChart() {
+  // Fetch per-month data for Jan through current month
+  const now = today();
+  const curMonth = Math.min(now.getMonth(), 4); // up to May (index 4)
+  const labels = [];
+  const leadsPerMonth = [];
+  const bookingsPerMonth = [];
+  const revenuePerMonth = [];
+
+  // We'll run queries for each month in parallel
+  const monthQueries = [];
+  for (let m = 0; m <= curMonth; m++) {
+    labels.push(SPEND_2026.months[m]);
+    const lastDay = new Date(2026, m+1, 0).getDate();
+    const start = dateStr(2026, m, 1);
+    const end = dateStr(2026, m, lastDay);
+
+    monthQueries.push(Promise.all([
+      fetchAllPages({
+        objectType: 'contacts',
+        filterGroups: VENUES.map(v => ({
+          filters: [
+            { propertyName: 'venue_s_', operator: 'CONTAINS_TOKEN', value: v },
+            ...dateFilter('createdate', start, end)
+          ]
+        })),
+        properties: ['venue_s_'],
+        limit: 200
+      }),
+      fetchAllPages({
+        objectType: 'deals',
+        filterGroups: [{
+          filters: [
+            { propertyName: 'pipeline', operator: 'EQ', value: SALES_PIPELINE },
+            ...dateFilter('contract_signed_date', start, end)
+          ]
+        }],
+        properties: ['dealname','pipeline','contract_signed_date'],
+        limit: 200
+      }).then(salesDeals =>
+        fetchAllPages({
+          objectType: 'deals',
+          filterGroups: [{
+            filters: [
+              { propertyName: 'pipeline', operator: 'EQ', value: EP_PIPELINE },
+              ...dateFilter('contract_signed_date', start, end)
+            ]
+          }],
+          properties: ['dealname','pipeline','contract_signed_date'],
+          limit: 200
+        }).then(epDeals => dedupeDeals([...salesDeals, ...epDeals]))
+      ),
+      fetchAllPages({
+        objectType: 'deals',
+        filterGroups: [{
+          filters: [
+            { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
+            ...dateFilter('actual_event_date', start, end)
+          ]
+        }],
+        properties: ['final_event_total_accounting'],
+        limit: 200
+      })
+    ]));
+  }
+
+  const monthResults = await Promise.all(monthQueries);
+  for (const [leads, bks, rev] of monthResults) {
+    leadsPerMonth.push(leads.length);
+    bookingsPerMonth.push(bks.length);
+    revenuePerMonth.push(rev.reduce((s,d) => s + (parseFloat(d.properties.final_event_total_accounting)||0) * NET_TAX, 0));
+  }
+
+  // Destroy old chart
+  if (trendChart) trendChart.destroy();
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Leads',
+          data: leadsPerMonth,
+          backgroundColor: 'rgba(201,169,110,0.5)',
+          borderColor: 'var(--gold)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 2
+        },
+        {
+          label: 'Bookings',
+          data: bookingsPerMonth,
+          type: 'line',
+          borderColor: '#2E86C1',
+          backgroundColor: 'rgba(46,134,193,0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          fill: false,
+          yAxisID: 'y',
+          order: 1
+        },
+        {
+          label: 'Revenue',
+          data: revenuePerMonth,
+          type: 'line',
+          borderColor: '#27AE60',
+          backgroundColor: 'rgba(39,174,96,0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          fill: false,
+          yAxisID: 'y1',
+          order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { position: 'left', title: { display: true, text: 'Count' }, beginAtZero: true },
+        y1: { position: 'right', title: { display: true, text: 'Revenue ($)' }, beginAtZero: true, grid: { drawOnChartArea: false },
+          ticks: { callback: v => fmtMoney(v) }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === 'Revenue') return ctx.dataset.label + ': ' + fmtMoney(ctx.raw);
+              return ctx.dataset.label + ': ' + ctx.raw;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ===== AI NARRATIVE ===== */
+async function loadAINarrative() {
+  const d = DATA;
+  const summary = {
+    period: d.period.label,
+    leads: d.totals.leads,
+    tours: d.totals.tours,
+    bookings: d.totals.bookings,
+    completedEvents: d.totals.completed,
+    revenue: Math.round(d.totals.revenue),
+    adSpend: Math.round(d.adSpend),
+    fullyLoadedSpend: Math.round(d.fullyLoaded),
+    cplPaid: Math.round(d.cplPaid),
+    cpbPaid: Math.round(d.cpbPaid),
+    roas: d.roas.toFixed(1),
+    leadToTourPct: d.ltPct.toFixed(1),
+    tourToBookPct: d.tbPct.toFixed(1),
+    venues: {}
+  };
+  for (const v of VENUES) {
+    summary.venues[v] = { leads: d.venueData[v].leads, tours: d.venueData[v].tours, bookings: d.venueData[v].bookings, revenue: Math.round(d.venueData[v].revenue) };
+  }
+
+  const prompt = `You are a wedding and event venue marketing analyst. Using this data for ${d.period.label}, write exactly 3 short paragraphs (no headers, no bullets):
+1. Efficiency snapshot: compare CPL and CPB to wedding-venue industry benchmarks (CPL $50-150, CPB $500-2000). Comment on ROAS.
+2. Venue-level story: which venues are strongest/weakest on leads, conversion, and revenue.
+3. Top 2-3 actions the marketing team should take right now.
+Keep it concise, data-driven, and specific. No filler. Reference actual numbers.`;
+
+  try {
+    const res = await fetch('/api/ai/narrative', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, data: summary })
+    });
+    if (!res.ok) throw new Error('AI endpoint error: ' + res.status);
+    const json = await res.json();
+    const text = json.text || 'No analysis available.';
+    const paragraphs = text.split(/\n\n+/).filter(p => p.trim());
+    document.getElementById('aiNarrative').innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+  } catch (err) {
+    document.getElementById('aiNarrative').innerHTML = '<p style="color:var(--text-light)">AI analysis unavailable: ' + err.message + '</p>';
+  }
+}
+
+/* ===== CSV EXPORT ===== */
+function downloadCSV(filename, headers, rows) {
+  const escape = v => '"' + String(v||'').replace(/"/g,'""') + '"';
+  let csv = headers.map(escape).join(',') + '\n';
+  for (const r of rows) csv += r.map(escape).join(',') + '\n';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+document.getElementById('exportTours').addEventListener('click', () => {
+  if (!RAW.tours) return;
+  const headers = ['Deal Name','Venue','Tour Date','Pipeline','Event Type'];
+  const rows = RAW.tours.map(d => [d.properties.dealname, d.properties.venue, d.properties.initial_tour_date, d.properties.pipeline === SALES_PIPELINE ? 'Sales' : 'Event Planning', d.properties.event_type_sales]);
+  downloadCSV('tours_export.csv', headers, rows);
+});
+
+document.getElementById('exportBookings').addEventListener('click', () => {
+  if (!RAW.bookings) return;
+  const headers = ['Deal Name','Venue','Contract Signed','Pipeline','Event Type'];
+  const rows = RAW.bookings.map(d => [d.properties.dealname, d.properties.venue, d.properties.contract_signed_date, d.properties.pipeline === SALES_PIPELINE ? 'Sales' : 'Event Planning', d.properties.event_type_sales]);
+  downloadCSV('bookings_export.csv', headers, rows);
+});
+
+document.getElementById('exportRevenue').addEventListener('click', () => {
+  if (!RAW.revenue) return;
+  const headers = ['Deal Name','Venue','Event Date','Event Type','Gross Total','Net Total (x0.95)'];
+  const rows = RAW.revenue.map(d => {
+    const gross = parseFloat(d.properties.final_event_total_accounting)||0;
+    return [d.properties.dealname, d.properties.venue, d.properties.actual_event_date, d.properties.event_type_sales, gross.toFixed(2), (gross*NET_TAX).toFixed(2)];
+  });
+  downloadCSV('revenue_export.csv', headers, rows);
+});
+
+/* ===== EVENT LISTENERS ===== */
+document.getElementById('periodSelect').addEventListener('change', loadDashboard);
+document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+
+/* ===== INIT ===== */
+loadDashboard();
+</script>
+</body>
+</html>
