@@ -44,7 +44,8 @@ header h1 { font-size: 16px; letter-spacing: 2.5px; font-weight: 600; color: var
 .goal-bar-wrap { background: var(--white); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); }
 .goal-labels { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
 .goal-track { position: relative; height: 32px; background: #EDE8E0; border-radius: 16px; overflow: visible; }
-.goal-fill { height: 100%; border-radius: 16px; background: linear-gradient(90deg, var(--gold), #D4AF37); transition: width .6s; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; font-size: 12px; font-weight: 700; color: var(--dark); min-width: 40px; }
+.goal-fill { height: 100%; border-radius: 16px 0 0 16px; background: linear-gradient(90deg, var(--gold), #D4AF37); transition: width .6s; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; font-size: 12px; font-weight: 700; color: var(--dark); min-width: 40px; position: absolute; top: 0; left: 0; z-index: 1; }
+.goal-projected { height: 100%; border-radius: 16px 0 0 16px; background: repeating-linear-gradient(45deg, rgba(201,169,110,0.25), rgba(201,169,110,0.25) 4px, rgba(201,169,110,0.1) 4px, rgba(201,169,110,0.1) 8px); transition: width .6s; position: absolute; top: 0; left: 0; z-index: 0; }
 .goal-pace { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--gold); border-radius: 2px; z-index: 2; }
 .goal-pace::after { content: attr(data-label); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--gold); white-space: nowrap; }
 
@@ -133,8 +134,13 @@ canvas { max-height: 360px; }
         <span>Goal: $19,600,000</span>
       </div>
       <div class="goal-track">
+        <div class="goal-projected" id="goalProjected" style="width:0%"></div>
         <div class="goal-fill" id="goalFill" style="width:0%">0%</div>
         <div class="goal-pace" id="goalPace" style="left:0%" data-label="Pace"></div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:11px;color:var(--text-light)">
+        <span><span style="display:inline-block;width:12px;height:12px;background:var(--gold);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Actual Revenue</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:repeating-linear-gradient(45deg,rgba(201,169,110,0.35),rgba(201,169,110,0.35) 2px,rgba(201,169,110,0.15) 2px,rgba(201,169,110,0.15) 4px);border-radius:2px;vertical-align:middle;margin-right:4px"></span>+ Projected Pipeline</span>
       </div>
     </div>
   </div>
@@ -143,6 +149,12 @@ canvas { max-height: 360px; }
   <div class="section">
     <div class="section-title">Key Performance Indicators</div>
     <div class="kpi-grid" id="kpiGrid"></div>
+  </div>
+
+  <!-- 2b. Event Revenue & Pipeline -->
+  <div class="section">
+    <div class="section-title">Event Revenue &amp; Pipeline</div>
+    <div class="kpi-grid" id="revenueCards" style="grid-template-columns: repeat(4, 1fr);"></div>
   </div>
 
   <!-- 3. AI Analysis -->
@@ -235,7 +247,7 @@ const SPEND_2026 = {
     'WeddingWire':{TBB:[1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17,1561.17],TBT:[605,605,605,605,605,605,605,605,605,605,605,605],ECD:[677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08,677.08],SWF:[1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25,1650.25]}
   },
   fixed: {
-    'Katherine Salary':[6200,6200,6200,6200,6200,6200,6200,6200,6200,6200,6200,6200],
+    'Marketing Labor':[6200,6200,6200,6200,6200,6200,6200,6200,6200,6200,6200,6200],
     'K+M Agency':[15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000],
     'Content Creator':[0,0,3750,3000,3000,0,0,0,0,0,0,0],
     'Software & Tools':[1245,1421,1301,1268,1532,0,0,0,0,0,0,0],
@@ -371,7 +383,7 @@ async function loadDashboard() {
 
   try {
     const contactProps = ['venue_s_','lead_source','createdate'];
-    const dealProps = ['venue','event_type_sales','initial_tour_date','contract_signed_date','actual_event_date','final_event_total_accounting','booked_cancelled__reporting_use_only_','pipeline','dealstage','dealname'];
+    const dealProps = ['venue','event_type_sales','initial_tour_date','contract_signed_date','actual_event_date','final_event_total_accounting','current_event_total','booked_cancelled__reporting_use_only_','pipeline','dealstage','dealname'];
 
     // Build queries
     const leadsQuery = {
@@ -488,8 +500,22 @@ async function loadDashboard() {
       limit: 200
     };
 
+    // Projected pipeline: deals with current_event_total but NO final accounting yet
+    const projectedQuery = {
+      objectType: 'deals',
+      filterGroups: [{
+        filters: [
+          { propertyName: 'current_event_total', operator: 'HAS_PROPERTY' },
+          { propertyName: 'final_event_total_accounting', operator: 'NOT_HAS_PROPERTY' },
+          { propertyName: 'booked_cancelled__reporting_use_only_', operator: 'NEQ', value: 'Cancelled' }
+        ]
+      }],
+      properties: dealProps,
+      limit: 200
+    };
+
     // Fire all queries in parallel
-    const [leadsRaw, toursSalesRaw, toursEPRaw, bookingsSalesRaw, bookingsEPRaw, completedRaw, revenueRaw, goalRaw] = await Promise.all([
+    const [leadsRaw, toursSalesRaw, toursEPRaw, bookingsSalesRaw, bookingsEPRaw, completedRaw, revenueRaw, goalRaw, projectedRaw] = await Promise.all([
       fetchAllPages(leadsQuery),
       fetchAllPages(toursSalesQuery),
       fetchAllPages(toursEPQuery),
@@ -497,7 +523,8 @@ async function loadDashboard() {
       fetchAllPages(bookingsEPQuery),
       fetchAllPages(completedQuery),
       fetchAllPages(revenueQuery),
-      fetchAllPages(goalQuery)
+      fetchAllPages(goalQuery),
+      fetchAllPages(projectedQuery)
     ]);
 
     // Dedupe tours & bookings
@@ -569,6 +596,14 @@ async function loadDashboard() {
       goalRevenue += (parseFloat(d.properties.final_event_total_accounting) || 0) * NET_TAX;
     }
 
+    // Projected pipeline revenue (not yet finalized)
+    let projectedRevenue = 0;
+    let projectedCount = 0;
+    for (const d of projectedRaw) {
+      const amt = parseFloat(d.properties.current_event_total) || 0;
+      if (amt > 0) { projectedRevenue += amt * NET_TAX; projectedCount++; }
+    }
+
     // Spend for period
     const adSpend = getAdSpendForPeriod(months);
     const fullyLoaded = getFullyLoadedForPeriod(months);
@@ -583,11 +618,12 @@ async function loadDashboard() {
     const cpbFull = totals.bookings > 0 ? fullyLoaded / totals.bookings : 0;
     const roas = adSpend > 0 ? totals.revenue / adSpend : 0;
 
-    DATA = { venueData, totals, goalRevenue, adSpend, fullyLoaded, ltPct, tbPct, lbPct, cplPaid, cplFull, cpbPaid, cpbFull, roas, leadsBySource, bookingsByType, revenue, months, period, periodVal };
+    DATA = { venueData, totals, goalRevenue, projectedRevenue, projectedCount, adSpend, fullyLoaded, ltPct, tbPct, lbPct, cplPaid, cplFull, cpbPaid, cpbFull, roas, leadsBySource, bookingsByType, revenue, months, period, periodVal };
 
     // Render all sections
-    renderGoalBar(goalRevenue);
+    renderGoalBar(goalRevenue, projectedRevenue);
     renderKPIs();
+    renderRevenueCards();
     renderFunnelTable();
     renderLeadSource();
     renderEventType();
@@ -614,19 +650,26 @@ async function loadDashboard() {
 }
 
 function showLoading() {
-  const kpiNames = ['Paid Ad Spend','Fully Loaded Spend','Leads','Tours','Bookings','Completed Events','Event Revenue','Lead→Tour %','Tour→Book %','Lead→Book %','CPL (Paid)','CPL (Fully Loaded)','CPB (Paid)','CPB (Fully Loaded)','ROAS'];
+  const kpiNames = ['Paid Ad Spend','Fully Loaded Spend','Leads','Tours','Bookings','Lead→Tour %','Tour→Book %','Lead→Book %','CPL (Paid)','CPL (Fully Loaded)','CPB (Paid)','CPB (Fully Loaded)','ROAS'];
   document.getElementById('kpiGrid').innerHTML = kpiNames.map(n =>
+    `<div class="kpi-card loading"><div class="label">${n}</div><div class="value"><span class="spinner"></span></div></div>`
+  ).join('');
+  const revNames = ['Completed Events','Event Revenue (Finalized)','Projected Pipeline','Total (Actual + Projected)'];
+  document.getElementById('revenueCards').innerHTML = revNames.map(n =>
     `<div class="kpi-card loading"><div class="label">${n}</div><div class="value"><span class="spinner"></span></div></div>`
   ).join('');
 }
 
 /* ===== RENDER: Goal Bar ===== */
-function renderGoalBar(rev) {
+function renderGoalBar(rev, projected) {
   const pct = Math.min(rev / REVENUE_GOAL * 100, 100);
-  document.getElementById('goalCurrent').textContent = fmtMoney(rev);
+  const projPct = Math.min((rev + (projected||0)) / REVENUE_GOAL * 100, 100);
+  document.getElementById('goalCurrent').textContent = fmtMoney(rev) + (projected > 0 ? ' (+' + fmtMoney(projected) + ' projected)' : '');
   const fill = document.getElementById('goalFill');
   fill.style.width = pct + '%';
   fill.textContent = pct.toFixed(1) + '%';
+  const projFill = document.getElementById('goalProjected');
+  projFill.style.width = projPct + '%';
 
   // Pace marker: day of year / 365
   const now = today();
@@ -648,8 +691,6 @@ function renderKPIs() {
     { label: 'Leads', value: d.totals.leads.toLocaleString() },
     { label: 'Tours', value: d.totals.tours.toLocaleString() },
     { label: 'Bookings', value: d.totals.bookings.toLocaleString() },
-    { label: 'Completed Events', value: d.totals.completed.toLocaleString() },
-    { label: 'Event Revenue', value: fmtMoney(d.totals.revenue) },
     { label: 'Lead→Tour %', value: fmtPct(d.ltPct) },
     { label: 'Tour→Book %', value: fmtPct(d.tbPct) },
     { label: 'Lead→Book %', value: fmtPct(d.lbPct) },
@@ -661,6 +702,20 @@ function renderKPIs() {
   ];
   document.getElementById('kpiGrid').innerHTML = kpis.map(k =>
     `<div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`
+  ).join('');
+}
+
+/* ===== RENDER: Revenue & Pipeline Cards ===== */
+function renderRevenueCards() {
+  const d = DATA;
+  const cards = [
+    { label: 'Completed Events', value: d.totals.completed.toLocaleString() },
+    { label: 'Event Revenue (Finalized)', value: fmtMoney(d.totals.revenue), sub: 'Net of 5% tax' },
+    { label: 'Projected Pipeline', value: fmtMoney(d.projectedRevenue), sub: d.projectedCount + ' booked events pending' },
+    { label: 'Total (Actual + Projected)', value: fmtMoney(d.totals.revenue + d.projectedRevenue), sub: 'Combined revenue outlook' }
+  ];
+  document.getElementById('revenueCards').innerHTML = cards.map(k =>
+    `<div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div>${k.sub ? '<div class="sub">'+k.sub+'</div>' : ''}</div>`
   ).join('');
 }
 
