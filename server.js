@@ -10,8 +10,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const GA4_PROPERTIES = {
   'TBB': '360515557',
   'TBT': '360552021',
-  'ECD': '110468618',
-  'SWF': '318610212'
+  'ECD': '372413058',
+  'SWF': '446541210'
 };
 
 let analyticsDataClient = null;
