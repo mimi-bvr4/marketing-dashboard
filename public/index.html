@@ -601,13 +601,17 @@ tbody tr:hover { background: #fafaf8; }
   }
   async function countDeals(filters) { return (await callHs({ objectType: 'deals', filterGroups: [{ filters }], limit: 1 })).total || 0; }
   async function countContacts(filters) { return (await callHs({ objectType: 'contacts', filterGroups: [{ filters }], limit: 1 })).total || 0; }
-  async function fetchAll(objectType, filterGroups, properties, maxPages = 20) {
-    const out = []; let offset = 0;
+  async function fetchAll(objectType, filterGroups, properties, maxPages = 60) {
+    // HubSpot CRM Search uses CURSOR paging (paging.next.after), NOT offset. Sending offset
+    // is ignored, so the same first 200 rows return every page, inflating any count over 200.
+    const out = []; let after;
     for (let i = 0; i < maxPages; i++) {
-      const data = await callHs({ objectType, filterGroups, properties, limit: 200, offset });
+      const body = { objectType, filterGroups, properties, limit: 200 };
+      if (after) body.after = after;
+      const data = await callHs(body);
       const batch = data.results || []; out.push(...batch);
-      if (batch.length < 200) break;
-      offset = data.offset || (offset + 200);
+      after = data.paging && data.paging.next && data.paging.next.after;
+      if (!after || batch.length < 200) break;
     }
     return out;
   }
