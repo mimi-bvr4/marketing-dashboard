@@ -186,7 +186,7 @@ app.get('/api/ga4/summary', async (req, res) => {
     await Promise.all(Object.entries(GA4_PROPERTIES).map(async ([v, pid]) => {
       try {
         const response = await ga4Fetch(pid, { startDate, endDate },
-          [{ name: 'sessionSource' }],
+          [{ name: 'sessionDefaultChannelGroup' }],
           [{ name: 'sessions' }, { name: 'newUsers' }]
         );
         const data = parseGA4Response(response, ['sessionSource']);
@@ -194,7 +194,7 @@ app.get('/api/ga4/summary', async (req, res) => {
           propertyId: pid,
           totalSessions: data.reduce((s, r) => s + r.sessions, 0),
           newUsers: data.reduce((s, r) => s + r.newUsers, 0),
-          bySource: data.map(r => ({ source: GA4_SOURCE_MAP[(r.sessionSource || '(direct)').toLowerCase()] || 'Other', sessions: r.sessions, newUsers: r.newUsers }))
+          bySource: data.map(r => ({ source: r.sessionSource || 'Direct', sessions: r.sessions, newUsers: r.newUsers }))
         };
       } catch (e) {
         venues[v] = { error: e.message };
