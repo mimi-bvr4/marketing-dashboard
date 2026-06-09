@@ -494,6 +494,9 @@ tbody tr:hover { background: #fafaf8; }
   }
   // Convert a full ISO string to a YYYY-MM-DD for date-type HubSpot properties
   function toDateStr(iso) { return iso.slice(0, 10); }
+  // HubSpot DATE-type props (initial_tour_date, contract_signed_date, actual_event_date) must be
+  // FILTERED with UTC-midnight epoch ms; YYYY-MM-DD / ISO return 400. Returned values stay YYYY-MM-DD.
+  function toEpochMs(d) { const x = new Date(d); return String(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate())); }
   // Normalize a dealname for cross-pipeline dedupe.
   function normalizeDealName(name) {
     return (name || '')
@@ -651,8 +654,8 @@ tbody tr:hover { background: #fafaf8; }
   async function fetchUniqueTours(period) {
     const filtersFor = (pl) => [
       { propertyName: 'pipeline', operator: 'EQ', value: pl },
-      { propertyName: TOUR_DATE_FIELD, operator: 'GTE', value: toDateStr(period.start) },
-      { propertyName: TOUR_DATE_FIELD, operator: 'LT', value: toDateStr(period.end) }
+      { propertyName: TOUR_DATE_FIELD, operator: 'GTE', value: toEpochMs(period.start) },
+      { propertyName: TOUR_DATE_FIELD, operator: 'LT', value: toEpochMs(period.end) }
     ];
     const props = ['venue', TOUR_DATE_FIELD, 'event_type_sales', 'dealname', 'pipeline'];
     const [salesTours, eventTours] = await Promise.all([
@@ -669,8 +672,8 @@ tbody tr:hover { background: #fafaf8; }
   async function fetchUniqueBookings(period) {
     const filtersFor = (pl) => [
       { propertyName: 'pipeline', operator: 'EQ', value: pl },
-      { propertyName: BOOKED_DATE_FIELD, operator: 'GTE', value: toDateStr(period.start) },
-      { propertyName: BOOKED_DATE_FIELD, operator: 'LT', value: toDateStr(period.end) }
+      { propertyName: BOOKED_DATE_FIELD, operator: 'GTE', value: toEpochMs(period.start) },
+      { propertyName: BOOKED_DATE_FIELD, operator: 'LT', value: toEpochMs(period.end) }
     ];
     const props = ['venue', BOOKED_DATE_FIELD, 'event_type_sales', 'dealname', 'pipeline', 'booked_cancelled__reporting_use_only_'];
     const [salesBookings, eventBookings] = await Promise.all([
@@ -691,6 +694,11 @@ tbody tr:hover { background: #fafaf8; }
       { propertyName: p, operator: 'GTE', value: period.start },
       { propertyName: p, operator: 'LT', value: period.end }
     ];
+    // Date-type deal props (actual_event_date) need epoch-ms bounds.
+    const filtersTimeMs = p => [
+      { propertyName: p, operator: 'GTE', value: toEpochMs(period.start) },
+      { propertyName: p, operator: 'LT', value: toEpochMs(period.end) }
+    ];
     try {
       const leadsP = fetchAll('contacts',
         [{ filters: [
@@ -706,8 +714,8 @@ tbody tr:hover { background: #fafaf8; }
       ];
       if (period.kind !== 'ytd') {
         completedEventsFilters.push(
-          { propertyName: 'actual_event_date', operator: 'GTE', value: toDateStr(period.start) },
-          { propertyName: 'actual_event_date', operator: 'LT', value: toDateStr(period.end) }
+          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(period.start) },
+          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(period.end) }
         );
       }
       const completedEventsP = fetchAll('deals',
@@ -717,14 +725,14 @@ tbody tr:hover { background: #fafaf8; }
         [{ filters: [
           { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
           { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
-          ...filtersTime('actual_event_date')
+          ...filtersTimeMs('actual_event_date')
         ]}],
         ['venue', 'dealname', 'final_event_total_accounting', 'event_type_sales', 'actual_event_date', 'pipeline']);
       const typingLookupP = fetchAll('deals',
         [{ filters: [
           { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
           { propertyName: 'event_type_sales', operator: 'HAS_PROPERTY' },
-          ...filtersTime('actual_event_date')
+          ...filtersTimeMs('actual_event_date')
         ]}],
         ['dealname', 'event_type_sales', 'pipeline']);
 
@@ -1077,8 +1085,8 @@ tbody tr:hover { background: #fafaf8; }
         [{ filters: [
           { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
           { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
-          { propertyName: 'actual_event_date', operator: 'GTE', value: yStart },
-          { propertyName: 'actual_event_date', operator: 'LT', value: yEnd }
+          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(yStart) },
+          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(yEnd) }
         ]}],
         ['final_event_total_accounting', 'venue', 'actual_event_date']);
       const today = new Date();
@@ -1109,7 +1117,7 @@ tbody tr:hover { background: #fafaf8; }
       const filtersFor = (pl) => [
         { propertyName: 'pipeline', operator: 'EQ', value: pl },
         { propertyName: 'contract_signed_date', operator: 'HAS_PROPERTY' },
-        { propertyName: 'actual_event_date', operator: 'GT', value: todayStr }
+        { propertyName: 'actual_event_date', operator: 'GT', value: toEpochMs(todayStr) }
       ];
       const props = ['venue', 'dealname', 'pipeline', 'contract_signed_date', 'actual_event_date', 'current_event_total', 'final_event_total_accounting', 'event_type_sales', 'dealstage'];
       const sampleStart = new Date(today.getTime() - 18 * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -1119,8 +1127,8 @@ tbody tr:hover { background: #fafaf8; }
         fetchAll('deals', [{ filters: [
           { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
           { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
-          { propertyName: 'actual_event_date', operator: 'GTE', value: sampleStart },
-          { propertyName: 'actual_event_date', operator: 'LT', value: todayStr }
+          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(sampleStart) },
+          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(todayStr) }
         ]}], ['venue', 'event_type_sales', 'final_event_total_accounting', 'actual_event_date'])
       ]);
       const epByName = new Map();
@@ -1263,8 +1271,8 @@ tbody tr:hover { background: #fafaf8; }
         fetchAll('deals', [{ filters: [
           { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
           { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
-          { propertyName: 'actual_event_date', operator: 'GTE', value: start },
-          { propertyName: 'actual_event_date', operator: 'LT', value: end }
+          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(start) },
+          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(end) }
         ]}], ['final_event_total_accounting'], 3)
       ]);
       leadCounts.push(l);
