@@ -6,6 +6,14 @@ const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ---- Fleet Contract v0 (ORDER #192): discovery, health, read-only tokens ----
+const { fleetGate } = require('./middleware/auth');
+app.use(fleetGate);
+app.use('/', require('./routes/fleet'));
+app.get('/settings/api-tokens', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api-tokens.html')));
+const { ensureTables } = require('./db');
+ensureTables().catch(e => console.error('[fleet] ensureTables:', e.message));
+
 // ---- GA4 Configuration ----
 const GA4_PROPERTIES = {
   'TBB': '360515557',
