@@ -93,6 +93,25 @@ tbody tr:hover { background: #fafaf8; }
   .funnel-stage .stage-name { width: 100%; }
   .funnel-stage .stage-conv { width: 100%; text-align: left; }
 }
+/* ---- Tabs (IHG vs Elle) ---- */
+.tab-nav { display: flex; gap: 4px; margin: 4px 0 18px; border-bottom: 2px solid #e5e7eb; }
+.tab-btn { appearance: none; background: none; border: none; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.tab-btn:hover { color: #1a365d; }
+.tab-btn.active { color: #1a365d; border-bottom-color: #1a365d; }
+.tab-btn.elle.active { color: #8b2f5f; border-bottom-color: #8b2f5f; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* ---- Elle panel styling — deliberately distinct color so nobody reads it as IHG ---- */
+.elle-banner { background: #fbf0f6; border: 1px solid #e6b9d2; border-left: 4px solid #8b2f5f; color: #6b2148; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+.elle-banner strong { color: #8b2f5f; }
+.elle-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.elle-controls label { font-size: 12px; font-weight: 600; color: #6b7280; }
+.elle-controls select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+.elle-status { font-size: 11px; font-style: italic; color: #9ca3af; margin-left: auto; }
+.elle-status.live { color: #10b981; font-style: normal; font-weight: 600; }
+.elle-status.pending { color: #f59e0b; font-style: normal; font-weight: 600; }
+.kpi-card.elle { border-left-color: #8b2f5f; }
+.elle-venue-label { font-weight: 700; color: #8b2f5f; }
 </style>
 </head>
 <body>
@@ -110,6 +129,11 @@ tbody tr:hover { background: #fafaf8; }
     </select>
   </div>
 </header>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="ihg" id="tabbtn-ihg">Infinity Hospitality</button>
+  <button class="tab-btn elle" data-tab="elle" id="tabbtn-elle">Elle Venues <span style="font-weight:400;opacity:.7">· acquisition</span></button>
+</nav>
+<div id="panel-ihg" class="tab-panel active">
 <div id="status" class="status">Loading live data from HubSpot&hellip;</div>
 <div class="goal-section">
   <div class="goal-row">
@@ -345,6 +369,46 @@ tbody tr:hover { background: #fafaf8; }
   <h2>2026 Monthly Trend &middot; Leads, Bookings, Revenue</h2>
   <div class="chart-wrap"><canvas id="trend-chart"></canvas></div>
 </div>
+</div><!-- /#panel-ihg -->
+
+<div id="panel-elle" class="tab-panel">
+  <div class="elle-banner">
+    <strong>Elle venues — held separate from Infinity numbers.</strong>
+    Saint Elle, The Cordelle &amp; Estelle are acquisition properties. Their website traffic is shown here on its own and is <strong>not</strong> rolled into any Infinity total, funnel, or goal on the Infinity Hospitality tab. When the revenue converts to IH, we pull them into the full mix. Traffic only for now — no spend/CAC until Katherine adds Elle spend.
+  </div>
+  <div class="elle-controls">
+    <label for="elle-period">Period</label>
+    <select id="elle-period">
+      <option value="30">Last 30 days</option>
+      <option value="90" selected>Last 90 days</option>
+      <option value="ytd">2026 YTD</option>
+    </select>
+    <span id="elle-status" class="elle-status">&nbsp;</span>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card elle"><div class="label">Elle Sessions</div><div class="value" id="elle-kpi-sessions">&mdash;</div><div class="sub">STE + COR + EST · website visits</div></div>
+    <div class="kpi-card elle"><div class="label">New Users</div><div class="value" id="elle-kpi-newusers">&mdash;</div><div class="sub">first-time visitors</div></div>
+    <div class="kpi-card elle"><div class="label">Venues Reporting</div><div class="value" id="elle-kpi-venues">&mdash;</div><div class="sub">of 3 Elle GA4 properties</div></div>
+  </div>
+  <div class="section">
+    <h2>Elle Website Traffic by Venue <span class="hint">live from GA4 · Elle properties only</span></h2>
+    <table>
+      <thead>
+        <tr><th>Venue</th><th class="num">Sessions</th><th class="num">New Users</th><th>Top Source</th><th class="num">GA4 Property</th></tr>
+      </thead>
+      <tbody id="elle-venue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+    </table>
+    <div class="footnote">Sessions and new users pulled live from each Elle venue's Google Analytics 4 property. Kept fully separate from the Infinity tab — no Elle number appears in any Infinity aggregate.</div>
+  </div>
+  <div class="section">
+    <h2>Elle Traffic by Source <span class="hint">across all three Elle venues combined</span></h2>
+    <table>
+      <thead><tr><th>Source</th><th class="num">Sessions</th><th class="num">% of Elle Total</th></tr></thead>
+      <tbody id="elle-source-body"><tr><td colspan="3" class="skeleton">Loading&hellip;</td></tr></tbody>
+    </table>
+  </div>
+</div><!-- /#panel-elle -->
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 (async () => {
@@ -1403,6 +1467,118 @@ tbody tr:hover { background: #fafaf8; }
   await loadPeriod(resolvePeriod('ytd'));
   loadTrend().catch(e => console.error(e));
   loadProjectedRevenue().catch(e => console.error(e));
+})();
+</script>
+<script>
+/* ============================================================
+   ELLE TAB — fully self-contained. Reads ONLY /api/ga4/elle/summary.
+   Shares no state with the IHG dashboard closure above. Never throws.
+   ============================================================ */
+(() => {
+  const ELLE_NAMES = { STE: 'Saint Elle', COR: 'The Cordelle', EST: 'Estelle' };
+  const fmt = n => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US');
+  const pct = (a, b) => (!b) ? '—' : (Math.round((a / b) * 1000) / 10).toFixed(1) + '%';
+  let elleLoaded = false;
+
+  function elleDateRange(val) {
+    const today = new Date();
+    const end = today.toISOString().split('T')[0];
+    if (val === 'ytd') return { startDate: '2026-01-01', endDate: end };
+    const days = parseInt(val, 10) || 90;
+    const start = new Date(today.getTime() - days * 86400000);
+    return { startDate: start.toISOString().split('T')[0], endDate: end };
+  }
+
+  function setStatus(text, cls) {
+    const s = document.getElementById('elle-status');
+    s.textContent = text;
+    s.className = 'elle-status' + (cls ? ' ' + cls : '');
+  }
+
+  function topSource(bySource) {
+    if (!Array.isArray(bySource) || !bySource.length) return '—';
+    const top = bySource.slice().sort((a, b) => (b.sessions || 0) - (a.sessions || 0))[0];
+    return (top.sessionSource || '(direct)') + ' · ' + fmt(top.sessions);
+  }
+
+  async function loadElle() {
+    const range = elleDateRange(document.getElementById('elle-period').value);
+    setStatus('loading GA4…');
+    const venueBody = document.getElementById('elle-venue-body');
+    const sourceBody = document.getElementById('elle-source-body');
+    venueBody.innerHTML = '<tr><td colspan="5" class="skeleton">Loading…</td></tr>';
+    sourceBody.innerHTML = '<tr><td colspan="3" class="skeleton">Loading…</td></tr>';
+
+    let data;
+    try {
+      const r = await fetch(`/api/ga4/elle/summary?startDate=${range.startDate}&endDate=${range.endDate}`);
+      data = await r.json();
+    } catch (e) {
+      setStatus('● GA4 unreachable', 'pending');
+      venueBody.innerHTML = '<tr><td colspan="5" class="footnote">Could not reach the GA4 endpoint.</td></tr>';
+      return;
+    }
+
+    // Plumbing staged but property IDs / access not in yet — clean pending state, not an error.
+    if (data.pending) {
+      setStatus('○ plumbing staged — awaiting property IDs + access', 'pending');
+      document.getElementById('elle-kpi-sessions').textContent = '—';
+      document.getElementById('elle-kpi-newusers').textContent = '—';
+      document.getElementById('elle-kpi-venues').textContent = '0';
+      venueBody.innerHTML = Object.keys(ELLE_NAMES).map(v =>
+        `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
+        + `<td class="num">—</td><td class="num">—</td><td>awaiting GA4 property ID + service-account access</td><td class="num">—</td></tr>`
+      ).join('');
+      sourceBody.innerHTML = '<tr><td colspan="3" class="footnote">Traffic-by-source populates once the three Elle GA4 property IDs are filled in and the dashboard service account is granted Viewer on each property.</td></tr>';
+      return;
+    }
+
+    const venues = data.venues || {};
+    let totalSessions = 0, totalNew = 0, reporting = 0;
+    const sourceTotals = {};
+
+    const rows = Object.keys(ELLE_NAMES).map(v => {
+      const vd = venues[v];
+      if (!vd || vd.error) {
+        return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
+          + `<td class="num">—</td><td class="num">—</td><td style="color:#f59e0b">${vd && vd.error ? 'GA4 error' : 'no data'}</td><td class="num">—</td></tr>`;
+      }
+      reporting++;
+      totalSessions += vd.totalSessions || 0;
+      totalNew += vd.newUsers || 0;
+      (vd.bySource || []).forEach(s => {
+        const key = s.sessionSource || '(direct)';
+        sourceTotals[key] = (sourceTotals[key] || 0) + (s.sessions || 0);
+      });
+      return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
+        + `<td class="num">${fmt(vd.totalSessions)}</td><td class="num">${fmt(vd.newUsers)}</td>`
+        + `<td>${topSource(vd.bySource)}</td><td class="num" style="color:#9ca3af">${vd.propertyId || '—'}</td></tr>`;
+    }).join('');
+
+    venueBody.innerHTML = rows;
+    document.getElementById('elle-kpi-sessions').textContent = fmt(totalSessions);
+    document.getElementById('elle-kpi-newusers').textContent = fmt(totalNew);
+    document.getElementById('elle-kpi-venues').textContent = reporting + ' / 3';
+    setStatus(reporting ? '● GA4 live' : '○ no Elle data in range', reporting ? 'live' : 'pending');
+
+    const sorted = Object.entries(sourceTotals).sort((a, b) => b[1] - a[1]);
+    sourceBody.innerHTML = sorted.length
+      ? sorted.map(([src, n]) => `<tr><td>${src}</td><td class="num">${fmt(n)}</td><td class="num">${pct(n, totalSessions)}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="footnote">No traffic sources in this period.</td></tr>';
+  }
+
+  // ---- Tab switching ----
+  const headerControls = document.querySelector('header .controls');
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('panel-ihg').classList.toggle('active', tab === 'ihg');
+    document.getElementById('panel-elle').classList.toggle('active', tab === 'elle');
+    // The header period selector drives IHG only — hide it on the Elle tab to avoid confusion.
+    if (headerControls) headerControls.style.visibility = (tab === 'elle') ? 'hidden' : 'visible';
+    if (tab === 'elle' && !elleLoaded) { elleLoaded = true; loadElle(); }
+  }
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.getElementById('elle-period').addEventListener('change', loadElle);
 })();
 </script>
 </body>
