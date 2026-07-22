@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IHG Marketing Dashboard</title>
 <style>
 :root { color-scheme: light; }
@@ -390,79 +391,16 @@ tbody tr:hover { background: #fafaf8; }
     { key: 'website', label: 'Website' }
   ];
   // Per-month spend. channels[channel][venue]; fixed[category]
-  const SPEND_2026 = {
-    '2026-01': {
-      channels: {
-        google_ads: { TBB: 1500, TBT: 1500, ECD: 1800, SWF: 1500 },
-        tiktok: { TBB: 0, TBT: 0, ECD: 0, SWF: 0 },
-        hctg: { TBB: 153, TBT: 85.50, ECD: 85.50, SWF: 153 },
-        wedsociety: { TBB: 375, TBT: 375, ECD: 375, SWF: 375 },
-        zola: { TBB: 160, TBT: 0, ECD: 0, SWF: 120 },
-        cvent: { TBB: 541.42, TBT: 541.42, ECD: 0, SWF: 0 },
-        the_knot: { TBB: 1550.08, TBT: 605, ECD: 1480.25, SWF: 1650.33 },
-        weddingwire: { TBB: 1561.17, TBT: 605, ECD: 677.08, SWF: 1650.25 }
-      },
-      fixed: { salary: 6200, kam_agency: 15000, content_creator: 0, software_tools: 1245, website: 902 }
-    },
-    '2026-02': {
-      channels: {
-        google_ads: { TBB: 1500, TBT: 1500, ECD: 1800, SWF: 1500 },
-        tiktok: { TBB: 750, TBT: 750, ECD: 750, SWF: 750 },
-        hctg: { TBB: 153, TBT: 85.50, ECD: 85.50, SWF: 153 },
-        wedsociety: { TBB: 375, TBT: 375, ECD: 375, SWF: 375 },
-        zola: { TBB: 160, TBT: 0, ECD: 0, SWF: 120 },
-        cvent: { TBB: 541.42, TBT: 541.42, ECD: 0, SWF: 0 },
-        the_knot: { TBB: 1550.08, TBT: 605, ECD: 1480.25, SWF: 1650.33 },
-        weddingwire: { TBB: 1561.17, TBT: 605, ECD: 677.08, SWF: 1650.25 }
-      },
-      fixed: { salary: 6200, kam_agency: 15000, content_creator: 0, software_tools: 1421, website: 902 }
-    },
-    '2026-03': {
-      channels: {
-        google_ads: { TBB: 1500, TBT: 1500, ECD: 1800, SWF: 1500 },
-        tiktok: { TBB: 750, TBT: 750, ECD: 750, SWF: 750 },
-        hctg: { TBB: 153, TBT: 85.50, ECD: 85.50, SWF: 153 },
-        wedsociety: { TBB: 375, TBT: 375, ECD: 375, SWF: 375 },
-        zola: { TBB: 160, TBT: 0, ECD: 0, SWF: 120 },
-        cvent: { TBB: 541.42, TBT: 541.42, ECD: 0, SWF: 0 },
-        the_knot: { TBB: 1550.08, TBT: 605, ECD: 1480.25, SWF: 1650.33 },
-        weddingwire: { TBB: 1561.17, TBT: 605, ECD: 677.08, SWF: 1650.25 }
-      },
-      fixed: { salary: 6200, kam_agency: 15000, content_creator: 3750, software_tools: 1301, website: 902 }
-    },
-    '2026-04': {
-      channels: {
-        google_ads: { TBB: 2000, TBT: 2000, ECD: 1800, SWF: 1500 },
-        tiktok: { TBB: 0, TBT: 0, ECD: 750, SWF: 750 },
-        hctg: { TBB: 153, TBT: 85.50, ECD: 85.50, SWF: 153 },
-        wedsociety: { TBB: 375, TBT: 375, ECD: 375, SWF: 375 },
-        zola: { TBB: 160, TBT: 0, ECD: 0, SWF: 120 },
-        cvent: { TBB: 541.42, TBT: 541.42, ECD: 0, SWF: 0 },
-        the_knot: { TBB: 1550.08, TBT: 605, ECD: 1480.25, SWF: 1650.33 },
-        weddingwire: { TBB: 1561.17, TBT: 605, ECD: 677.08, SWF: 1650.25 }
-      },
-      fixed: { salary: 6200, kam_agency: 15000, content_creator: 3000, software_tools: 1268, website: 3074 }
-    },
-    '2026-05': {
-      channels: {
-        google_ads: { TBB: 1500, TBT: 1500, ECD: 1800, SWF: 1500 },
-        tiktok: { TBB: 0, TBT: 0, ECD: 750, SWF: 750 },
-        hctg: { TBB: 153, TBT: 85.50, ECD: 85.50, SWF: 153 },
-        wedsociety: { TBB: 375, TBT: 375, ECD: 375, SWF: 375 },
-        zola: { TBB: 160, TBT: 0, ECD: 0, SWF: 120 },
-        cvent: { TBB: 541.42, TBT: 541.42, ECD: 0, SWF: 0 },
-        the_knot: { TBB: 1550.08, TBT: 605, ECD: 1480.25, SWF: 1650.33 },
-        weddingwire: { TBB: 1561.17, TBT: 605, ECD: 677.08, SWF: 1650.25 }
-      },
-      fixed: { salary: 6200, kam_agency: 15000, content_creator: 3000, software_tools: 1532, website: 902 }
-    }
-  };
-  // Baseline template for remaining months (Jun-Dec): same channel mix as May, no content creator or software
-  const BASELINE_CHANNELS = SPEND_2026['2026-05'].channels;
-  const BASELINE_FIXED = { salary: 6200, kam_agency: 15000, content_creator: 0, software_tools: 0, website: 902 };
-  ['2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'].forEach(ym => {
-    SPEND_2026[ym] = { channels: BASELINE_CHANNELS, fixed: BASELINE_FIXED };
-  });
+  // ORDER #182 rider ("Unify spend"): this used to be an inline copy of Katherine's
+  // spend data, drifted from server.js's OWN differently-shaped copy of the same
+  // figures (a real "which one is truth" landmine). Now there is exactly one copy —
+  // server.js's SPEND_MONTHS_2026 — served from GET /api/spend and fetched once here.
+  let SPEND_2026 = null;
+  async function fetchSpendData() {
+    const r = await fetch('/api/spend');
+    if (!r.ok) throw new Error(`/api/spend returned ${r.status}`);
+    return r.json();
+  }
 
   const periodSel = document.getElementById('period');
   const statusEl = document.getElementById('status');
@@ -740,8 +678,28 @@ tbody tr:hover { background: #fafaf8; }
         ]}],
         ['dealname', 'event_type_sales', 'pipeline']);
 
-      const [leads, toursResult, bookingsResult, completedEvents, revenueDeals, typingLookup] = await Promise.all([leadsP, toursResultP, bookingsResultP, completedEventsP, revenueP, typingLookupP]);
-      const typingMap = buildEventTypeMap(typingLookup);
+      // ORDER #182 rider ("Per-section error handling"): Promise.all rejects the WHOLE
+      // batch on any single failure, which used to error-banner the entire dashboard even
+      // when 5 of 6 queries succeeded. Promise.allSettled + a per-query fallback means one
+      // bad section degrades to empty (rendered honestly, named in the status line) while
+      // every other section still renders with its own real data.
+      const labels = ['leads', 'tours', 'bookings', 'completedEvents', 'revenueDeals', 'typingLookup'];
+      const settled = await Promise.allSettled([leadsP, toursResultP, bookingsResultP, completedEventsP, revenueP, typingLookupP]);
+      const failed = [];
+      const emptyToursBookings = { all: [], salesCount: 0, eventOnlyCount: 0 };
+      const fallback = { leads: [], tours: emptyToursBookings, bookings: emptyToursBookings, completedEvents: [], revenueDeals: [], typingLookup: [] };
+      const out = {};
+      settled.forEach((r, i) => {
+        const label = labels[i];
+        if (r.status === 'fulfilled') { out[label] = r.value; return; }
+        out[label] = fallback[label];
+        failed.push(label);
+        console.error(`[loadPeriod] ${label} failed:`, r.reason);
+      });
+      const leads = out.leads;
+      const toursResult = out.tours, bookingsResult = out.bookings;
+      const completedEvents = out.completedEvents, revenueDeals = out.revenueDeals;
+      const typingMap = buildEventTypeMap(out.typingLookup);
       const tours = toursResult.all;
       const bookings = bookingsResult.all;
       CURRENT = { period, tours, bookings, completedEvents, revenueDeals, typingMap };
@@ -752,7 +710,13 @@ tbody tr:hover { background: #fafaf8; }
       const bookExtra = bookingsResult.eventOnlyCount
         ? ` (${bookingsResult.salesCount} Sales + ${bookingsResult.eventOnlyCount} event-only, deduped)`
         : '';
-      statusEl.textContent = `Live · ${period.label} · ${leads.length} leads · ${tours.length} tours${tourExtra} · ${bookings.length} bookings${bookExtra} · ${completedEvents.length} completed events (${revenueDeals.length} w/ final totals) · refreshed ${new Date().toLocaleTimeString()}`;
+      const liveLine = `Live · ${period.label} · ${leads.length} leads · ${tours.length} tours${tourExtra} · ${bookings.length} bookings${bookExtra} · ${completedEvents.length} completed events (${revenueDeals.length} w/ final totals) · refreshed ${new Date().toLocaleTimeString()}`;
+      if (failed.length) {
+        statusEl.textContent = `${liveLine} — ⚠️ failed to load: ${failed.join(', ')} (shown as empty, not guessed)`;
+        statusEl.className = 'status error';
+      } else {
+        statusEl.textContent = liveLine;
+      }
       generateNarrative(period, { leads, tours, bookings, completedEvents, revenueDeals });
     } catch (e) {
       statusEl.textContent = 'Error loading HubSpot: ' + (e.message || e);
@@ -1400,6 +1364,12 @@ tbody tr:hover { background: #fafaf8; }
   });
 
   periodSel.addEventListener('change', () => loadPeriod(resolvePeriod(periodSel.value)));
+  try {
+    SPEND_2026 = await fetchSpendData();
+  } catch (e) {
+    console.error('[spend]', e.message);
+    SPEND_2026 = {}; // degrade to "no spend data" rather than block the rest of the dashboard
+  }
   await loadPeriod(resolvePeriod('ytd'));
   loadTrend().catch(e => console.error(e));
   loadProjectedRevenue().catch(e => console.error(e));
