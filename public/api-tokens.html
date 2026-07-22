@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fleet API Keys — Marketing Dashboard</title><style>
+body{font:15px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#141414;background:#faf8f5;margin:0;padding:32px 20px}
+.wrap{max-width:760px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}p.sub{color:#6b6b6b;margin:0 0 24px}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:18px 20px;margin-bottom:18px}
+label{display:block;font-size:13px;color:#6b6b6b;margin-bottom:6px}
+input{width:100%;padding:9px 11px;border:1px solid #e5e5e5;border-radius:7px;font-size:14px}
+button{background:#141414;color:#fff;border:0;border-radius:7px;padding:9px 15px;font-size:14px;cursor:pointer}
+button.mint{background:#BD574E}button.link{background:none;color:#BD574E;padding:4px 6px}
+.row{display:flex;gap:10px;align-items:flex-end}.row .grow{flex:1}
+table{width:100%;border-collapse:collapse;margin-top:6px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #e5e5e5;font-size:13px}
+th{color:#6b6b6b}code{background:#f2efe9;padding:2px 6px;border-radius:5px;font-size:13px;word-break:break-all}
+.reveal{background:#fff8e6;border:1px solid #f0d98a;border-radius:8px;padding:14px 16px;margin-top:14px}
+.reveal code{display:block;background:#fff;border:1px dashed #d8c05a;padding:10px;margin-top:8px}
+.revoked{color:#6b6b6b;text-decoration:line-through}.hint{color:#6b6b6b}.err{color:#8a2b22;font-size:13px;margin-top:6px}
+</style></head><body><div class="wrap">
+<h1>Fleet API keys</h1><p class="sub">Read-only keys other Infinity apps (like ARC) use to read marketing spend + revenue metrics. A key can only read, never change anything, and you can revoke it anytime.</p>
+<div id="loginCard" class="card"><label for="pw">Admin password</label><div class="row"><div class="grow"><input id="pw" type="password" placeholder="Marketing admin password"></div><button id="loginBtn">Sign in</button></div><div id="loginErr" class="err"></div></div>
+<div id="app" hidden>
+ <div class="card"><div class="row"><div class="grow"><label for="label">Name this key</label><input id="label" placeholder="e.g. ARC read key"></div><button class="mint" id="mintBtn">Mint read-only key</button></div><div id="reveal" class="reveal" hidden><strong>Copy this now — it will never be shown again.</strong><code id="rawTok"></code></div><div id="mintErr" class="err"></div></div>
+ <div class="card"><table><thead><tr><th>Key</th><th>Name</th><th>Last used</th><th></th></tr></thead><tbody id="list"><tr><td colspan="4" class="hint">Loading…</td></tr></tbody></table></div>
+</div></div>
+<script>
+var jwt=null;var $=function(i){return document.getElementById(i)};
+function H(){return {'Authorization':'Bearer '+jwt,'Content-Type':'application/json'}}
+function showApp(){$('loginCard').hidden=true;$('app').hidden=false;load()}
+function login(){fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d}})}).then(function(x){if(x.ok&&x.d.token){jwt=x.d.token;showApp()}else{$('loginErr').textContent=x.d.error||'Sign-in failed'}}).catch(function(){$('loginErr').textContent='Sign-in failed'})}
+function fmt(t){if(!t)return'—';try{return new Date(t).toLocaleString()}catch(e){return t}}
+function render(rows){var tb=$('list');if(!rows.length){tb.innerHTML='<tr><td colspan="4" class="hint">No keys yet.</td></tr>';return}tb.innerHTML=rows.map(function(r){var rev=!!r.revoked_at;var a=rev?'<span class="hint">revoked</span>':'<button class="link" data-id="'+r.id+'">Revoke</button>';return '<tr'+(rev?' class="revoked"':'')+'><td><code>'+r.token_prefix+'</code></td><td>'+(r.label||'(unnamed)')+'</td><td>'+fmt(r.last_used_at)+'</td><td>'+a+'</td></tr>'}).join('');Array.prototype.forEach.call(tb.querySelectorAll('button[data-id]'),function(b){b.onclick=function(){revoke(b.getAttribute('data-id'))}})}
+function load(){fetch('/api/tokens',{headers:H()}).then(function(r){return r.json()}).then(function(x){if(Array.isArray(x))render(x);else $('list').innerHTML='<tr><td colspan="4" class="hint">'+(x.error||'')+'</td></tr>'}).catch(function(){})}
+function mint(){fetch('/api/tokens',{method:'POST',headers:H(),body:JSON.stringify({label:$('label').value||''})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d}})}).then(function(x){if(x.ok&&x.d.token){$('rawTok').textContent=x.d.token;$('reveal').hidden=false;$('label').value='';load()}else{$('mintErr').textContent=x.d.error||'Mint failed'}}).catch(function(){})}
+function revoke(id){fetch('/api/tokens/'+id+'/revoke',{method:'POST',headers:H()}).then(function(){load()}).catch(function(){})}
+$('loginBtn').onclick=login;$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')login()});$('mintBtn').onclick=mint;
+</script></body></html>

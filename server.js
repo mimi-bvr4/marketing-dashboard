@@ -6,6 +6,14 @@ const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ---- Fleet Contract v0 (ORDER #192): discovery, health, read-only tokens ----
+const { fleetGate } = require('./middleware/auth');
+app.use(fleetGate);
+app.use('/', require('./routes/fleet'));
+app.get('/settings/api-tokens', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api-tokens.html')));
+const { ensureTables } = require('./db');
+ensureTables().catch(e => console.error('[fleet] ensureTables:', e.message));
+
 // ---- GA4 Configuration ----
 const GA4_PROPERTIES = {
   'TBB': '360515557',
@@ -13,6 +21,24 @@ const GA4_PROPERTIES = {
   'ECD': '372413058',
   'SWF': '446541210'
 };
+
+// ---- Elle venues (ACQUISITION — held DELIBERATELY SEPARATE from IHG) ----
+// A SECOND map on purpose. GA4_PROPERTIES (above) is the ONLY map the IHG
+// summary/funnel iterate, so nothing here can bleed into a validated Infinity number.
+// The Elle dashboard tab reads ONLY /api/ga4/elle/*, which read ONLY this map.
+// WHEN Elle revenue converts to IH: move these lines up into GA4_PROPERTIES,
+// delete this block + the /api/ga4/elle/* routes, add STE/COR/EST to the front-end
+// pickers. That single move "pulls Elle into the full mix."
+// Property IDs verified via GA4 Data Streams (site each stream points to):
+const GA4_ELLE_PROPERTIES = {
+  'STE': '546276459',   // Saint Elle   — thesaintelle.com
+  'COR': '397846080',   // The Cordelle — thecordelle.com
+  'EST': '356513971'    // Estelle      — estellenashville.com
+};
+// True only once real numeric property IDs are present.
+function elleConfigured() {
+  return Object.values(GA4_ELLE_PROPERTIES).every(id => /^\d+$/.test(String(id)));
+}
 
 let analyticsDataClient = null;
 try {
@@ -242,6 +268,64 @@ app.get('/api/ga4/summary', async (req, res) => {
     res.json({ dateRange: { startDate, endDate }, venues });
   } catch (e) {
     console.error('[GA4 summary]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// ELLE (acquisition) GA4 endpoints — walled off from IHG.
+// Read GA4_ELLE_PROPERTIES only. No IHG route touches that map and these touch no
+// IHG map, so Elle can never appear in /api/ga4/summary or any IHG aggregate.
+// Return { pending:true } (not a 500) until real property IDs are set.
+// ============================================================
+app.get('/api/ga4/elle/sessions', async (req, res) => {
+  const { venue, startDate, endDate } = req.query;
+  if (!venue || !GA4_ELLE_PROPERTIES[venue]) return res.status(400).json({ error: 'Invalid Elle venue. Use: ' + Object.keys(GA4_ELLE_PROPERTIES).join(', ') });
+  if (!startDate || !endDate) return res.status(400).json({ error: 'startDate and endDate required (YYYY-MM-DD)' });
+  if (!elleConfigured()) return res.json({ pending: true, venue, reason: 'Elle GA4 property IDs not yet configured' });
+  try {
+    const response = await ga4Fetch(GA4_ELLE_PROPERTIES[venue],
+      { startDate, endDate },
+      [{ name: 'sessionSource' }, { name: 'date' }],
+      [{ name: 'sessions' }, { name: 'newUsers' }, { name: 'totalUsers' }, { name: 'screenPageViews' }, { name: 'bounceRate' }]
+    );
+    const data = parseGA4Response(response, ['sessionSource', 'date']);
+    res.json({ venue, propertyId: GA4_ELLE_PROPERTIES[venue], dateRange: { startDate, endDate }, totalSessions: data.reduce((s, r) => s + r.sessions, 0), rawData: data });
+  } catch (e) {
+    console.error('[GA4 elle sessions]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/ga4/elle/summary', async (req, res) => {
+  const { startDate, endDate } = req.query;
+  if (!startDate || !endDate) return res.status(400).json({ error: 'startDate and endDate required (YYYY-MM-DD)' });
+  if (!elleConfigured()) {
+    return res.json({ pending: true, reason: 'Elle GA4 property IDs not yet configured',
+      venues: Object.keys(GA4_ELLE_PROPERTIES).reduce((a, v) => (a[v] = { pending: true }, a), {}) });
+  }
+  try {
+    const venues = {};
+    await Promise.all(Object.entries(GA4_ELLE_PROPERTIES).map(async ([v, pid]) => {
+      try {
+        const response = await ga4Fetch(pid, { startDate, endDate },
+          [{ name: 'sessionDefaultChannelGroup' }],
+          [{ name: 'sessions' }, { name: 'newUsers' }]
+        );
+        const data = parseGA4Response(response, ['sessionSource']);
+        venues[v] = {
+          propertyId: pid,
+          totalSessions: data.reduce((s, r) => s + r.sessions, 0),
+          newUsers: data.reduce((s, r) => s + r.newUsers, 0),
+          bySource: data.map(r => ({ sessionSource: r.sessionSource || 'Direct', sessions: r.sessions, newUsers: r.newUsers }))
+        };
+      } catch (e) {
+        venues[v] = { error: e.message };
+      }
+    }));
+    res.json({ scope: 'elle', dateRange: { startDate, endDate }, venues });
+  } catch (e) {
+    console.error('[GA4 elle summary]', e.message);
     res.status(500).json({ error: e.message });
   }
 });
