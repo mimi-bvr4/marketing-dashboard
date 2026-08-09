@@ -31,4 +31,4 @@ function load(){fetch('/api/tokens',{headers:H()}).then(function(r){return r.jso
 function mint(){fetch('/api/tokens',{method:'POST',headers:H(),body:JSON.stringify({label:$('label').value||''})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d}})}).then(function(x){if(x.ok&&x.d.token){$('rawTok').textContent=x.d.token;$('reveal').hidden=false;$('label').value='';load()}else{$('mintErr').textContent=x.d.error||'Mint failed'}}).catch(function(){})}
 function revoke(id){fetch('/api/tokens/'+id+'/revoke',{method:'POST',headers:H()}).then(function(){load()}).catch(function(){})}
 $('loginBtn').onclick=login;$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')login()});$('mintBtn').onclick=mint;
-</script></body></html>
+</script><script src="https://dispatch.infinityhospitalitygroup.com/ihg-nav.js" defer></script></body></html>
