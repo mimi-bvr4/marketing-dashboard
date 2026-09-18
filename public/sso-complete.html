@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signing you in — Marketing Dashboard</title>
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+</head><body style="font-family:system-ui;max-width:420px;margin:14vh auto;padding:0 20px">
+<!--
+  ORDER #656: the completion page, the SAME shape planning's sso-complete.html has.
+  Dispatch runs Google, signs a token and lands the browser HERE with the token in
+  the URL FRAGMENT -- never the query string, so it is not sent to this server in
+  the request line and never lands in an access log. This page's only job is to
+  move it into a real session by POSTing it to our own verify route, then replace
+  the history entry so the token does not sit in the back button.
+-->
+<p id="msg" style="color:#6D6E71;font-size:14px">Signing you in…</p>
+<script>
+(function () {
+  var params = new URLSearchParams(location.hash.slice(1));
+  var token = params.get('token');
+  var next = new URLSearchParams(location.search).get('next');
+  var dest = (next && next.charAt(0) === '/' && next.charAt(1) !== '/') ? next : '/';
+  if (!token) { location.replace('/'); return; }
+  fetch('/api/auth/sso', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: token }),
+  }).then(function (r) {
+    if (r.ok) { location.replace(dest); }
+    else { document.getElementById('msg').textContent = 'That sign-in could not be verified. Open the dashboard from the Hub and try again.'; }
+  }).catch(function () {
+    document.getElementById('msg').textContent = 'Could not reach the dashboard to finish signing in.';
+  });
+})();
+</script></body></html>

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool, hasDb } = require('../db');
+const jwt = require('jsonwebtoken');
 const { requireAuth, sign } = require('../middleware/auth');
 // ORDER #654: named here so the gate in server.js and the login that satisfies
 // it cannot drift apart on the cookie's name.
@@ -33,6 +34,85 @@ router.get('/api/contract', (req,res)=>{
       {method:'GET',path:'/api/ga4/sessions',desc:'GA4 sessions detail.'} ] });
 });
 // simple admin login -> short-lived JWT (bearer) used by the mint page
+// ═══════════════════════════════════════════════════════════════════════════
+// ORDER #656 — CONSUME THE ESTATE'S EXISTING CROSS-APP SSO. NOT A NEW SCHEME.
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Mimi: "we already talked about not having to do the google login between
+// dispatch and planning last week... this is the same shape." She is right, and
+// #654's reply was wrong to say the hand-off does not exist -- it exists
+// estate-wide and marketing was simply never wired into it.
+//
+// THE MECHANISM, and all three pieces are copied from planning/sales-brain
+// rather than invented:
+//   1. GET  /api/auth/sso-url  -> the bounce. Points at dispatch's
+//      /api/auth/google?return_to=<this app>/sso-complete.html. Dispatch checks
+//      that origin against SSO_RETURN_TO_ORIGINS on the way in AND out.
+//   2. public/sso-complete.html -> dispatch lands here with the token in the URL
+//      FRAGMENT; the page POSTs it to (3).
+//   3. POST /api/auth/sso      -> verifies the DISPATCH-signed token and mints
+//      this app's own session cookie.
+//
+// 🔴 TWO SECRETS, NOT ONE, AND DELIBERATELY SO. planning verifies dispatch's
+// token with its OWN JWT_SECRET, which means the two apps must share one secret
+// and the secret that signs a local session is the same one that vouches for a
+// remote identity. The Sales Brain kept them separate (DISPATCH_JWT_SECRET) and
+// that is the shape copied here: JWT_SECRET still signs THIS app's session,
+// DISPATCH_JWT_SECRET only ever verifies dispatch's. Rotating one does not
+// silently widen the other.
+//
+// FAILS CLOSED, never open: with DISPATCH_JWT_SECRET unset this route returns
+// 503 and nothing is trusted -- the same refusal the Sales Brain's does, so an
+// unconfigured deploy cannot quietly accept an unverifiable token.
+//
+// WHAT MIMI MUST SET (named, not invented, and not settable from here):
+//   * DISPATCH_JWT_SECRET on the marketing-dashboard service, equal to
+//     dispatch's own JWT_SECRET
+//   * https://marketing.infinityhospitalitygroup.com on dispatch's
+//     SSO_RETURN_TO_ORIGINS -- without it dispatch silently DROPS the return_to
+//     and the user lands on dispatch's own page instead of coming back here
+const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL
+  || 'https://marketing.infinityhospitalitygroup.com').replace(/\/$/, '');
+const DISPATCH_BASE = (process.env.DISPATCH_BRIDGE_URL
+  || 'https://dispatch.infinityhospitalitygroup.com').replace(/\/$/, '');
+
+function isSameOriginPath(p) {
+  return typeof p === 'string' && p.startsWith('/') && !p.startsWith('//');
+}
+
+router.get('/api/auth/sso-url', (req, res) => {
+  // 🔴 BUILT FROM THE PINNED PUBLIC BASE URL, NEVER req.hostname. planning's
+  // equivalent uses `https://${req.hostname}` and ORDER #634 exists because of
+  // exactly that defect -- a link that becomes whichever host the browser
+  // happened to be on. #634 deliberately left planning's alone because the
+  // allowlist did not yet carry the custom domain; this one is new, so it does
+  // not inherit the problem.
+  const next = req.query.next;
+  const suffix = isSameOriginPath(next) ? ('?next=' + encodeURIComponent(next)) : '';
+  const returnTo = PUBLIC_BASE_URL + '/sso-complete.html' + suffix;
+  const url = DISPATCH_BASE + '/api/auth/google?return_to=' + encodeURIComponent(returnTo);
+  res.json({ url });
+});
+
+router.post('/api/auth/sso', (req, res) => {
+  const secret = process.env.DISPATCH_JWT_SECRET;
+  if (!secret) return res.status(503).json({ error: 'SSO not configured on this deploy' });
+  const token = String((req.body && req.body.token) || '');
+  if (!token) return res.status(400).json({ error: 'token required' });
+  let claims;
+  try { claims = jwt.verify(token, secret); }
+  catch (e) { return res.status(401).json({ error: 'Invalid or expired token' }); }
+  if (!claims || !claims.email) {
+    return res.status(401).json({ error: 'Token carries no identity to accept' });
+  }
+  // The session this mints is THIS app's own, signed with THIS app's secret.
+  const session = sign({ role: 'sso', name: claims.name || claims.email, email: claims.email });
+  res.setHeader('Set-Cookie', SESSION_COOKIE_NAME + '=' + encodeURIComponent(session)
+    + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200'
+    + (process.env.NODE_ENV === 'production' ? '; Secure' : ''));
+  res.json({ ok: true, name: claims.name || claims.email, email: claims.email });
+});
+
 router.post('/api/login', (req,res)=>{
   const pw = String((req.body && req.body.password) || '');
   const expected = process.env.MARKETING_ADMIN_PASSWORD;
