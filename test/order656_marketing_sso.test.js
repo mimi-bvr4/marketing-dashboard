@@ -15,6 +15,17 @@ const path = require('path');
 
 const FLEET_SRC = fs.readFileSync(path.join(__dirname, '..', 'routes', 'fleet.js'), 'utf8');
 const SERVER_SRC = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+// ORDER #661 (09.18.2026): the gate moved from server.js to
+// middleware/page-gate.js, and the bounce builder to lib/sso.js, so the
+// known-bads could drive the REAL middleware instead of a copy. The BEHAVIOUR
+// asserted below did not change -- these reads follow the code to where it now
+// lives. A guard pinned to a FILE rather than to a fact is the same defect
+// family as a guard pinned to one naming convention, and this is the seventh
+// time this week it has cost a run: the fix is to follow the code, never to
+// weaken the assertion.
+const GATE_SRC = fs.readFileSync(path.join(__dirname, '..', 'middleware', 'page-gate.js'), 'utf8');
+const SSO_SRC = fs.readFileSync(path.join(__dirname, '..', 'lib', 'sso.js'), 'utf8');
+const GATE_ALL = SERVER_SRC + GATE_SRC + SSO_SRC;
 const COMPLETE = fs.readFileSync(path.join(__dirname, '..', 'public', 'sso-complete.html'), 'utf8');
 
 const DISPATCH_SECRET = 'dispatch-test-secret-not-real';
@@ -123,21 +134,26 @@ test('the bounce is built from the PINNED base URL, never req.hostname', () => {
   // block and failed on the COMMENT that explains planning uses req.hostname and
   // this one does not -- prose, not behaviour, for the eleventh time in this
   // estate and the second time in my own check.
-  const raw = FLEET_SRC.slice(FLEET_SRC.indexOf('ORDER #656'), FLEET_SRC.indexOf("router.post('/api/login'"));
+  // ORDER #661: the builder moved to lib/sso.js so the gate could share it.
+  // The FACT is unchanged and is asserted in its new home.
+  const raw = SSO_SRC;
   const code = raw.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
   assert.ok(/PUBLIC_BASE_URL/.test(code), 'the pinned base must be used in code');
   assert.ok(!/req\.hostname/.test(code), 'ORDER #634 exists because of exactly that');
   assert.ok(/req\.hostname/.test(raw), 'sanity: the comment naming the defect is what the naive check tripped on');
+  // …and the route that used to build the string itself no longer does.
+  const fleetCode = FLEET_SRC.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  assert.ok(!/api\/auth\/google\?return_to=/.test(fleetCode), 'a second bounce builder came back');
 });
 
 test('the SSO door is open on the gate, or nobody could ever sign in', () => {
   for (const p of ['/api/auth/sso-url', '/api/auth/sso', '/sso-complete.html']) {
-    assert.ok(SERVER_SRC.includes("'" + p + "'"), p + ' must be in OPEN_PATHS');
+    assert.ok(GATE_ALL.includes("'" + p + "'"), p + ' must be in OPEN_PATHS');
   }
 });
 
 test('KNOWN-BAD: the dashboard itself is NOT in the open list', () => {
-  const block = SERVER_SRC.slice(SERVER_SRC.indexOf('const OPEN_PATHS'), SERVER_SRC.indexOf('function cookieToken'));
+  const block = GATE_SRC.slice(GATE_SRC.indexOf('const OPEN_PATHS'), GATE_SRC.indexOf('function cookieToken'));
   for (const p of ['/api/spend', '/api/ai/narrative', '/settings/api-tokens']) {
     assert.ok(!block.includes("'" + p + "'"), p + ' must stay gated');
   }

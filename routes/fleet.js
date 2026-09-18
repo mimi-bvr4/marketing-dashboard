@@ -71,14 +71,10 @@ router.get('/api/contract', (req,res)=>{
 //   * https://marketing.infinityhospitalitygroup.com on dispatch's
 //     SSO_RETURN_TO_ORIGINS -- without it dispatch silently DROPS the return_to
 //     and the user lands on dispatch's own page instead of coming back here
-const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL
-  || 'https://marketing.infinityhospitalitygroup.com').replace(/\/$/, '');
-const DISPATCH_BASE = (process.env.DISPATCH_BRIDGE_URL
-  || 'https://dispatch.infinityhospitalitygroup.com').replace(/\/$/, '');
-
-function isSameOriginPath(p) {
-  return typeof p === 'string' && p.startsWith('/') && !p.startsWith('//');
-}
+// ORDER #661: the bounce URL builder moved to lib/sso.js so the GATE in
+// server.js can build the same string. It is mounted above this router, so it
+// could not require this file. One builder, two callers, no second scheme.
+const { ssoBounceUrl, isSameOriginPath, BOUNCE_MARKER } = require('../lib/sso');
 
 router.get('/api/auth/sso-url', (req, res) => {
   // 🔴 BUILT FROM THE PINNED PUBLIC BASE URL, NEVER req.hostname. planning's
@@ -87,11 +83,7 @@ router.get('/api/auth/sso-url', (req, res) => {
   // happened to be on. #634 deliberately left planning's alone because the
   // allowlist did not yet carry the custom domain; this one is new, so it does
   // not inherit the problem.
-  const next = req.query.next;
-  const suffix = isSameOriginPath(next) ? ('?next=' + encodeURIComponent(next)) : '';
-  const returnTo = PUBLIC_BASE_URL + '/sso-complete.html' + suffix;
-  const url = DISPATCH_BASE + '/api/auth/google?return_to=' + encodeURIComponent(returnTo);
-  res.json({ url });
+  res.json({ url: ssoBounceUrl(req.query.next) });
 });
 
 router.post('/api/auth/sso', (req, res) => {
@@ -107,9 +99,17 @@ router.post('/api/auth/sso', (req, res) => {
   }
   // The session this mints is THIS app's own, signed with THIS app's secret.
   const session = sign({ role: 'sso', name: claims.name || claims.email, email: claims.email });
-  res.setHeader('Set-Cookie', SESSION_COOKIE_NAME + '=' + encodeURIComponent(session)
-    + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200'
-    + (process.env.NODE_ENV === 'production' ? '; Secure' : ''));
+  // ORDER #661: two cookies in one response — the session, and the EXPIRY of
+  // the bounce marker. Clearing it here rather than on the next page load is
+  // what makes the loop guard self-healing: the next time this person arrives
+  // cold they get one automatic bounce again, not a wall inherited from a
+  // sign-in that has since succeeded.
+  res.setHeader('Set-Cookie', [
+    SESSION_COOKIE_NAME + '=' + encodeURIComponent(session)
+      + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200'
+      + (process.env.NODE_ENV === 'production' ? '; Secure' : ''),
+    BOUNCE_MARKER + '=; Path=/; Max-Age=0; SameSite=Lax',
+  ]);
   res.json({ ok: true, name: claims.name || claims.email, email: claims.email });
 });
 

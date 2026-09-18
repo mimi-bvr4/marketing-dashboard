@@ -45,58 +45,11 @@ app.use(fleetGate);
 //     Contract v0 discovery surface, public by its own design (ORDER #192)
 //   * a validated fleet token    -- already constrained to GET/HEAD/OPTIONS by
 //     fleetGate above; #653 classified it a legitimate read principal
-const jwtLib = require('jsonwebtoken');
-const SESSION_COOKIE = 'mkt_session';
-const OPEN_PATHS = new Set([
-  '/api/login', '/health', '/.well-known/agent-contract', '/api/contract',
-  // ORDER #656: the cross-app SSO door. Both are part of getting a session, so
-  // gating them would mean nobody arriving from the Hub could ever obtain one --
-  // the same reason #652 left the Sales Brain's /sales/api/auth/sso open. The
-  // verify route fails CLOSED (503) when DISPATCH_JWT_SECRET is unset, so an
-  // open path here is not an open door.
-  '/api/auth/sso-url', '/api/auth/sso', '/sso-complete.html',
-]);
-
-function cookieToken(req) {
-  const raw = req.headers.cookie || '';
-  for (const part of raw.split(';')) {
-    const [k, ...v] = part.trim().split('=');
-    if (k === SESSION_COOKIE) return decodeURIComponent(v.join('='));
-  }
-  return null;
-}
-
-function sessionUser(req) {
-  const h = req.headers.authorization || '';
-  const bearer = h.startsWith('Bearer ') ? h.slice(7).trim() : null;
-  const token = bearer || cookieToken(req);
-  if (!token) return null;
-  try { return jwtLib.verify(token, process.env.JWT_SECRET || 'dev-insecure-change-me'); }
-  catch (e) { return null; }
-}
-
-const SIGN_IN_PAGE = `<!doctype html><meta charset="utf-8"><title>Marketing Dashboard — sign in</title>
-<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
-<body style="font-family:system-ui;max-width:420px;margin:12vh auto;padding:0 20px">
-<h1 style="font-size:20px">Marketing Dashboard</h1>
-<p style="color:#6D6E71;font-size:14px">Signed in to Infinity already? Use the Hub button — no second Google login.</p>
-<p><button onclick="sso()" style="padding:10px 16px">Continue with Infinity</button></p>
-<p style="color:#6D6E71;font-size:13px">or sign in with the marketing password:</p>
-<form onsubmit="go(event)"><input id="pw" type="password" placeholder="Password" style="width:100%;padding:10px;font-size:15px">
-<button style="margin-top:10px;padding:10px 16px">Sign in</button></form>
-<p id="err" style="color:#b00;font-size:13px"></p>
-<script>async function sso(){const r=await fetch('/api/auth/sso-url');if(!r.ok){document.getElementById('err').textContent='Single sign-on is not configured on this deploy.';return;}location.href=(await r.json()).url;}
-async function go(e){e.preventDefault();
- const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('pw').value})});
- if(r.ok){location.reload();}else{document.getElementById('err').textContent=(await r.json()).error||'Sign in failed';}}</script>`;
-
-app.use((req, res, next) => {
-  if (OPEN_PATHS.has(req.path)) return next();
-  if (req.fleetClient) return next();          // a validated, read-only fleet token
-  if (sessionUser(req)) return next();
-  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Not authenticated' });
-  return res.status(401).type('html').send(SIGN_IN_PAGE);
-});
+// ORDER #661: the gate moved to middleware/page-gate.js, unchanged, so the
+// known-bads can drive the real middleware. Still mounted HERE, above
+// express.static, which is the property #654 exists for.
+const { pageGate } = require('./middleware/page-gate');
+app.use(pageGate);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', require('./routes/fleet'));

@@ -22,6 +22,17 @@ const SECRET = 'test-only-not-a-real-secret';
 process.env.JWT_SECRET = SECRET;
 
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+// ORDER #661 (09.18.2026): the gate moved from server.js to
+// middleware/page-gate.js, and the bounce builder to lib/sso.js, so the
+// known-bads could drive the REAL middleware instead of a copy. The BEHAVIOUR
+// asserted below did not change -- these reads follow the code to where it now
+// lives. A guard pinned to a FILE rather than to a fact is the same defect
+// family as a guard pinned to one naming convention, and this is the seventh
+// time this week it has cost a run: the fix is to follow the code, never to
+// weaken the assertion.
+const GATE_SRC = fs.readFileSync(path.join(__dirname, '..', 'middleware', 'page-gate.js'), 'utf8');
+const SSO_SRC = fs.readFileSync(path.join(__dirname, '..', 'lib', 'sso.js'), 'utf8');
+const SRC_ALL = SRC + GATE_SRC + SSO_SRC;
 const FLEET_SRC = fs.readFileSync(path.join(__dirname, '..', 'routes', 'fleet.js'), 'utf8');
 
 const SESSION_COOKIE = 'mkt_session';
@@ -170,12 +181,13 @@ test('server.js mounts the gate ABOVE express.static -- the page, not just the A
   assert.ok(gate < st, 'a gate below express.static would serve index.html to anyone');
 });
 
-test('server.js reads identity from a header OR a cookie', () => {
-  assert.ok(/req\.headers\.authorization/.test(SRC) && /req\.headers\.cookie/.test(SRC));
+test('the gate reads identity from a header OR a cookie', () => {
+  // ORDER #661: this code is in middleware/page-gate.js now. Same two reads.
+  assert.ok(/req\.headers\.authorization/.test(GATE_SRC) && /req\.headers\.cookie/.test(GATE_SRC));
 });
 
 test('the open-path list in server.js is the one tested here', () => {
-  for (const p of OPEN_PATHS) assert.ok(SRC.includes("'" + p + "'"), p + ' must be open in server.js');
+  for (const p of OPEN_PATHS) assert.ok(SRC_ALL.includes("'" + p + "'"), p + ' must be open on the gate');
 });
 
 test('login sets the cookie in routes/fleet.js', () => {
