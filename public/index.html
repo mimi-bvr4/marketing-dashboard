@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IHG Marketing Dashboard</title>
+<!-- ORDER #654 Amendment B: the estate's design system (#286), loaded BEFORE
+     this page's own styles so its tokens are available and the chrome reads as
+     one system, while every existing rule below still wins. This is chrome
+     consistency, NOT a redesign -- the dashboard's content, charts, the Elle
+     GA4 tab and every live number are untouched, per the amendment's rule 5.
+     The shared nav (ihg-nav.js) was ALREADY present on this page; measured, not
+     assumed, so it is not re-applied. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
 <style>
 :root { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
