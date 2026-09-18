@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { pool, hasDb } = require('../db');
 const { requireAuth, sign } = require('../middleware/auth');
+// ORDER #654: named here so the gate in server.js and the login that satisfies
+// it cannot drift apart on the cookie's name.
+const SESSION_COOKIE_NAME = 'mkt_session';
+const COOKIE_OPTS = { httpOnly: true, sameSite: 'lax', maxAge: 12 * 60 * 60 * 1000,
+                      secure: process.env.NODE_ENV === 'production' };
 const { mintRaw } = require('../lib/fleet-tokens');
 function baseUrl(req){
   const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
@@ -33,7 +38,16 @@ router.post('/api/login', (req,res)=>{
   const expected = process.env.MARKETING_ADMIN_PASSWORD;
   if(!expected) return res.status(503).json({ error: 'Login not configured (set MARKETING_ADMIN_PASSWORD).' });
   if(pw !== expected) return res.status(401).json({ error: 'Wrong password' });
-  res.json({ token: sign({ role:'admin', name:'marketing-admin' }) });
+  // ORDER #654: the same JWT also goes into an httpOnly cookie, because a
+  // browser NAVIGATING to the dashboard page cannot send an Authorization
+  // header. The header path is unchanged for the token-admin page's fetches.
+  const token = sign({ role:'admin', name:'marketing-admin' });
+  res.cookie
+    ? res.cookie(SESSION_COOKIE_NAME, token, COOKIE_OPTS)
+    : res.setHeader('Set-Cookie', SESSION_COOKIE_NAME + '=' + encodeURIComponent(token)
+        + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200'
+        + (process.env.NODE_ENV === 'production' ? '; Secure' : ''));
+  res.json({ token });
 });
 router.post('/api/tokens', requireAuth, async (req,res)=>{
   if(!hasDb) return res.status(503).json({ error:'Token store not configured (add a Postgres + DATABASE_URL).' });

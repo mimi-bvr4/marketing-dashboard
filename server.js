@@ -4,11 +4,92 @@ const { BetaAnalyticsDataClient } = require('@google-analytics/data');
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 // ---- Fleet Contract v0 (ORDER #192): discovery, health, read-only tokens ----
 const { fleetGate } = require('./middleware/auth');
 app.use(fleetGate);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORDER #654 — THE SINGLE CHOKE POINT. RED #1 of the #653 fleet audit.
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// WHAT WAS OPEN: not one of nine routes named an auth middleware, and the only
+// global middleware was fleetGate -- whose own comment says "No token /
+// non-fleet token → pass through (existing open dashboard behavior
+// preserved)". It constrains FLEET tokens; it authenticates nobody. So
+// POST /api/ai/narrative (an AI call that spends money on attacker-supplied
+// text), POST /api/hubspot/search (live CRM), /api/spend, four /api/ga4/* and
+// the token-minting page were reachable by anyone on the internet.
+//
+// 🔴 express.static USED TO BE MOUNTED ABOVE THIS LINE, which is why gating
+// only /api/* would have been a half fix: index.html was served by the static
+// middleware before any gate could run. Amendment A is explicit -- "the gate
+// covers the PAGE, not just /api/*" -- so the gate now sits ABOVE
+// express.static and a cold navigate hits the sign-in wall.
+//
+// ONE GATE, NOT A PER-ROUTE SPRINKLE (the order's item 1, same shape as #652):
+// app.use() before the route table means a route written next week is gated by
+// default, with nobody remembering a decorator. There is a known-bad for it.
+//
+// IDENTITY: the JWT that POST /api/login already mints, presented EITHER as
+// `Authorization: Bearer` (what the existing token-admin page does) OR in the
+// `mkt_session` cookie (what a browser navigating to a PAGE can do -- a
+// navigation cannot set a header, which is the whole reason the cookie exists).
+// The cookie is read straight off req.headers.cookie: no cookie-parser, no new
+// dependency, because safe_ff's dependency guard treats a package.json change
+// as a real event (ORDER #581 item 3) and this fix should not need one.
+//
+// STILL OPEN, deliberately, each named:
+//   * POST /api/login            -- the door itself
+//   * /health, /.well-known/agent-contract, /api/contract -- the Fleet
+//     Contract v0 discovery surface, public by its own design (ORDER #192)
+//   * a validated fleet token    -- already constrained to GET/HEAD/OPTIONS by
+//     fleetGate above; #653 classified it a legitimate read principal
+const jwtLib = require('jsonwebtoken');
+const SESSION_COOKIE = 'mkt_session';
+const OPEN_PATHS = new Set([
+  '/api/login', '/health', '/.well-known/agent-contract', '/api/contract',
+]);
+
+function cookieToken(req) {
+  const raw = req.headers.cookie || '';
+  for (const part of raw.split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k === SESSION_COOKIE) return decodeURIComponent(v.join('='));
+  }
+  return null;
+}
+
+function sessionUser(req) {
+  const h = req.headers.authorization || '';
+  const bearer = h.startsWith('Bearer ') ? h.slice(7).trim() : null;
+  const token = bearer || cookieToken(req);
+  if (!token) return null;
+  try { return jwtLib.verify(token, process.env.JWT_SECRET || 'dev-insecure-change-me'); }
+  catch (e) { return null; }
+}
+
+const SIGN_IN_PAGE = `<!doctype html><meta charset="utf-8"><title>Marketing Dashboard — sign in</title>
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<body style="font-family:system-ui;max-width:420px;margin:12vh auto;padding:0 20px">
+<h1 style="font-size:20px">Marketing Dashboard</h1>
+<p style="color:#6D6E71;font-size:14px">Sign in, or reach this page from the Hub.</p>
+<form onsubmit="go(event)"><input id="pw" type="password" placeholder="Password" style="width:100%;padding:10px;font-size:15px">
+<button style="margin-top:10px;padding:10px 16px">Sign in</button></form>
+<p id="err" style="color:#b00;font-size:13px"></p>
+<script>async function go(e){e.preventDefault();
+ const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('pw').value})});
+ if(r.ok){location.reload();}else{document.getElementById('err').textContent=(await r.json()).error||'Sign in failed';}}</script>`;
+
+app.use((req, res, next) => {
+  if (OPEN_PATHS.has(req.path)) return next();
+  if (req.fleetClient) return next();          // a validated, read-only fleet token
+  if (sessionUser(req)) return next();
+  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Not authenticated' });
+  return res.status(401).type('html').send(SIGN_IN_PAGE);
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', require('./routes/fleet'));
 app.get('/settings/api-tokens', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api-tokens.html')));
 const { ensureTables } = require('./db');
