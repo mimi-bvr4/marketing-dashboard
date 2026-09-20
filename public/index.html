@@ -382,8 +382,8 @@ tbody tr:hover { background: #fafaf8; }
 
 <div id="panel-elle" class="tab-panel">
   <div class="elle-banner">
-    <strong>Elle venues — held separate from Infinity numbers.</strong>
-    Saint Elle, The Cordelle &amp; Estelle are acquisition properties. Their website traffic is shown here on its own and is <strong>not</strong> rolled into any Infinity total, funnel, or goal on the Infinity Hospitality tab. When the revenue converts to IH, we pull them into the full mix. Traffic only for now — no spend/CAC until Katherine adds Elle spend.
+    <strong>Elle venues, held separate from Infinity numbers.</strong>
+    Saint Elle, The Cordelle &amp; Estelle are acquisition properties. Their website traffic is shown here on its own and is <strong>not</strong> rolled into any Infinity total, funnel, or goal on the Infinity Hospitality tab. When the revenue converts to IH, we pull them into the full mix. Traffic only for now, no spend/CAC until Katherine adds Elle spend.
   </div>
   <div class="elle-controls">
     <label for="elle-period">Period</label>
@@ -407,7 +407,7 @@ tbody tr:hover { background: #fafaf8; }
       </thead>
       <tbody id="elle-venue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
     </table>
-    <div class="footnote">Sessions and new users pulled live from each Elle venue's Google Analytics 4 property. Kept fully separate from the Infinity tab — no Elle number appears in any Infinity aggregate.</div>
+    <div class="footnote">Sessions and new users pulled live from each Elle venue's Google Analytics 4 property. Kept fully separate from the Infinity tab, no Elle number appears in any Infinity aggregate.</div>
   </div>
   <div class="section">
     <h2>Elle Traffic by Source <span class="hint">across all three Elle venues combined</span></h2>
@@ -639,9 +639,9 @@ tbody tr:hover { background: #fafaf8; }
     }
   }
 
-  const money = n => n == null || isNaN(n) ? '—' : '$' + Math.round(n).toLocaleString();
-  const num = n => n == null ? '—' : n.toLocaleString();
-  const pct = n => n == null || !isFinite(n) ? '—' : (n * 100).toFixed(1) + '%';
+  const money = n => n == null || isNaN(n) ? '-' : '$' + Math.round(n).toLocaleString();
+  const num = n => n == null ? '-' : n.toLocaleString();
+  const pct = n => n == null || !isFinite(n) ? '-' : (n * 100).toFixed(1) + '%';
 
   function groupByVenue(records, key) {
     const out = { TBB: 0, TBT: 0, ECD: 0, SWF: 0, OS: 0 };
@@ -784,7 +784,7 @@ tbody tr:hover { background: #fafaf8; }
         : '';
       const liveLine = `Live · ${period.label} · ${leads.length} leads · ${tours.length} tours${tourExtra} · ${bookings.length} bookings${bookExtra} · ${completedEvents.length} completed events (${revenueDeals.length} w/ final totals) · refreshed ${new Date().toLocaleTimeString()}`;
       if (failed.length) {
-        statusEl.textContent = `${liveLine} — ⚠️ failed to load: ${failed.join(', ')} (shown as empty, not guessed)`;
+        statusEl.textContent = `${liveLine}, ⚠️ failed to load: ${failed.join(', ')} (shown as empty, not guessed)`;
         statusEl.className = 'status error';
       } else {
         statusEl.textContent = liveLine;
@@ -815,14 +815,14 @@ tbody tr:hover { background: #fafaf8; }
     document.getElementById('kpi-events-sub').textContent = `${revenueDeals.length} w/ final totals`;
     document.getElementById('kpi-revenue').textContent = money(totalR);
     document.getElementById('kpi-revenue-sub').textContent = `${revenueDeals.length} finalized of ${totalE}`;
-    document.getElementById('kpi-l2t').textContent = totalL ? pct(totalT / totalL) : '—';
-    document.getElementById('kpi-t2b').textContent = totalT ? pct(totalB / totalT) : '—';
-    document.getElementById('kpi-l2b').textContent = totalL ? pct(totalB / totalL) : '—';
-    document.getElementById('kpi-cpl').textContent = totalL ? money(spend.paid / totalL) : '—';
-    document.getElementById('kpi-cpl-fl').textContent = totalL ? money(spend.fullyLoaded / totalL) : '—';
-    document.getElementById('kpi-cpb').textContent = totalB ? money(spend.paid / totalB) : '—';
-    document.getElementById('kpi-cpb-fl').textContent = totalB ? money(spend.fullyLoaded / totalB) : '—';
-    document.getElementById('kpi-roas').textContent = spend.paid ? (totalR / spend.paid).toFixed(2) + 'x' : '—';
+    document.getElementById('kpi-l2t').textContent = totalL ? pct(totalT / totalL) : '-';
+    document.getElementById('kpi-t2b').textContent = totalT ? pct(totalB / totalT) : '-';
+    document.getElementById('kpi-l2b').textContent = totalL ? pct(totalB / totalL) : '-';
+    document.getElementById('kpi-cpl').textContent = totalL ? money(spend.paid / totalL) : '-';
+    document.getElementById('kpi-cpl-fl').textContent = totalL ? money(spend.fullyLoaded / totalL) : '-';
+    document.getElementById('kpi-cpb').textContent = totalB ? money(spend.paid / totalB) : '-';
+    document.getElementById('kpi-cpb-fl').textContent = totalB ? money(spend.fullyLoaded / totalB) : '-';
+    document.getElementById('kpi-roas').textContent = spend.paid ? (totalR / spend.paid).toFixed(2) + 'x' : '-';
     // Full funnel
     const fb = document.getElementById('funnel-body'); fb.innerHTML = '';
     for (const v of [...['TBB','TBT','ECD','SWF'], 'OS', 'TOTAL']) {
@@ -843,11 +843,11 @@ tbody tr:hover { background: #fafaf8; }
         <td class="num">${num(b)}</td>
         <td class="num">${num(ev)}</td>
         <td class="num">${money(r)}</td>
-        <td class="num">${l2t !== null ? pct(l2t) : '<span class="dash">—</span>'}</td>
-        <td class="num">${t2b !== null ? pct(t2b) : '<span class="dash">—</span>'}</td>
-        <td class="num">${l2b !== null ? pct(l2b) : '<span class="dash">—</span>'}</td>
-        <td class="num">${cpl !== null ? money(cpl) : '<span class="dash">—</span>'}</td>
-        <td class="num">${cpb !== null ? money(cpb) : '<span class="dash">—</span>'}</td>
+        <td class="num">${l2t !== null ? pct(l2t) : '<span class="dash">-</span>'}</td>
+        <td class="num">${t2b !== null ? pct(t2b) : '<span class="dash">-</span>'}</td>
+        <td class="num">${l2b !== null ? pct(l2b) : '<span class="dash">-</span>'}</td>
+        <td class="num">${cpl !== null ? money(cpl) : '<span class="dash">-</span>'}</td>
+        <td class="num">${cpb !== null ? money(cpb) : '<span class="dash">-</span>'}</td>
       </tr>`;
     }
     // Sources — cross-tab: rows = lead_source, columns = venues (first venue when multi-select)
@@ -868,7 +868,7 @@ tbody tr:hover { background: #fafaf8; }
       venueTotalsXT.total += c.total;
       return `<tr>
         <td>${s}</td>
-        ${venuesXT.map(v => `<td class="num">${c[v] ? num(c[v]) : '<span class="dash">—</span>'}</td>`).join('')}
+        ${venuesXT.map(v => `<td class="num">${c[v] ? num(c[v]) : '<span class="dash">-</span>'}</td>`).join('')}
         <td class="num"><strong>${num(c.total)}</strong></td>
       </tr>`;
     }).join('');
@@ -916,11 +916,11 @@ tbody tr:hover { background: #fafaf8; }
     rb.innerHTML = sorted.length ? sorted.map(d => {
       const p = d.properties || {};
       const amt = (parseFloat(p.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
-      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '—';
+      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
       const resolvedType = resolveEventTypeSales(d, typingMap);
       const bucket = classifyEventType(resolvedType, p.dealname);
-      const typeDisplay = resolvedType || (bucket ? `<em style="color:#9ca3af">${bucket} (derived)</em>` : '—');
-      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '—'}</td><td>${typeDisplay}</td><td>${p.dealname || '—'}</td><td class="num">${money(amt)}</td></tr>`;
+      const typeDisplay = resolvedType || (bucket ? `<em style="color:#9ca3af">${bucket} (derived)</em>` : '-');
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${typeDisplay}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td></tr>`;
     }).join('') : '<tr><td colspan="5" class="dash">No completed events in window.</td></tr>';
     // CEO View — revenue by event type × venue
     renderCeoRevenueView(revenueDeals, typingMap);
@@ -1005,20 +1005,20 @@ tbody tr:hover { background: #fafaf8; }
     if (sessions != null) {
       stages.push({ cls: 'stage-sessions', name: 'Sessions', main: num(sessions), sub: 'website visits', width: widthPct(sessions), conv: '<strong>' + num(sessions) + '</strong>GA4 sessions', empty: false });
     } else {
-      stages.push({ cls: 'stage-sessions', name: 'Sessions', main: '—', sub: gaPending ? 'loading GA4…' : 'connect GA4', width: 100, conv: '<strong>—</strong>GA4 not connected', empty: true });
+      stages.push({ cls: 'stage-sessions', name: 'Sessions', main: '-', sub: gaPending ? 'loading GA4…' : 'connect GA4', width: 100, conv: '<strong>-</strong>GA4 not connected', empty: true });
     }
     // Leads
     stages.push({ cls: 'stage-leads', name: 'Leads', main: num(leads), sub: 'HubSpot contacts', width: widthPct(leads),
-      conv: '<strong>' + (sessions ? pct(leads / sessions) : '—') + '</strong>' + (sessions ? 'session → lead' : 'top of funnel'), empty: leads === 0 });
+      conv: '<strong>' + (sessions ? pct(leads / sessions) : '-') + '</strong>' + (sessions ? 'session → lead' : 'top of funnel'), empty: leads === 0 });
     // Tours
     stages.push({ cls: 'stage-tours', name: 'Tours', main: num(tours), sub: 'venue tours', width: widthPct(tours),
-      conv: '<strong>' + (leads ? pct(tours / leads) : '—') + '</strong>lead → tour', empty: tours === 0 });
+      conv: '<strong>' + (leads ? pct(tours / leads) : '-') + '</strong>lead → tour', empty: tours === 0 });
     // Bookings
     stages.push({ cls: 'stage-bookings', name: 'Bookings', main: num(bookings), sub: 'contracts signed', width: widthPct(bookings),
-      conv: '<strong>' + (tours ? pct(bookings / tours) : '—') + '</strong>tour → booking', empty: bookings === 0 });
+      conv: '<strong>' + (tours ? pct(bookings / tours) : '-') + '</strong>tour → booking', empty: bookings === 0 });
     // Revenue (scaled vs bookings count for bar — revenue is dollars, so size by bookings share)
     stages.push({ cls: 'stage-revenue', name: 'Revenue', main: money(revenue), sub: 'net of tax', width: widthPct(bookings),
-      conv: '<strong>' + (bookings ? money(avgBooking) : '—') + '</strong>avg / booking', empty: revenue === 0 });
+      conv: '<strong>' + (bookings ? money(avgBooking) : '-') + '</strong>avg / booking', empty: revenue === 0 });
 
     let html = '<div class="funnel-container">';
     for (const s of stages) {
@@ -1046,7 +1046,7 @@ tbody tr:hover { background: #fafaf8; }
       }
       html += '</div>';
     } else {
-      html += `<div class="footnote" style="margin-top:0">${gaPending ? 'Loading traffic sources from GA4…' : 'GA4 not connected yet — traffic-by-source will populate once Google Analytics credentials are configured.'}</div>`;
+      html += `<div class="footnote" style="margin-top:0">${gaPending ? 'Loading traffic sources from GA4…' : 'GA4 not connected yet, traffic-by-source will populate once Google Analytics credentials are configured.'}</div>`;
     }
     html += '</div>';
 
@@ -1081,38 +1081,38 @@ tbody tr:hover { background: #fafaf8; }
         unclassified.push(d);
       }
     }
-    const ipe = (rev, count) => count > 0 ? money(rev / count) : '<span class="dash">—</span>';
-    const dashIfZero = (s) => s === '$0' || s === '0' ? '<span class="dash">—</span>' : s;
+    const ipe = (rev, count) => count > 0 ? money(rev / count) : '<span class="dash">-</span>';
+    const dashIfZero = (s) => s === '$0' || s === '0' ? '<span class="dash">-</span>' : s;
     const body = document.getElementById('ceo-revenue-body');
     let html = '';
     for (const v of venues) {
       const row = cells[v];
       html += `<tr><td class="venue-label">${v}</td>`;
       for (const b of buckets) {
-        html += `<td class="num">${dashIfZero(money(row[b].rev))}</td><td class="num">${row[b].count || '<span class="dash">—</span>'}</td><td class="num">${ipe(row[b].rev, row[b].count)}</td>`;
+        html += `<td class="num">${dashIfZero(money(row[b].rev))}</td><td class="num">${row[b].count || '<span class="dash">-</span>'}</td><td class="num">${ipe(row[b].rev, row[b].count)}</td>`;
       }
       html += `<td class="num">${money(row._total.rev)}</td><td class="num">${row._total.count}</td><td class="num">${ipe(row._total.rev, row._total.count)}</td>`;
       html += `</tr>`;
     }
     html += `<tr class="total-row"><td>TOTAL</td>`;
     for (const b of buckets) {
-      html += `<td class="num">${dashIfZero(money(colTotals[b].rev))}</td><td class="num">${colTotals[b].count || '<span class="dash">—</span>'}</td><td class="num">${ipe(colTotals[b].rev, colTotals[b].count)}</td>`;
+      html += `<td class="num">${dashIfZero(money(colTotals[b].rev))}</td><td class="num">${colTotals[b].count || '<span class="dash">-</span>'}</td><td class="num">${ipe(colTotals[b].rev, colTotals[b].count)}</td>`;
     }
     html += `<td class="num">${money(grand.rev)}</td><td class="num">${grand.count}</td><td class="num">${ipe(grand.rev, grand.count)}</td></tr>`;
     body.innerHTML = html;
     const classifiedRev = buckets.reduce((a, b) => a + colTotals[b].rev, 0);
     const gap = grand.rev - classifiedRev;
     document.getElementById('ceo-recon').textContent = unclassified.length
-      ? `${unclassified.length} of ${grand.count} events (${money(gap)}) couldn't be auto-classified — see worklist below.`
+      ? `${unclassified.length} of ${grand.count} events (${money(gap)}) couldn't be auto-classified, see worklist below.`
       : `All ${grand.count} events classified · ${money(grand.rev)} reconciles to the Event Revenue KPI.`;
     const wb = document.getElementById('ceo-missing-body');
     const wsorted = unclassified.slice().sort((a, b) => (a.properties?.actual_event_date || '').localeCompare(b.properties?.actual_event_date || ''));
     wb.innerHTML = wsorted.length ? wsorted.map(d => {
       const p = d.properties || {};
       const amt = (parseFloat(p.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
-      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '—';
+      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
       const url = `https://app.hubspot.com/contacts/49701209/record/0-3/${d.id}`;
-      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '—'}</td><td>${p.dealname || '—'}</td><td class="num">${money(amt)}</td><td><a href="${url}" target="_blank" rel="noopener" style="color:#1a365d;font-weight:600;">Open in HubSpot ↗</a></td></tr>`;
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td><td><a href="${url}" target="_blank" rel="noopener" style="color:#1a365d;font-weight:600;">Open in HubSpot ↗</a></td></tr>`;
     }).join('') : '<tr><td colspan="5" class="dash">All revenue events classified into Wedding, Social, or Corp/Non-Profit. ✓</td></tr>';
     document.getElementById('ceo-missing-count').textContent = `${unclassified.length}`;
   }
@@ -1207,7 +1207,7 @@ tbody tr:hover { background: #fafaf8; }
       }
       const ytdActual = completedSample.reduce((a, d) => {
         const dt = d.properties?.actual_event_date || '';
-        if (dt < '2026-01-01' || dt > todayStr) return a;
+        if (dt < '01.01.2026' || dt > todayStr) return a;
         return a + (parseFloat(d.properties?.final_event_total_accounting || '0') || 0);
       }, 0) * REVENUE_NET_MULTIPLIER;
       renderProjected(allBooked, ytdActual);
@@ -1226,7 +1226,7 @@ tbody tr:hover { background: #fafaf8; }
     document.getElementById('proj-confirmed').textContent = money(confirmedTotal);
     document.getElementById('proj-confirmed-sub').textContent = `${enteredCount} of ${total} events with contract totals entered`;
     document.getElementById('proj-estimated-sub').textContent = `Estimated total (incl. unfilled at hist. avg): ${money(estimatedTotal)}`;
-    const restOf2026 = allBooked.filter(d => (d.properties?.actual_event_date || '') < '2027-01-01');
+    const restOf2026 = allBooked.filter(d => (d.properties?.actual_event_date || '') < '01.01.2027');
     const restOf2026Confirmed = restOf2026.reduce((a, d) => a + (d._hasEntered ? d._projectedAmount : 0), 0) * REVENUE_NET_MULTIPLIER;
     const restOf2026Estimated = restOf2026.reduce((a, d) => a + d._estimatedAmount, 0) * REVENUE_NET_MULTIPLIER;
     const exp2026 = ytdActual + restOf2026Confirmed;
@@ -1284,9 +1284,9 @@ tbody tr:hover { background: #fafaf8; }
     const mw = document.getElementById('proj-missing-body');
     mw.innerHTML = missing.length ? missing.map(d => {
       const p = d.properties || {};
-      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '—';
+      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
       const url = `https://app.hubspot.com/contacts/49701209/record/0-3/${d.id}`;
-      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '—'}</td><td>${p.event_type_sales || '—'}</td><td>${p.dealname || '—'}</td><td><a href="${url}" target="_blank" rel="noopener" style="color:#1a365d;font-weight:600;">Open in HubSpot ↗</a></td></tr>`;
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.event_type_sales || '-'}</td><td>${p.dealname || '-'}</td><td><a href="${url}" target="_blank" rel="noopener" style="color:#1a365d;font-weight:600;">Open in HubSpot ↗</a></td></tr>`;
     }).join('') : '<tr><td colspan="5" class="dash">All booked future events have contract totals entered. ✓</td></tr>';
     document.getElementById('proj-missing-count').textContent = `${missing.length} of ${total}`;
   }
@@ -1361,7 +1361,7 @@ tbody tr:hover { background: #fafaf8; }
         total_completed_events: data.completedEvents?.length ?? 0,
         total_finalized_events: data.revenueDeals.length,
         total_revenue_net_of_tax: rev.total,
-        revenue_note: 'All revenue figures are net of sales tax (final_event_total_accounting × 0.95) per CEO directive — these reflect Infinity\'s actual kept revenue.',
+        revenue_note: 'All revenue figures are net of sales tax (final_event_total_accounting × 0.95) per CEO directive, these reflect Infinity\'s actual kept revenue.',
         by_venue: ['TBB','TBT','ECD','SWF'].map(v => ({
           venue: v, spend: spend.venueTotals[v] || 0, leads: leadsByV[v], bookings: bookingsByV[v],
           revenue_net_of_tax: rev.byVenue[v] || 0,
@@ -1371,7 +1371,7 @@ tbody tr:hover { background: #fafaf8; }
         })),
         top_lead_sources: topSources.map(([s, n]) => ({ source: s, leads: n }))
       };
-      const prompt = `You are analyzing marketing performance for Infinity Hospitality Group — a Nashville-area wedding and event venue company with four venues: TBB (Bell Tower on 16th), TBT (The Bell Tower), ECD (Estate at Cherokee Dock), SWF (Saddle Woods Farm). Industry benchmarks for wedding venues: CPL $50-150, CPB $500-2,000. Write a concise marketing analysis in 3 short sections (no headers, no bullet lists — use short paragraphs): 1. Efficiency snapshot vs industry benchmarks (1-2 sentences) 2. Venue-level story: which is winning, which needs attention, which is a conversion problem vs spend problem (2-3 sentences) 3. Top 2-3 specific actions for this period (2-3 sentences) Keep it under 180 words total. Be direct. No preamble.`;
+      const prompt = `You are analyzing marketing performance for Infinity Hospitality Group, a Nashville-area wedding and event venue company with four venues: TBB (Bell Tower on 16th), TBT (The Bell Tower), ECD (Estate at Cherokee Dock), SWF (Saddle Woods Farm). Industry benchmarks for wedding venues: CPL $50-150, CPB $500-2,000. Write a concise marketing analysis in 3 short sections (no headers, no bullet lists, use short paragraphs): 1. Efficiency snapshot vs industry benchmarks (1-2 sentences) 2. Venue-level story: which is winning, which needs attention, which is a conversion problem vs spend problem (2-3 sentences) 3. Top 2-3 specific actions for this period (2-3 sentences) Keep it under 180 words total. Be direct. No preamble.`;
       const r = await fetch('/api/ai/narrative', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1392,7 +1392,7 @@ tbody tr:hover { background: #fafaf8; }
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
   function downloadCsv(filename, rows) {
-    if (!rows.length) { alert('No rows to export — change the period or wait for data to load.'); return; }
+    if (!rows.length) { alert('No rows to export, change the period or wait for data to load.'); return; }
     const headers = Object.keys(rows[0]);
     const csv = [headers.join(','), ...rows.map(r => headers.map(h => csvEscape(r[h])).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1454,14 +1454,14 @@ tbody tr:hover { background: #fafaf8; }
    ============================================================ */
 (() => {
   const ELLE_NAMES = { STE: 'Saint Elle', COR: 'The Cordelle', EST: 'Estelle' };
-  const fmt = n => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US');
-  const pct = (a, b) => (!b) ? '—' : (Math.round((a / b) * 1000) / 10).toFixed(1) + '%';
+  const fmt = n => (n == null || isNaN(n)) ? '-' : Number(n).toLocaleString('en-US');
+  const pct = (a, b) => (!b) ? '-' : (Math.round((a / b) * 1000) / 10).toFixed(1) + '%';
   let elleLoaded = false;
 
   function elleDateRange(val) {
     const today = new Date();
     const end = today.toISOString().split('T')[0];
-    if (val === 'ytd') return { startDate: '2026-01-01', endDate: end };
+    if (val === 'ytd') return { startDate: '01.01.2026', endDate: end };
     const days = parseInt(val, 10) || 90;
     const start = new Date(today.getTime() - days * 86400000);
     return { startDate: start.toISOString().split('T')[0], endDate: end };
@@ -1474,7 +1474,7 @@ tbody tr:hover { background: #fafaf8; }
   }
 
   function topSource(bySource) {
-    if (!Array.isArray(bySource) || !bySource.length) return '—';
+    if (!Array.isArray(bySource) || !bySource.length) return '-';
     const top = bySource.slice().sort((a, b) => (b.sessions || 0) - (a.sessions || 0))[0];
     return (top.sessionSource || '(direct)') + ' · ' + fmt(top.sessions);
   }
@@ -1499,13 +1499,13 @@ tbody tr:hover { background: #fafaf8; }
 
     // Plumbing staged but property IDs / access not in yet — clean pending state, not an error.
     if (data.pending) {
-      setStatus('○ plumbing staged — awaiting property IDs + access', 'pending');
-      document.getElementById('elle-kpi-sessions').textContent = '—';
-      document.getElementById('elle-kpi-newusers').textContent = '—';
+      setStatus('○ plumbing staged, awaiting property IDs + access', 'pending');
+      document.getElementById('elle-kpi-sessions').textContent = '-';
+      document.getElementById('elle-kpi-newusers').textContent = '-';
       document.getElementById('elle-kpi-venues').textContent = '0';
       venueBody.innerHTML = Object.keys(ELLE_NAMES).map(v =>
         `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
-        + `<td class="num">—</td><td class="num">—</td><td>awaiting GA4 property ID + service-account access</td><td class="num">—</td></tr>`
+        + `<td class="num">-</td><td class="num">-</td><td>awaiting GA4 property ID + service-account access</td><td class="num">-</td></tr>`
       ).join('');
       sourceBody.innerHTML = '<tr><td colspan="3" class="footnote">Traffic-by-source populates once the three Elle GA4 property IDs are filled in and the dashboard service account is granted Viewer on each property.</td></tr>';
       return;
@@ -1519,7 +1519,7 @@ tbody tr:hover { background: #fafaf8; }
       const vd = venues[v];
       if (!vd || vd.error) {
         return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
-          + `<td class="num">—</td><td class="num">—</td><td style="color:#f59e0b">${vd && vd.error ? 'GA4 error' : 'no data'}</td><td class="num">—</td></tr>`;
+          + `<td class="num">-</td><td class="num">-</td><td style="color:#f59e0b">${vd && vd.error ? 'GA4 error' : 'no data'}</td><td class="num">-</td></tr>`;
       }
       reporting++;
       totalSessions += vd.totalSessions || 0;
@@ -1530,7 +1530,7 @@ tbody tr:hover { background: #fafaf8; }
       });
       return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
         + `<td class="num">${fmt(vd.totalSessions)}</td><td class="num">${fmt(vd.newUsers)}</td>`
-        + `<td>${topSource(vd.bySource)}</td><td class="num" style="color:#9ca3af">${vd.propertyId || '—'}</td></tr>`;
+        + `<td>${topSource(vd.bySource)}</td><td class="num" style="color:#9ca3af">${vd.propertyId || '-'}</td></tr>`;
     }).join('');
 
     venueBody.innerHTML = rows;
