@@ -3,6 +3,17 @@ const path = require('path');
 const { BetaAnalyticsDataClient } = require('@google-analytics/data');
 
 const app = express();
+
+// ---- ORDER #1202: the venue hub, split by HOST (hub/router.js) ----
+// FIRST, above express.json, fleetGate and pageGate. On a host named in
+// VENUE_HUB_HOSTS it answers every request itself (the hub's allow-list, or a
+// plain 404) and never calls next(), so no dashboard middleware sees a public
+// request. On any other host, or with VENUE_HUB_HOSTS unset, it passes through
+// and nothing below changes.
+const { createHubRouter } = require('./hub/router');
+const hubRouter = createHubRouter();
+app.use(hubRouter.publicHosts);
+
 app.use(express.json({ limit: '2mb' }));
 
 // ---- Fleet Contract v0 (ORDER #192): discovery, health, read-only tokens ----
@@ -50,6 +61,10 @@ app.use(fleetGate);
 // express.static, which is the property #654 exists for.
 const { pageGate } = require('./middleware/page-gate');
 app.use(pageGate);
+
+// ORDER #1202: the hub's PRIVATE preview at /hub/*, BELOW the gate, so only a
+// signed-in session sees it. Off (passes through) when VENUE_HUB_HOSTS is unset.
+app.use('/hub', hubRouter.preview);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', require('./routes/fleet'));
@@ -378,8 +393,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`IHG Marketing Dashboard running on port ${PORT}`));
+// ORDER #1202: exported so the host-split known-bads drive THIS app, not a copy
+// of it. `node server.js` (Railway's start command) still listens exactly as before.
+module.exports = app;
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`IHG Marketing Dashboard running on port ${PORT}`));
+}
 
 // ============================================================
 // 2026 Marketing Spend Data (from Katherine's IHG MARKETING SPEND INPUT)
