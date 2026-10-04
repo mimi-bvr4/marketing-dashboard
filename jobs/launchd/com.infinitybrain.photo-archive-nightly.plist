@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ORDER #1240 step 4. The photo archive's nightly run: crawl changes, then tag.
+  The logic is marketing-dashboard's jobs/photo_nightly.sh; this is its schedule.
+
+  SHIPPED NOT LOADED. Loading this plist turns the job on, and the job writes to
+  the marketing Postgres (photos, photo_tags), so loading it IS the switch.
+  Mimi loads it with her own paste, after #1240 is merged to main (launchd runs
+  ~/repos/marketing-dashboard, never a branch) and after #1239 ruling item 2.
+
+  TIME: 02:15 CT, daily. PACE: up to 1000 photos tagged a night (PHOTO_TAG_CAP).
+
+  WHERE IT LOGS: the two paths below, red runs too.
+
+  RunAtLoad is false: loading this plist must not fire a write.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.infinitybrain.photo-archive-nightly</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/infinitybrain/repos/marketing-dashboard/jobs/photo_nightly.sh</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TZ</key>
+		<string>America/Chicago</string>
+		<key>PHOTO_TAG_CAP</key>
+		<string>1000</string>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>/Users/infinitybrain/repos/marketing-dashboard</string>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>2</integer>
+		<key>Minute</key>
+		<integer>15</integer>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_photo_archive_nightly.out</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_photo_archive_nightly.err</string>
+</dict>
+</plist>
