@@ -51,6 +51,22 @@ app.use(fleetGate);
 const { pageGate } = require('./middleware/page-gate');
 app.use(pageGate);
 
+// ORDER #1241: the photo archive. BELOW the gate (signed-out gets the wall) and
+// ABOVE express.static, so public/photos.html is only ever served after the
+// 'marketing.photos' check in routes/photos.js.
+{
+  const { pool: photoPool } = require('./db');
+  const { createPhotosRouter } = require('./routes/photos');
+  const { createPgStore } = require('./lib/photo-store');
+  const { createIdentityClient } = require('./lib/staff-identity');
+  if (photoPool) {
+    app.use(createPhotosRouter({ store: createPgStore(photoPool), identity: createIdentityClient() }));
+  } else {
+    app.get(['/photos', '/photos.html', '/api/photos', '/api/photos/*', '/photos/thumb/*'],
+      (req, res) => res.status(503).json({ error: 'The photo archive needs the marketing database' }));
+  }
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', require('./routes/fleet'));
 app.get('/settings/api-tokens', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api-tokens.html')));

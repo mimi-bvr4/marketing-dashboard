@@ -238,5 +238,7 @@ test('a row carries the path fields, the date facets and the Venues rights defau
   assert.strictEqual(r.guest_band, '100-200');
   assert.strictEqual(r.season, 'summer');
   assert.strictEqual(r.orientation, 'landscape');
-  assert.strictEqual(r.rights_state, 'cleared');
+  // ORDER #1241: the launch default is 'unknown' until Katherine confirms #1008's
+  // Venues default (lib/photo-config.js). Was 'cleared' under #1239.
+  assert.strictEqual(r.rights_state, 'unknown');
 });
