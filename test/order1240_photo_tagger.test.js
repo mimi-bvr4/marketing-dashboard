@@ -134,6 +134,12 @@ test('--apply writes AI rows and never writes a human-removed tag back', async (
   assert.ok(!pool.queries.some((q) => /DELETE FROM photo_tags/.test(q.sql) && !/source = 'ai'/.test(q.sql)), 'human rows are never deleted');
 });
 
+test('the paste count reads the same photos the tagger would pick, with no ORDER BY', () => {
+  assert.ok(J.COUNT_SQL.startsWith('SELECT count(*)::int AS n FROM photos p'));
+  assert.ok(!/ORDER BY/.test(J.COUNT_SQL));
+  assert.ok(J.COUNT_SQL.includes("t.source = 'ai'") && J.COUNT_SQL.includes('p.thumb IS NOT NULL'));
+});
+
 test('no key: the job refuses with exit code 4 and calls nothing', async () => {
   await assert.rejects(J.main({ argv: ['--apply'], pool: mockPool(), makeModel: () => null, log: quiet }),
     (e) => e.exitCode === 4 && /KEY MISSING/.test(e.message));
