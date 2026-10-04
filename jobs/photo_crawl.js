@@ -165,7 +165,14 @@ async function dryRun({ client, log }) {
 async function applyFull({ client, pool, log, thumbs }) {
   await ensurePhotoTables(pool);
   const root = await client.getFile(A.ROOT_FOLDER_ID, 'id, driveId');
-  const startPageToken = await client.startPageToken(root.driveId);   // BEFORE the walk: nothing changed during it is missed
+  // BEFORE the walk: nothing changed during it is missed. Measured 10.04.2026:
+  // Drive refuses this (403, "requires shared drive membership") while the
+  // service account is only on the folder. The load still goes ahead; it stores
+  // no token, and --changes then refuses until a later --apply stores one.
+  let startPageToken = null;
+  try { startPageToken = await client.startPageToken(root.driveId); } catch (e) {
+    log(`CHANGES FEED NOT READABLE, no start token stored: ${e.message}`);
+  }
   const run = await A.crawlTree(client.listPage);
   const s = summarize(run);
   printReport(s, log);

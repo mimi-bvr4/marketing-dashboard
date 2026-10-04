@@ -176,6 +176,18 @@ test('--apply stores the start-page token, and --changes reuses it and stores th
   assert.strictEqual(stored[0].params[8], 'tok-2');
 });
 
+test('--apply still loads when Drive refuses the changes feed (measured live 10.04), and stores no token', async () => {
+  const client = fakeClient();
+  client.startPageToken = async () => { throw new Error('Drive 403: The attempted action requires shared drive membership.'); };
+  const pool = mockPool();
+  const lines = [];
+  await J.main({ argv: ['--apply'], client, pool, log: (l) => lines.push(l) });
+  assert.ok(pool.queries.some((q) => /INSERT INTO photos /.test(q.sql)), 'the rows still load');
+  const run = pool.queries.find((q) => /INSERT INTO photo_crawl_runs/.test(q.sql));
+  assert.strictEqual(run.params[8], null);
+  assert.ok(lines.some((l) => /CHANGES FEED NOT READABLE/.test(l)));
+});
+
 test('--changes with no stored token refuses rather than guessing a start point', async () => {
   await assert.rejects(J.main({ argv: ['--changes'], client: fakeClient(), pool: mockPool(), log: () => {} }), /run --apply once first/);
 });
