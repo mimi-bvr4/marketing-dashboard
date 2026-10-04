@@ -122,10 +122,10 @@ async function upsertFile(pool, client, file, { thumbs }) {
   await pool.query(UPSERT_SQL, [...COLS.map((c) => row[c]), t ? t.bytes : null, t ? t.w : null, t ? t.h : null]);
   await pool.query(`INSERT INTO photo_paths (drive_id, md5, path) VALUES ($1, $2, $3)
     ON CONFLICT (drive_id, path) DO UPDATE SET md5 = EXCLUDED.md5, seen_at = now()`, [row.drive_id, row.md5, row.folder_path]);
-  for (const tag of row.path_tags) {
-    await pool.query(`INSERT INTO photo_tags (drive_id, tag, source, confidence, who) VALUES ($1, $2, 'ai', 1, 'path')
-      ON CONFLICT (drive_id, tag, source) DO NOTHING`, [row.drive_id, tag]);
-  }
+  // No photo_tags rows here. An unparsed path segment is often an event album
+  // named for the couple (measured 10.04.2026: 820 such folders), and #1008
+  // bans client names from tags. Tagging is #1240's, and it decides which
+  // segments may become tags.
   return true;
 }
 
