@@ -76,6 +76,8 @@ const TODO_SQL = `SELECT p.drive_id FROM photos p
   WHERE p.removed_at IS NULL AND p.thumb IS NOT NULL AND p.kind = 'image'
   AND NOT EXISTS (SELECT 1 FROM photo_tags t WHERE t.drive_id = p.drive_id AND t.source = 'ai')
   ORDER BY p.indexed_at, p.drive_id`;
+// The apply paste's read-only "how many are waiting" count: the same WHERE.
+const COUNT_SQL = TODO_SQL.replace('SELECT p.drive_id', 'SELECT count(*)::int AS n').replace(/\s*ORDER BY[\s\S]*$/, '');
 
 async function apply({ args, pool, model, log }) {
   await ensurePhotoTables(pool);
@@ -144,4 +146,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`photo_tag FAILED: ${e.message}`); process.exitCode = e.exitCode || 1; if (pool) pool.end(); });
 }
 
-module.exports = { main, parseArgs, TODO_SQL };
+module.exports = { main, parseArgs, TODO_SQL, COUNT_SQL };
