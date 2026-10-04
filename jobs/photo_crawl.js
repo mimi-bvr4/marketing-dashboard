@@ -7,6 +7,8 @@
 //   node jobs/photo_crawl.js --changes    the nightly mode: the Drive changes feed
 //                                         from the stored start-page token
 //   --no-thumbs                           (--apply / --changes) skip the =s400 fetch
+//   --listing-out <file.json>             (--dry-run) save the media listing #1240's
+//                                         sample is picked from; outside the synced tree
 //
 // --apply and --changes need MARKETING_DATABASE_URL in the environment. The
 // dry run never opens a database connection at all.
@@ -25,7 +27,9 @@ const TOP_REPORTED = ['Venues', 'NLP', 'Culinary', 'Misc.'];
 function parseArgs(argv) {
   const modes = ['--dry-run', '--apply', '--changes'].filter((m) => argv.includes(m));
   if (modes.length > 1) throw new Error(`pick one of ${modes.join(', ')}`);
-  return { mode: (modes[0] || '--dry-run').slice(2), thumbs: !argv.includes('--no-thumbs') };
+  const i = argv.indexOf('--listing-out');
+  return { mode: (modes[0] || '--dry-run').slice(2), thumbs: !argv.includes('--no-thumbs'),
+    listingOut: i >= 0 ? argv[i + 1] : null };
 }
 
 // ------------------------------------------------------------- the report
@@ -147,10 +151,18 @@ async function recordRun(pool, mode, counts, extra) {
 
 // ------------------------------------------------------------- the modes
 
-async function dryRun({ client, log }) {
+async function dryRun({ client, log, listingOut }) {
   const run = await A.crawlTree(client.listPage);
   const s = summarize(run);
   printReport(s, log);
+  // #1240's sample is picked from this. Paths carry client names: write it
+  // outside the synced tree, and never commit it.
+  if (listingOut) {
+    const keep = run.files.filter((f) => kindOf(f.mimeType))
+      .map((f) => ({ id: f.id, mimeType: f.mimeType, thumbnailLink: f.thumbnailLink, path: f.path }));
+    require('fs').writeFileSync(listingOut, JSON.stringify(keep));
+    log(`LISTING: ${keep.length} media files written to ${listingOut}`);
+  }
   // Measured, not assumed: can this account read the changes feed the nightly mode needs?
   try {
     const root = await client.getFile(A.ROOT_FOLDER_ID, 'id, driveId');
@@ -244,9 +256,9 @@ async function applyChanges({ client, pool, log, thumbs }) {
 // `client` and `pool` are handed in so a test can run every mode with mocks.
 // The dry run is never given a pool and never asks for one.
 async function main({ argv = process.argv.slice(2), client, pool, makePool, log = console.log } = {}) {
-  const { mode, thumbs } = parseArgs(argv);
+  const { mode, thumbs, listingOut } = parseArgs(argv);
   log(`photo_crawl ${mode} as ${client.serviceAccount || '(mock)'}; scopes: ${A.DRIVE_SCOPES.join(' ')}`);
-  if (mode === 'dry-run') return dryRun({ client, log });
+  if (mode === 'dry-run') return dryRun({ client, log, listingOut });
   const db = pool || (makePool && makePool());
   if (!db) throw new Error(`--${mode} needs MARKETING_DATABASE_URL`);
   return mode === 'apply' ? applyFull({ client, pool: db, log, thumbs }) : applyChanges({ client, pool: db, log, thumbs });
