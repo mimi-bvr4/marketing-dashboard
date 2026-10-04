@@ -188,6 +188,20 @@ test('--apply still loads when Drive refuses the changes feed (measured live 10.
   assert.ok(lines.some((l) => /CHANGES FEED NOT READABLE/.test(l)));
 });
 
+test('LAW: --apply writes no tags, so an album folder named for a couple never becomes a search tag', async () => {
+  const client = fakeClient();
+  const base = client.listPage;
+  // Venues / TBT / Patio / TBT_2022.05.14_Jane-John: the album segment fits no field.
+  client.listPage = async (p) => (p.q.includes("'tbt'")
+    ? { files: [{ id: 'pat', name: 'Patio', mimeType: F }] }
+    : p.q.includes("'pat'") ? { files: [{ id: 'alb', name: 'TBT_2022.05.14_Jane-John', mimeType: F }] }
+      : p.q.includes("'alb'") ? { files: [{ id: 'p9', name: 'IMG_9.jpg', mimeType: 'image/jpeg', parents: ['alb'] }] } : base(p));
+  const pool = mockPool();
+  await J.main({ argv: ['--apply', '--no-thumbs'], client, pool, log: () => {} });
+  assert.ok(pool.queries.some((q) => /INSERT INTO photos /.test(q.sql) && q.params[0] === 'p9'));
+  assert.ok(!pool.queries.some((q) => /INSERT INTO photo_tags/.test(q.sql)));
+});
+
 test('--changes with no stored token refuses rather than guessing a start point', async () => {
   await assert.rejects(J.main({ argv: ['--changes'], client: fakeClient(), pool: mockPool(), log: () => {} }), /run --apply once first/);
 });
