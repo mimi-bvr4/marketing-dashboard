@@ -50,6 +50,14 @@ test('a synonym collapses to its head tag', async () => {
   assert.deepStrictEqual(r.ai, [{ tag: 'step-and-repeat', confidence: 0.9 }, { tag: 'string lights', confidence: 0.6 }]);
 });
 
+test('KNOWN-BAD (#1278): a vocabulary tag with its group in front still lands; an unknown word after a colon is still dropped', async () => {
+  const r = await T.tagPhoto({ model: answer({ tags: [{ tag: 'setting: night', confidence: 0.9 },
+    { tag: 'lighting: string lights', confidence: 0.8 }, { tag: 'decor: zzz unknown thing', confidence: 0.7 }] }),
+  vocab: VOCAB, prompt: PROMPT, thumb: THUMB });
+  assert.deepStrictEqual(r.ai, [{ tag: 'night', confidence: 0.9 }, { tag: 'string lights', confidence: 0.8 }]);
+  assert.strictEqual(r.dropped.length, 1);
+});
+
 test('malformed model JSON skips that photo and is logged; the batch goes on', async () => {
   const lines = [];
   let n = 0;
