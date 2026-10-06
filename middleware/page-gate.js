@@ -88,15 +88,29 @@ async function go(e){e.preventDefault();
 //   * anything but GET  a POST cannot be replayed through a redirect; the body
 //                       would be dropped silently.
 const { ssoBounceUrl, hasBounceMarker, BOUNCE_MARKER } = require('../lib/sso');
+const { renewIfDue } = require('../lib/session_life');
 
+// ORDER #1318: an SSO session in the mkt_session cookie lasts 30 days and is
+// renewed after a Dispatch staff check (lib/session_life.js). The password
+// session and a Bearer header are let through exactly as before.
 function pageGate(req, res, next) {
   if (OPEN_PATHS.has(req.path)) return next();
   if (req.fleetClient) return next();          // a validated, read-only fleet token
-  if (sessionUser(req)) return next();
+  const who = sessionUser(req);
+  const byHeader = (req.headers.authorization || '').startsWith('Bearer ');
+  if (who && (who.role !== 'sso' || byHeader)) return next();
+  if (who) {
+    return renewIfDue(res, who).then(outcome => (outcome === 'ended' ? refuse(req, res) : next()));
+  }
+  return refuse(req, res);
+}
+
+function refuse(req, res) {
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Not authenticated' });
   if (req.method === 'GET' && !hasBounceMarker(req)) {
     const nextPath = req.originalUrl || req.path;
-    res.setHeader('Set-Cookie',
+    // append, not set: an ended session's cookie-clear rides on this response too.
+    res.append('Set-Cookie',
       BOUNCE_MARKER + '=1; Path=/; Max-Age=300; SameSite=Lax'
       + (process.env.NODE_ENV === 'production' ? '; Secure' : ''));
     return res.redirect(302, ssoBounceUrl(nextPath));

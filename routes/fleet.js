@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool, hasDb } = require('../db');
 const jwt = require('jsonwebtoken');
 const { requireAuth, sign } = require('../middleware/auth');
+const { issueSso } = require('../lib/session_life');   // ORDER #1318
 // ORDER #654: named here so the gate in server.js and the login that satisfies
 // it cannot drift apart on the cookie's name.
 const SESSION_COOKIE_NAME = 'mkt_session';
@@ -98,16 +99,17 @@ router.post('/api/auth/sso', (req, res) => {
     return res.status(401).json({ error: 'Token carries no identity to accept' });
   }
   // The session this mints is THIS app's own, signed with THIS app's secret.
-  const session = sign({ role: 'sso', name: claims.name || claims.email, email: claims.email });
+  // ORDER #1318: 30 days, renewed after a Dispatch staff check, when that
+  // check can run here; the 12 hours of before when it cannot. The token and
+  // its cookie come from one place (lib/session_life.js) so they agree.
+  const session = issueSso(claims);
   // ORDER #661: two cookies in one response — the session, and the EXPIRY of
   // the bounce marker. Clearing it here rather than on the next page load is
   // what makes the loop guard self-healing: the next time this person arrives
   // cold they get one automatic bounce again, not a wall inherited from a
   // sign-in that has since succeeded.
   res.setHeader('Set-Cookie', [
-    SESSION_COOKIE_NAME + '=' + encodeURIComponent(session)
-      + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200'
-      + (process.env.NODE_ENV === 'production' ? '; Secure' : ''),
+    session.cookie,
     BOUNCE_MARKER + '=; Path=/; Max-Age=0; SameSite=Lax',
   ]);
   res.json({ ok: true, name: claims.name || claims.email, email: claims.email });
