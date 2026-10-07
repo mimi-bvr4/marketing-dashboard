@@ -29,6 +29,8 @@
     body: JSON.stringify({ token: token }),
   }).then(function (r) {
     if (r.ok) { location.replace(dest); }
+    // ORDER #1370: signed in fine, but not exec or Katherine.
+    else if (r.status === 403) { document.getElementById('msg').textContent = 'This dashboard is for Marketing leadership.'; }
     else { document.getElementById('msg').textContent = 'That sign-in could not be verified. Open the dashboard from the Hub and try again.'; }
   }).catch(function () {
     document.getElementById('msg').textContent = 'Could not reach the dashboard to finish signing in.';

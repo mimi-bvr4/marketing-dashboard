@@ -70,11 +70,17 @@ function call(server, urlPath, { method = 'GET', headers = {}, body } = {}) {
   });
 }
 // An SSO session that is `ageSec` old and still inside its own expiry.
+// ORDER #1370: an SSO session is only ever minted after the exec/Katherine
+// check, and carries mkt_access to say so. Dispatch's answers below carry
+// rung 3 (exec) wherever the person is meant to be let in.
 function ssoCookie(email, ageSec, role = 'sso') {
   const iat = Math.floor(Date.now() / 1000) - ageSec;
-  const tok = jwt.sign({ role, name: 'Some One', email, iat }, SECRET, { expiresIn: 30 * DAY });
+  const claims = { role, name: 'Some One', email, iat };
+  if (role === 'sso') claims.mkt_access = true;
+  const tok = jwt.sign(claims, SECRET, { expiresIn: 30 * DAY });
   return 'mkt_session=' + encodeURIComponent(tok);
 }
+const EXEC = { active: true, person_id: 'person_exec0001', rung: 3 };
 const cookies = r => [].concat(r.headers['set-cookie'] || []);
 const sessionSet = r => cookies(r).find(c => c.startsWith('mkt_session=') && !c.startsWith('mkt_session=;'));
 const sessionCleared = r => cookies(r).some(c => c.startsWith('mkt_session=;') && /Max-Age=0/.test(c));
@@ -82,7 +88,7 @@ const bounced = r => r.status === 302 && String(r.headers.location || '').includ
 
 // ---- KNOWN-BAD 1: a sign-in lasts 30 days, not 12 hours -------------------
 test('KNOWN-BAD: an Infinity sign-in lasts 30 days (on main: Max-Age=43200, 12 hours)', async (t) => {
-  answer();
+  answer({ body: EXEC });
   const s = await serve(t);
   const tok = jwt.sign({ email: 'someone@infinityhospitality.net', name: 'Some One' }, process.env.DISPATCH_JWT_SECRET, { expiresIn: '2m' });
   const r = await call(s, '/api/auth/sso', { method: 'POST', body: { token: tok } });
@@ -95,7 +101,8 @@ test('KNOWN-BAD: an Infinity sign-in lasts 30 days (on main: Max-Age=43200, 12 h
   const claims = jwt.decode(decodeURIComponent(c.split(';')[0].slice('mkt_session='.length)));
   assert.strictEqual(claims.exp - claims.iat, 30 * DAY, 'the JWT and the cookie must agree');
   assert.strictEqual(claims.role, 'sso');
-  assert.strictEqual(CALLS.length, 0, 'the sign-in itself does not ask Dispatch');
+  // ORDER #1370: the sign-in now asks Dispatch once, for the access check.
+  assert.strictEqual(CALLS.length, 1, 'the sign-in asks Dispatch exactly once');
   assert.ok(cookies(r).some(x => x.startsWith('mkt_sso_tried=;')), 'the bounce marker is still expired on success');
 });
 
@@ -121,7 +128,7 @@ test('…and the same session is a 401 on the API, never a redirect', async (t) 
 
 // ---- an active person renews with no Google step --------------------------
 test('an active person\'s 2-day-old session opens and comes back renewed for 30 days', async (t) => {
-  answer({ body: { active: true, person_id: 7 } });
+  answer({ body: EXEC });
   const s = await serve(t);
   const r = await call(s, '/', { headers: { cookie: ssoCookie('someone@infinityhospitality.net', 2 * DAY) } });
   assert.strictEqual(r.status, 200);
@@ -156,8 +163,10 @@ test('Dispatch down or answering 500: kept, not renewed, not ended', async (t) =
   }
 });
 
-// ---- no bridge token: main's 12 hours, never 30 days unchecked -------------
-test('with no DISPATCH_BRIDGE_TOKEN a sign-in is 12 hours and a 13-hour session ends', async (t) => {
+// ---- no bridge token: never 30 days unchecked ------------------------------
+// ORDER #1370: with no bridge token the access check cannot run, so the
+// sign-in mints nothing at all (it used to mint the 12 hours of main).
+test('with no DISPATCH_BRIDGE_TOKEN a sign-in is refused and a 13-hour session ends', async (t) => {
   const saved = process.env.DISPATCH_BRIDGE_TOKEN;
   delete process.env.DISPATCH_BRIDGE_TOKEN;
   t.after(() => { process.env.DISPATCH_BRIDGE_TOKEN = saved; });
@@ -165,7 +174,8 @@ test('with no DISPATCH_BRIDGE_TOKEN a sign-in is 12 hours and a 13-hour session 
   const s = await serve(t);
   const tok = jwt.sign({ email: 'someone@infinityhospitality.net' }, process.env.DISPATCH_JWT_SECRET, { expiresIn: '2m' });
   const r = await call(s, '/api/auth/sso', { method: 'POST', body: { token: tok } });
-  assert.match(sessionSet(r), /Max-Age=43200/);
+  assert.strictEqual(r.status, 503);
+  assert.strictEqual(sessionSet(r), undefined);
   const r2 = await call(s, '/', { headers: { cookie: ssoCookie('someone@infinityhospitality.net', 13 * HOUR) } });
   assert.ok(bounced(r2), r2.status + ' ' + r2.headers.location);
   assert.strictEqual(CALLS.length, 0, 'nothing is asked of Dispatch');
@@ -182,15 +192,18 @@ test('a signed-out browser still goes to Google through Dispatch, with no staff 
   assert.strictEqual(api.status, 401);
 });
 
-test('the marketing-password session and a Bearer header are let through untouched', async (t) => {
+// ORDER #1370 changed this one on purpose: the password session no longer
+// opens anything, and a Bearer session is checked exactly like the cookie.
+test('the marketing-password session is refused, and a Bearer session is renewal-checked like the cookie', async (t) => {
   answer({ body: { active: false } });
   const s = await serve(t);
   const pw = await call(s, '/', { headers: { cookie: ssoCookie(undefined, 2 * HOUR, 'admin') } });
-  assert.strictEqual(pw.status, 200);
-  const bearer = jwt.sign({ role: 'sso', email: 'someone@infinityhospitality.net', iat: Math.floor(Date.now() / 1000) - 13 * HOUR }, SECRET, { expiresIn: 30 * DAY });
+  assert.ok(bounced(pw), pw.status + ' ' + pw.headers.location);
+  assert.strictEqual(CALLS.length, 0, 'the password session is refused without asking Dispatch');
+  const bearer = jwt.sign({ role: 'sso', email: 'someone@infinityhospitality.net', mkt_access: true, iat: Math.floor(Date.now() / 1000) - 13 * HOUR }, SECRET, { expiresIn: 30 * DAY });
   const b = await call(s, '/', { headers: { authorization: 'Bearer ' + bearer } });
-  assert.strictEqual(b.status, 200);
-  assert.strictEqual(CALLS.length, 0);
+  assert.ok(bounced(b), 'an inactive person\'s Bearer session ends too: ' + b.status);
+  assert.strictEqual(CALLS.length, 1);
 });
 
 test('expired and forged sessions are refused before any check', async (t) => {

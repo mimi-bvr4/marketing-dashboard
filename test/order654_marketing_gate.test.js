@@ -190,8 +190,17 @@ test('the open-path list in server.js is the one tested here', () => {
   for (const p of OPEN_PATHS) assert.ok(SRC_ALL.includes("'" + p + "'"), p + ' must be open on the gate');
 });
 
-test('login sets the cookie in routes/fleet.js', () => {
-  assert.ok(/mkt_session/.test(FLEET_SRC) && /HttpOnly|httpOnly/.test(FLEET_SRC));
+// ORDER #1370 retired the marketing password: /api/login answers 410 and mints
+// nothing, so the old "login sets the cookie" fact is now its opposite. The
+// login tests above drive this file's own copy of the gate and still prove the
+// cookie-or-header mechanics #654 built; the password itself is tested in
+// order1370_marketing_exec_and_katherine_only.test.js against the real route.
+test('the password login in routes/fleet.js mints no session (ORDER #1370)', () => {
+  const code = FLEET_SRC.replace(/^[ \t]*\/\/.*$/gm, ' ');
+  const login = code.slice(code.indexOf("router.post('/api/login'"), code.indexOf("router.post('/api/tokens'"));
+  assert.ok(login.length > 0, 'the login route is still there and still answers');
+  assert.ok(/410/.test(login));
+  assert.ok(!/sign\(|Set-Cookie|res\.cookie/.test(login), 'no token, no cookie');
 });
 
 test('no new dependency was added', () => {

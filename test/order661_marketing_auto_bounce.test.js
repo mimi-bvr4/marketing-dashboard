@@ -155,7 +155,9 @@ test('…and a non-GET is never redirected — a redirect would silently drop th
 // ---- the gate still does what #654 built it for -------------------------
 test('a valid session still gets through, by cookie and by bearer', async (t) => {
   const s = await serve(app(), t);
-  const tok = jwt.sign({ role: 'sso', email: 'x@y.z' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  // ORDER #1370: a valid session is one minted after the exec/Katherine
+  // check, which is what mkt_access records.
+  const tok = jwt.sign({ role: 'sso', email: 'x@y.z', mkt_access: true }, process.env.JWT_SECRET, { expiresIn: '1h' });
   const byCookie = await get(s, '/', { cookie: 'mkt_session=' + encodeURIComponent(tok) });
   assert.strictEqual(byCookie.status, 200);
   assert.strictEqual(byCookie.body, 'BEHIND THE GATE');
