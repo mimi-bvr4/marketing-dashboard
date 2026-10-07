@@ -42,20 +42,16 @@ function sessionUser(req) {
 // anyway. It told them to do the thing that had already failed, and it carried
 // an em dash. This page is now only ever shown to someone dispatch does not
 // know, or to someone whose automatic sign-in was refused, so it says that.
+// ORDER #1370: the marketing-password form is gone. A shared password names
+// nobody, so it cannot answer "is this exec or Katherine?".
 const SIGN_IN_PAGE = `<!doctype html><meta charset="utf-8"><title>Marketing Dashboard: sign in</title>
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
 <body style="font-family:system-ui;max-width:420px;margin:12vh auto;padding:0 20px">
 <h1 style="font-size:20px">Marketing Dashboard</h1>
-<p style="color:#6D6E71;font-size:14px">We could not sign you in from Infinity. Try again, or use the marketing password.</p>
+<p style="color:#6D6E71;font-size:14px">We could not sign you in from Infinity. Try again.</p>
 <p><button onclick="sso()" style="padding:10px 16px">Continue with Infinity</button></p>
-<p style="color:#6D6E71;font-size:13px">or sign in with the marketing password:</p>
-<form onsubmit="go(event)"><input id="pw" type="password" placeholder="Password" style="width:100%;padding:10px;font-size:15px">
-<button style="margin-top:10px;padding:10px 16px">Sign in</button></form>
 <p id="err" style="color:#b00;font-size:13px"></p>
-<script>async function sso(){const r=await fetch('/api/auth/sso-url');if(!r.ok){document.getElementById('err').textContent='Single sign-on is not configured on this deploy.';return;}location.href=(await r.json()).url;}
-async function go(e){e.preventDefault();
- const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('pw').value})});
- if(r.ok){location.reload();}else{document.getElementById('err').textContent=(await r.json()).error||'Sign in failed';}}</script>`;
+<script>async function sso(){const r=await fetch('/api/auth/sso-url');if(!r.ok){document.getElementById('err').textContent='Single sign-on is not configured on this deploy.';return;}location.href=(await r.json()).url;}</script>`;
 
 // ORDER #661, on Mimi's ruling: "it should go straight to the marketing."
 //
@@ -89,20 +85,44 @@ async function go(e){e.preventDefault();
 //                       would be dropped silently.
 const { ssoBounceUrl, hasBounceMarker, BOUNCE_MARKER } = require('../lib/sso');
 const { renewIfDue } = require('../lib/session_life');
+const { DENIED_MESSAGE, DENIED_PAGE } = require('../lib/access');
 
 // ORDER #1318: an SSO session in the mkt_session cookie lasts 30 days and is
-// renewed after a Dispatch staff check (lib/session_life.js). The password
-// session and a Bearer header are let through exactly as before.
+// renewed after a Dispatch staff check (lib/session_life.js).
+//
+// ORDER #1370 (Mimi, 10.06.2026: "its exec only and katherine"): the only
+// session that opens anything is an SSO session minted AFTER lib/access.js
+// said yes, which carries `mkt_access: true`. Everything else that used to
+// pass is now sent back through Infinity sign-in, where the check runs:
+//   * the marketing-password session (role 'admin'): it names nobody;
+//   * an SSO session minted before #1370 (no mkt_access): it was handed to
+//     any signed-in staff;
+//   * a Bearer JWT of either kind: same two reasons, it used to skip renewal.
+// A validated fleet token is still let through, unchanged: it is a machine
+// key (the token page names ARC), GET-only, and whether it keeps reading is
+// filed as a ruling on #1370 rather than guessed.
 function pageGate(req, res, next) {
   if (OPEN_PATHS.has(req.path)) return next();
   if (req.fleetClient) return next();          // a validated, read-only fleet token
   const who = sessionUser(req);
-  const byHeader = (req.headers.authorization || '').startsWith('Bearer ');
-  if (who && (who.role !== 'sso' || byHeader)) return next();
-  if (who) {
-    return renewIfDue(res, who).then(outcome => (outcome === 'ended' ? refuse(req, res) : next()));
+  if (who && who.role === 'sso' && who.mkt_access === true) {
+    return renewIfDue(res, who).then(outcome => {
+      if (outcome === 'ended') return refuse(req, res);
+      if (outcome === 'denied') return deny(req, res);
+      req.mktUser = who;
+      return next();
+    });
+  }
+  if (who && cookieToken(req)) {
+    res.append('Set-Cookie', SESSION_COOKIE + '=; Path=/; Max-Age=0; SameSite=Lax');
   }
   return refuse(req, res);
+}
+
+// ORDER #1370: signed in, and not exec or Katherine. No data, no redirect.
+function deny(req, res) {
+  if (req.path.startsWith('/api/')) return res.status(403).json({ error: DENIED_MESSAGE });
+  return res.status(403).type('html').send(DENIED_PAGE);
 }
 
 function refuse(req, res) {
@@ -118,5 +138,5 @@ function refuse(req, res) {
   return res.status(401).type('html').send(SIGN_IN_PAGE);
 }
 
-module.exports = { pageGate, sessionUser, cookieToken, OPEN_PATHS, SIGN_IN_PAGE,
+module.exports = { pageGate, deny, sessionUser, cookieToken, OPEN_PATHS, SIGN_IN_PAGE,
                    SESSION_COOKIE };

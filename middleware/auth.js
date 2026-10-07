@@ -4,8 +4,13 @@ const { looksLikeFleetToken, validateFleetToken } = require('../lib/fleet-tokens
 const SECRET = () => process.env.JWT_SECRET || 'dev-insecure-change-me';
 function sign(payload){ return jwt.sign(payload, SECRET(), { expiresIn: '12h' }); }
 
-// Human login gate for mint/list/revoke (JWT from /api/login).
+// Human login gate for mint/list/revoke.
+// ORDER #1370: /api/login is retired, so the person is the one the page gate
+// already let through (req.mktUser: exec or Katherine, checked with Dispatch).
+// A fleet token is never a person, and the page gate passes those without
+// setting req.mktUser, so they still get the 403 below.
 function requireAuth(req, res, next){
+  if(req.mktUser){ req.user = { name: req.mktUser.email || req.mktUser.name }; return next(); }
   const h = req.headers.authorization;
   if(!h || !h.startsWith('Bearer ')) return res.status(401).json({ error: 'Not authenticated' });
   const token = h.split(' ')[1];

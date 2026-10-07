@@ -2,13 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { pool, hasDb } = require('../db');
 const jwt = require('jsonwebtoken');
-const { requireAuth, sign } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 const { issueSso } = require('../lib/session_life');   // ORDER #1318
-// ORDER #654: named here so the gate in server.js and the login that satisfies
-// it cannot drift apart on the cookie's name.
-const SESSION_COOKIE_NAME = 'mkt_session';
-const COOKIE_OPTS = { httpOnly: true, sameSite: 'lax', maxAge: 12 * 60 * 60 * 1000,
-                      secure: process.env.NODE_ENV === 'production' };
+const { staffIdentity, canCheck, isAllowed, DENIED_MESSAGE } = require('../lib/access');   // ORDER #1370
 const { mintRaw } = require('../lib/fleet-tokens');
 function baseUrl(req){
   const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
@@ -87,7 +83,7 @@ router.get('/api/auth/sso-url', (req, res) => {
   res.json({ url: ssoBounceUrl(req.query.next) });
 });
 
-router.post('/api/auth/sso', (req, res) => {
+router.post('/api/auth/sso', async (req, res) => {
   const secret = process.env.DISPATCH_JWT_SECRET;
   if (!secret) return res.status(503).json({ error: 'SSO not configured on this deploy' });
   const token = String((req.body && req.body.token) || '');
@@ -97,6 +93,21 @@ router.post('/api/auth/sso', (req, res) => {
   catch (e) { return res.status(401).json({ error: 'Invalid or expired token' }); }
   if (!claims || !claims.email) {
     return res.status(401).json({ error: 'Token carries no identity to accept' });
+  }
+  // ORDER #1370: exec or Katherine, asked of Dispatch BEFORE a session is
+  // minted. Fails CLOSED: with no DISPATCH_BRIDGE_TOKEN, or Dispatch not
+  // answering, nobody gets a session, because nobody can be shown to be allowed.
+  if (!canCheck(claims.email)) {
+    return res.status(503).json({ error: 'The access check is not configured on this deploy' });
+  }
+  let who;
+  try { who = await staffIdentity(claims.email); }
+  catch (e) {
+    console.warn('[auth] #1370 access check failed, no session minted: ' + e.message);
+    return res.status(503).json({ error: 'Could not confirm access. Try again in a minute.' });
+  }
+  if (!isAllowed(who)) {
+    return res.status(403).json({ error: DENIED_MESSAGE, denied: true });
   }
   // The session this mints is THIS app's own, signed with THIS app's secret.
   // ORDER #1318: 30 days, renewed after a Dispatch staff check, when that
@@ -115,21 +126,13 @@ router.post('/api/auth/sso', (req, res) => {
   res.json({ ok: true, name: claims.name || claims.email, email: claims.email });
 });
 
+// ORDER #1370: the shared marketing password no longer opens anything. It
+// named nobody, so anyone holding it got the dashboard (and /api/spend) with
+// no identity; the ruling is exec and Katherine only. The route stays and
+// answers plainly, right or wrong password alike, so nothing can probe it.
+// The token page now signs in through Infinity like the dashboard does.
 router.post('/api/login', (req,res)=>{
-  const pw = String((req.body && req.body.password) || '');
-  const expected = process.env.MARKETING_ADMIN_PASSWORD;
-  if(!expected) return res.status(503).json({ error: 'Login not configured (set MARKETING_ADMIN_PASSWORD).' });
-  if(pw !== expected) return res.status(401).json({ error: 'Wrong password' });
-  // ORDER #654: the same JWT also goes into an httpOnly cookie, because a
-  // browser NAVIGATING to the dashboard page cannot send an Authorization
-  // header. The header path is unchanged for the token-admin page's fetches.
-  const token = sign({ role:'admin', name:'marketing-admin' });
-  res.cookie
-    ? res.cookie(SESSION_COOKIE_NAME, token, COOKIE_OPTS)
-    : res.setHeader('Set-Cookie', SESSION_COOKIE_NAME + '=' + encodeURIComponent(token)
-        + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200'
-        + (process.env.NODE_ENV === 'production' ? '; Secure' : ''));
-  res.json({ token });
+  res.status(410).json({ error: 'The marketing password has been retired. Open the dashboard from the Hub.' });
 });
 router.post('/api/tokens', requireAuth, async (req,res)=>{
   if(!hasDb) return res.status(503).json({ error:'Token store not configured (add a Postgres + DATABASE_URL).' });
