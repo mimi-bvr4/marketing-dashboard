@@ -82,6 +82,7 @@ function build() {
   app.post('/api/ai/narrative', (req, res) => { AI_CALLS += 1; res.json({ ok: true }); });
   app.post('/api/hubspot/search', (req, res) => res.json({ ok: true }));
   app.get('/api/spend', (req, res) => res.json({ ok: true }));
+  app.get('/api/ga4/summary', (req, res) => res.json({ ok: true }));
   app.post('/api/a-route-added-next-week', (req, res) => res.json({ ok: true }));
   return app;
 }
@@ -166,8 +167,12 @@ test('the existing Bearer-header path still works, unchanged', async () => {
   assert.strictEqual((await req('GET', '/api/spend', { auth: 'Bearer ' + token })).status, 200);
 });
 
+// ORDER #1390: a key reads website traffic only and is refused /api/spend.
+// That rule is tested against the REAL gate in
+// order1390_fleet_keys_lose_spend.test.js; this copy keeps #654's fact that a
+// validated key gets past the sign-in wall at all.
 test('a validated fleet token still reads, per the Fleet Contract', async () => {
-  assert.strictEqual((await req('GET', '/api/spend', { auth: 'Bearer mkt_abc' })).status, 200);
+  assert.strictEqual((await req('GET', '/api/ga4/summary', { auth: 'Bearer mkt_abc' })).status, 200);
 });
 
 test('/health stays open for the platform probe', async () => {

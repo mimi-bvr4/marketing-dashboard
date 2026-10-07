@@ -98,12 +98,26 @@ const { DENIED_MESSAGE, DENIED_PAGE } = require('../lib/access');
 //   * an SSO session minted before #1370 (no mkt_access): it was handed to
 //     any signed-in staff;
 //   * a Bearer JWT of either kind: same two reasons, it used to skip renewal.
-// A validated fleet token is still let through, unchanged: it is a machine
-// key (the token page names ARC), GET-only, and whether it keeps reading is
-// filed as a ruling on #1370 rather than guessed.
+// A validated fleet token is a machine key (the token page names ARC), GET-only.
+//
+// ORDER #1390 (Mimi ruled A on the #1370 fleet-keys record, 10.07.2026): keys
+// keep the website-traffic numbers and lose /api/spend, the salary row and
+// every other spend or cost read. An ALLOW list, not a deny list: a key reads
+// only the GA4 traffic routes, so a spend route written next week is closed to
+// keys by default, and so is index.html. If ARC needs spend later, it gets its
+// own order.
+const FLEET_READ_PREFIXES = ['/api/ga4/'];
+const FLEET_DENIED_MESSAGE = 'A fleet key can read website-traffic numbers only (/api/ga4/*).';
+function fleetMayRead(p) {
+  return FLEET_READ_PREFIXES.some(prefix => p.startsWith(prefix));
+}
+
 function pageGate(req, res, next) {
   if (OPEN_PATHS.has(req.path)) return next();
-  if (req.fleetClient) return next();          // a validated, read-only fleet token
+  if (req.fleetClient) {                       // a validated, read-only fleet token
+    if (fleetMayRead(req.path)) return next();
+    return res.status(403).json({ error: FLEET_DENIED_MESSAGE });
+  }
   const who = sessionUser(req);
   if (who && who.role === 'sso' && who.mkt_access === true) {
     return renewIfDue(res, who).then(outcome => {
@@ -139,4 +153,4 @@ function refuse(req, res) {
 }
 
 module.exports = { pageGate, deny, sessionUser, cookieToken, OPEN_PATHS, SIGN_IN_PAGE,
-                   SESSION_COOKIE };
+                   SESSION_COOKIE, FLEET_READ_PREFIXES, fleetMayRead };
