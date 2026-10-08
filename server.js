@@ -189,11 +189,13 @@ async function hubspotFetch(objectType, body, retries = 2) {
 }
 
 // ---- HubSpot CRM Search Proxy ----
+const { excludeTestDeals } = require('./lib/test_deals');
 app.post('/api/hubspot/search', async (req, res) => {
-  const { objectType, ...body } = req.body;
+  const { objectType, ...rawBody } = req.body;
   if (!['deals', 'contacts'].includes(objectType)) {
     return res.status(400).json({ error: 'Invalid objectType — must be deals or contacts' });
   }
+  const body = excludeTestDeals(objectType, rawBody); // ORDER #1450: never count a test deal
   const key = hsCacheKey(objectType, body);
   const cached = hsCacheGet(key);
   if (cached) {
