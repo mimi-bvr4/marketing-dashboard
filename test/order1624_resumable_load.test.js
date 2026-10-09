@@ -205,6 +205,53 @@ test('a folder emptied in Drive is marked removed on its own run, and only insid
   assert.strictEqual(db.photos.get('elsewhere').removed_at, null, 'a folder whose name only starts the same is not touched');
 });
 
+// ------------------------------------------------------------ the status report
+
+const ST = require('../jobs/photo_load_status');
+
+function statusPool({ tables = true, runs = [] } = {}) {
+  const sent = [];
+  const client = {
+    query: async (sql) => {
+      sent.push(sql);
+      if (/to_regclass/.test(sql)) return { rows: [{ photos: tables, runs: tables }] };
+      if (/half_written/.test(sql)) return { rows: [{ photos: 10, live: 10, thumbs: 0, paths: 9, folders: 2, half_written: 1 }] };
+      if (/FROM photo_crawl_runs/.test(sql)) return { rows: runs };
+      return { rows: [] };
+    },
+    release: () => {},
+  };
+  return { sent, connect: async () => client };
+}
+
+test('the status report runs inside one READ ONLY transaction and sends nothing that writes', async () => {
+  const pool = statusPool({ runs: [{ id: 2, mode: 'apply-folder', finished_at: 'x', detail: { folder: 'Alpha' } },
+    { id: 1, mode: 'apply-start', finished_at: 'x', detail: { folders: ['Alpha', 'Bravo', 'Charlie'] } }] });
+  const lines = [];
+  const r = await ST.status(pool, (l) => lines.push(l));
+  assert.strictEqual(pool.sent[0], 'BEGIN READ ONLY');
+  assert.strictEqual(pool.sent[pool.sent.length - 1], 'ROLLBACK');
+  for (const sql of pool.sent) assert.ok(!/\b(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE)\b/i.test(sql), sql);
+  assert.deepStrictEqual(r.progress, { state: 'in progress', done: 1, total: 3 });
+  assert.ok(lines.includes('HALF-WRITTEN (a photo with no path row): 1'));
+  assert.ok(lines.includes('LOAD: in progress, 1 of 3 top folders done'));
+});
+
+test('the status report says so when no load has created the tables yet', async () => {
+  const lines = [];
+  const r = await ST.status(statusPool({ tables: false }), (l) => lines.push(l));
+  assert.strictEqual(r.tables, false);
+  assert.ok(/not created yet/.test(lines[0]));
+});
+
+test('progress: a finished load is complete, and a new start after it is a new load', () => {
+  assert.deepStrictEqual(ST.progress([]), { state: 'not started' });
+  assert.deepStrictEqual(ST.progress([{ id: 3, mode: 'apply' }, { id: 2, mode: 'apply-folder' }, { id: 1, mode: 'apply-start', detail: { folders: ['A'] } }]),
+    { state: 'complete', run: 3 });
+  assert.deepStrictEqual(ST.progress([{ id: 4, mode: 'apply-start', detail: '{"folders":["A","B"]}' }, { id: 3, mode: 'apply' }]),
+    { state: 'in progress', done: 0, total: 2 });
+});
+
 // ------------------------------------------------------------ the walk
 
 test('the concurrent walk finds the same files as the one-at-a-time walk', async () => {
