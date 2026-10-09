@@ -134,7 +134,9 @@ function call(server, urlPath, { headers = {}, method = 'GET', body } = {}) {
     req.end();
   });
 }
-const as = (email) => ({ Cookie: `mkt_session=${jwt.sign({ role: 'sso', email }, process.env.JWT_SECRET)}` });
+// #1611 rebase: since #1370 only a session minted after the exec-or-Katherine
+// check (mkt_access) passes the page gate, so every test person carries it.
+const as = (email) => ({ Cookie: `mkt_session=${jwt.sign({ role: 'sso', email, mkt_access: true }, process.env.JWT_SECRET)}` });
 const ids = (r) => r.json.results.map((p) => p.id).sort();
 
 // ------------------------------------------------------------- the acceptance list
@@ -223,12 +225,21 @@ test('ACCEPTANCE: a non-editor POST gets 403, and so does anyone without the sur
   assert.strictEqual(rights.status, 403);
   const pw = jwt.sign({ role: 'admin', name: 'marketing-admin' }, process.env.JWT_SECRET);
   const shared = await call(s, '/api/photos/p1/tags', { method: 'POST', headers: { Authorization: `Bearer ${pw}` }, body: { action: 'add', tag: 'candles' } });
-  assert.strictEqual(shared.status, 403, 'the shared marketing password is not a person and cannot edit');
+  // #1370 retired the shared password: its session is refused at the page gate now.
+  assert.strictEqual(shared.status, 401, 'the shared marketing password is refused at the gate');
   assert.deepStrictEqual(store.writes, [], 'nothing was written');
   assert.strictEqual((await call(s, '/api/photos', { headers: as('chef@x') })).status, 403);
   assert.strictEqual((await call(s, '/photos', { headers: as('chef@x') })).status, 403);
   assert.strictEqual((await call(s, '/photos/thumb/p1', { headers: as('chef@x') })).status, 403);
   assert.strictEqual((await call(s, '/api/photos', { headers: as('stranger@x') })).status, 403);
+});
+
+test('#1611: the page sits behind the #1370 exec-or-Katherine gate; staff without it never reach a photo', async (t) => {
+  const s = await serve(app(), t);
+  const staff = { Cookie: `mkt_session=${jwt.sign({ role: 'sso', email: 'sales@x' }, process.env.JWT_SECRET)}` };
+  assert.strictEqual((await call(s, '/api/photos?q=string%20lights', { headers: staff })).status, 401);
+  assert.strictEqual((await call(s, '/photos/thumb/p1', { headers: staff })).status, 302, 'a page path is sent to sign-in');
+  assert.strictEqual((await call(s, '/api/photos?q=string%20lights', { headers: as('sales@x') })).status, 200);
 });
 
 test('ACCEPTANCE: a human-removed tag never returns, however often the AI has it', async (t) => {
