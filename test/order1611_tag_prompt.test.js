@@ -34,6 +34,28 @@ test('event type is null when the photo does not show it', () => {
   assert.match(PROMPT, /or null when the photo does not show which/);
 });
 
+// The #1611 40-photo sample: on one photo the model wrote the whole term
+// "branded gobo / logo projection" (dropped as bad free text) and the group
+// names "lighting" and "production av" (kept as free text).
+const A = require('../lib/photo-archive');
+const VOCAB = A.buildVocabulary({ groups: GROUPS, synonyms: SYNONYMS });
+const THUMB = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+const answer = (o) => ({ model: 'mock', describe: async () => JSON.stringify(o) });
+
+test('KNOWN-BAD (#1611): a vocabulary term written whole, "a / b", lands on its tag', async () => {
+  const r = await T.tagPhoto({ model: answer({ tags: [{ tag: 'branded gobo / logo projection', confidence: 0.9 }] }),
+    vocab: VOCAB, prompt: PROMPT, thumb: THUMB });
+  assert.deepStrictEqual(r.ai, [{ tag: 'branded gobo', confidence: 0.9 }]);
+});
+
+test('KNOWN-BAD (#1611): a prompt group name is dropped, never kept as a free tag', async () => {
+  const r = await T.tagPhoto({ model: answer({ tags: [{ tag: 'lighting', confidence: 0.95 },
+    { tag: 'production av', confidence: 0.95 }, { tag: 'stage', confidence: 0.9 }] }),
+  vocab: VOCAB, prompt: PROMPT, thumb: THUMB });
+  assert.deepStrictEqual(r.ai, [{ tag: 'stage', confidence: 0.9 }]);
+  assert.deepStrictEqual(r.dropped.map((d) => d.why), ['a group name, not a tag', 'a group name, not a tag']);
+});
+
 test('the identity and consumables rules are still there', () => {
   assert.match(PROMPT, /Never tag who a person is/);
   assert.match(PROMPT, /Never tag liquor, wine, disposables/);
