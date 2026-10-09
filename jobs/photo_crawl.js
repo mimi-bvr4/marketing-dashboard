@@ -20,6 +20,7 @@
 const A = require('../lib/photo-archive');
 const { ensurePhotoTables } = require('../lib/photo-schema');
 const { allChanges } = require('../lib/drive-client');
+const { VENUES_DEFAULT } = require('../lib/photo-config');   // ORDER #1241: 'unknown' at launch
 
 const kindOf = (mime) => (/^image\//.test(mime || '') ? 'image' : /^video\//.test(mime || '') ? 'video' : null);
 const TOP_REPORTED = ['Venues', 'NLP', 'Culinary', 'Misc.'];
@@ -91,7 +92,7 @@ function rowFor(file) {
   const w = img.width || vid.width || null;
   const h = img.height || vid.height || null;
   const dealId = A.dealIdFrom([...file.path, file.name]);
-  const rights = A.rightsFor({ topFolder: file.path[0], dealId });
+  const rights = A.rightsFor({ topFolder: file.path[0], dealId, venuesDefault: VENUES_DEFAULT });
   return {
     drive_id: file.id, name: file.name, mime_type: file.mimeType, kind: kindOf(file.mimeType),
     size: file.size ? Number(file.size) : null, width: w, height: h, orientation: A.orientation(w, h),

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photos · Marketing</title>
+<!-- ORDER #1241: the photo archive page. The round-1 token and component layer,
+     served by dispatch (ORDER #1210). Every value below comes from a token. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  .layout { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  @media (min-width: 60rem) { .layout { grid-template-columns: 16rem 1fr; align-items: start; } }
+  .rail { display: grid; gap: var(--ihg-space-4); }
+  .rail details > summary { font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-semibold); min-height: var(--ihg-target-min); display: flex; align-items: center; cursor: pointer; }
+  .facet-value { display: flex; justify-content: space-between; gap: var(--ihg-space-2); width: 100%; min-height: var(--ihg-target-min); padding: var(--ihg-space-1) var(--ihg-space-2); background: transparent; border: 0; border-radius: var(--ihg-radius-sm); color: var(--ihg-color-text); text-align: left; font-size: var(--ihg-text-sm); }
+  .facet-value:hover { background: var(--ihg-color-surface-muted); }
+  .facet-value[aria-pressed="true"] { background: var(--ihg-color-accent-subtle); font-weight: var(--ihg-weight-semibold); }
+  .facet-count { color: var(--ihg-color-text-muted); font-variant-numeric: tabular-nums; }
+  .thumbs { display: grid; gap: var(--ihg-space-3); grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+  .thumb { display: grid; gap: var(--ihg-space-1); padding: 0; background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); overflow: hidden; text-align: left; color: var(--ihg-color-text); }
+  .thumb img, .thumb .no-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--ihg-color-surface-muted); display: block; }
+  .thumb .meta { padding: var(--ihg-space-1) var(--ihg-space-2) var(--ihg-space-2); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); }
+  .crumbs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-1); font-size: var(--ihg-text-sm); }
+  .crumbs button { background: none; border: 0; padding: var(--ihg-space-1); color: var(--ihg-color-accent-text); text-decoration: underline; font-size: var(--ihg-text-sm); }
+  dialog { width: min(56rem, calc(100vw - var(--ihg-space-8))); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: 0; background: var(--ihg-color-surface); color: var(--ihg-color-text); box-shadow: var(--ihg-shadow-overlay); }
+  dialog::backdrop { background: var(--ihg-color-inverse-bg); opacity: 0.6; }
+  .viewer { display: grid; gap: var(--ihg-space-4); padding: var(--ihg-space-6); }
+  @media (min-width: 48rem) { .viewer { grid-template-columns: 3fr 2fr; } }
+  .viewer img { width: 100%; border-radius: var(--ihg-radius); background: var(--ihg-color-surface-muted); }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Photos</div>
+  <nav class="row"><a class="nav-button" href="/">Marketing dashboard</a></nav>
+</div></header>
+
+<main class="container layout">
+  <aside class="rail" aria-label="Filters">
+    <form id="search" class="field" role="search">
+      <label for="q">Search photos</label>
+      <input id="q" class="input" type="search" placeholder="string lights, stage + corporate" autocomplete="off">
+    </form>
+    <p id="progress" class="small muted" hidden></p>
+    <button id="clear" class="button quiet" type="button" hidden>Clear filters</button>
+    <div id="facets" class="stack-tight"></div>
+  </aside>
+
+  <section class="stack" aria-live="polite">
+    <p id="count" class="small muted"></p>
+    <div id="grid" class="thumbs"></div>
+    <button id="more" class="button secondary" type="button" hidden>Show more</button>
+  </section>
+</main>
+
+<dialog id="view" aria-label="Photo">
+  <div class="viewer">
+    <div class="stack-tight"><img id="v-img" alt=""><p id="v-name" class="small muted"></p></div>
+    <div class="stack">
+      <div class="row spread"><span id="v-badge" class="pill" hidden></span>
+        <button class="button quiet" type="button" onclick="document.getElementById('view').close()">Close</button></div>
+      <p id="v-date" class="small"></p>
+      <div><p class="eyebrow">Folder</p><div id="v-crumbs" class="crumbs"></div></div>
+      <div><p class="eyebrow">Tags</p><div id="v-tags" class="chips"></div></div>
+      <form id="v-edit" class="row" hidden>
+        <input id="v-newtag" class="input" placeholder="Add a tag" maxlength="40" style="flex:1">
+        <button class="button secondary" type="submit">Add</button>
+      </form>
+      <div class="row" id="v-actions"></div>
+      <label id="v-internal-wrap" class="choice small" hidden><input type="checkbox" id="v-internal"> Internal only, don't send to clients</label>
+      <p id="v-reason" class="small muted"></p>
+      <p id="v-error" class="field-error" hidden></p>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const FACET_LABELS = { venue: 'Venue', space: 'Space', event_class: 'Event type', event_type: 'Event', setup: 'Setup',
+    guest_band: 'Guests', season: 'Season', month: 'Month', year: 'Year', brand: 'Brand', orientation: 'Shape', rights_state: 'Rights' };
+  const RIGHTS_WORDS = { cleared: 'Cleared', unknown: 'Check with marketing', internal_only: 'Internal only' };
+  const PAGE = 60;
+  const state = { q: '', filters: {}, path: '', offset: 0 };
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, props = {}, kids = []) => { const n = document.createElement(tag); Object.assign(n, props); kids.forEach((k) => n.append(k)); return n; };
+
+  function params() {
+    const p = new URLSearchParams();
+    if (state.q) p.set('q', state.q);
+    if (state.path) p.set('path', state.path);
+    for (const [f, v] of Object.entries(state.filters)) if (v.length) p.set(f, v.join(','));
+    p.set('offset', state.offset); p.set('limit', PAGE);
+    return p;
+  }
+
+  async function load(append) {
+    if (!append) state.offset = 0;
+    const r = await fetch('/api/photos?' + params());
+    if (!r.ok) { $('count').textContent = (await r.json().catch(() => ({}))).error || 'Could not load photos.'; return; }
+    const d = await r.json();
+    $('count').textContent = d.total === 1 ? '1 photo' : d.total.toLocaleString() + ' photos';
+    const pr = d.progress;
+    $('progress').hidden = !(pr && pr.total && pr.tagged < pr.total);
+    if (pr) $('progress').textContent = pr.tagged.toLocaleString() + ' of ' + pr.total.toLocaleString() + ' tagged so far';
+    if (!append) $('grid').replaceChildren();
+    d.results.forEach((p) => $('grid').append(tile(p)));
+    $('more').hidden = d.offset + d.results.length >= d.total;
+    renderFacets(d.facets);
+    $('clear').hidden = !(state.q || state.path || Object.values(state.filters).some((v) => v.length));
+  }
+
+  function tile(p) {
+    const img = p.thumb_url ? el('img', { src: p.thumb_url, alt: p.tags.slice(0, 3).join(', '), loading: 'lazy' }) : el('div', { className: 'no-thumb' });
+    const meta = el('div', { className: 'meta', textContent: [p.venue, p.space].filter(Boolean).join(' · ') || ' ' });
+    const b = el('button', { className: 'thumb', type: 'button' }, [img, meta]);
+    b.addEventListener('click', () => open(p.id));
+    return b;
+  }
+
+  function renderFacets(facets) {
+    const box = $('facets'); box.replaceChildren();
+    for (const [f, label] of Object.entries(FACET_LABELS)) {
+      const counts = facets[f] || {};
+      const values = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      if (!values.length) continue;
+      const det = el('details', { open: ['venue', 'event_class', 'season'].includes(f) || !!(state.filters[f] || []).length });
+      det.append(el('summary', { textContent: label }));
+      for (const [v, n] of values.slice(0, 40)) {
+        const on = (state.filters[f] || []).includes(v);
+        const btn = el('button', { className: 'facet-value', type: 'button' },
+          [el('span', { textContent: f === 'rights_state' ? (RIGHTS_WORDS[v] || v) : v }), el('span', { className: 'facet-count', textContent: n })]);
+        btn.setAttribute('aria-pressed', on);
+        btn.addEventListener('click', () => {
+          const cur = state.filters[f] || [];
+          state.filters[f] = on ? cur.filter((x) => x !== v) : [...cur, v];
+          load(false);
+        });
+        det.append(btn);
+      }
+      box.append(det);
+    }
+  }
+
+  let current = null;
+  async function open(id) {
+    $('v-error').hidden = true;
+    const r = await fetch('/api/photos/' + encodeURIComponent(id));
+    if (!r.ok) return;
+    current = await r.json();
+    render();
+    if (!$('view').open) $('view').showModal();
+  }
+
+  function render() {
+    const p = current;
+    $('v-img').src = p.thumb_url || '';
+    $('v-img').alt = p.tags.slice(0, 3).join(', ');
+    $('v-name').textContent = p.name;
+    $('v-badge').hidden = !p.rights.badge;
+    $('v-badge').className = 'pill ' + (p.rights.state === 'internal_only' ? 'late' : 'attention');
+    $('v-badge').textContent = p.rights.badge || '';
+    $('v-date').textContent = p.taken_date ? p.taken_date + (p.season ? ' · ' + p.season : '') : '';
+    $('v-crumbs').replaceChildren(...p.breadcrumbs.map((c, i) => {
+      const b = el('button', { type: 'button', textContent: c.label });
+      b.addEventListener('click', () => { state.path = c.path; $('view').close(); load(false); });
+      return i ? [el('span', { className: 'muted', textContent: '/' }), b] : [b];
+    }).flat());
+    $('v-tags').replaceChildren(...p.tags.map((t) => {
+      const chip = el('span', { className: 'pill neutral' }, [t]);
+      if (p.can_edit) {
+        const x = el('button', { type: 'button', className: 'button quiet icon-button', textContent: '×', title: 'Remove ' + t });
+        x.setAttribute('aria-label', 'Remove tag ' + t);
+        x.addEventListener('click', () => edit('remove', t));
+        chip.append(x);
+      }
+      return chip;
+    }));
+    $('v-edit').hidden = !p.can_edit;
+    const actions = [el('a', { className: 'button secondary', href: p.drive_url, target: '_blank', rel: 'noopener', textContent: 'Open in Drive' })];
+    if (p.download_url) actions.push(el('a', { className: 'button', href: p.download_url, textContent: 'Download' }));
+    if (p.share_url) {
+      const c = el('button', { className: 'button secondary', type: 'button', textContent: 'Copy link' });
+      c.addEventListener('click', async () => { await navigator.clipboard.writeText(p.share_url); c.textContent = 'Copied'; });
+      actions.push(c);
+    }
+    $('v-actions').replaceChildren(...actions);
+    $('v-internal-wrap').hidden = !p.can_edit;
+    $('v-internal').checked = !!p.rights.internal_by_hand;
+    $('v-reason').textContent = p.rights.reason || '';
+  }
+
+  async function post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) { $('v-error').hidden = false; $('v-error').textContent = (await r.json().catch(() => ({}))).error || 'Could not save.'; return false; }
+    return true;
+  }
+  async function edit(action, tag) {
+    if (await post('/api/photos/' + encodeURIComponent(current.id) + '/tags', { action, tag })) open(current.id);
+  }
+
+  $('v-edit').addEventListener('submit', (e) => { e.preventDefault(); const t = $('v-newtag').value.trim(); if (t) { $('v-newtag').value = ''; edit('add', t); } });
+  $('v-internal').addEventListener('change', async (e) => {
+    if (await post('/api/photos/' + encodeURIComponent(current.id) + '/rights', { internal: e.target.checked })) { open(current.id); load(false); }
+  });
+  $('search').addEventListener('submit', (e) => { e.preventDefault(); state.q = $('q').value.trim(); load(false); });
+  $('more').addEventListener('click', () => { state.offset += PAGE; load(true); });
+  $('clear').addEventListener('click', () => { state.q = ''; state.path = ''; state.filters = {}; $('q').value = ''; load(false); });
+  load(false);
+})();
+</script>
+</body>
+</html>
