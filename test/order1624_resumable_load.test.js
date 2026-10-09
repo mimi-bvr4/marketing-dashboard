@@ -74,7 +74,8 @@ function fakeDb({ killAfter = Infinity } = {}) {
 }
 
 // Root: Alpha (3 files), Bravo (1,200 files in two sub-folders, one file in
-// both), Charlie (2 files), and Staff Photos, which is never opened.
+// both), Charlie (2 files, one of them also in its sub-folder), and Staff
+// Photos, which is never opened.
 function fakeDrive({ tokens = ['tok-1', 'tok-LATE'] } = {}) {
   const img = (id, parent) => ({ id, name: `${id}.jpg`, mimeType: 'image/jpeg', md5Checksum: id, parents: [parent] });
   const kids = {
@@ -84,7 +85,8 @@ function fakeDrive({ tokens = ['tok-1', 'tok-LATE'] } = {}) {
     bravo: [{ id: 'b-one', name: 'One', mimeType: F }, { id: 'b-two', name: 'Two', mimeType: F }],
     'b-one': Array.from({ length: 700 }, (_, i) => img(`b${i}`, 'b-one')),
     'b-two': [...Array.from({ length: 500 }, (_, i) => img(`b${700 + i}`, 'b-two')), img('b0', 'b-two')],
-    charlie: [img('c1', 'charlie'), img('c2', 'charlie')],
+    charlie: [img('c1', 'charlie'), img('c2', 'charlie'), { id: 'c-sub', name: 'Sub', mimeType: F }],
+    'c-sub': [img('c1', 'c-sub')],   // c1 in two folders, both in Charlie's one batch
     staff: [img('secret', 'staff')],
   };
   const listed = [];
@@ -106,7 +108,7 @@ test('KNOWN-BAD: kill the load mid-run, re-run it, and get the same rows as one 
   const clean = fakeDb();
   const r1 = await J.main({ argv: RESUME, client: fakeDrive(), pool: clean, log: quiet });
   assert.strictEqual(r1.complete, true);
-  assert.strictEqual(clean.photos.size, 3 + 1200 + 2, 'b0 sits in two folders and is one row');
+  assert.strictEqual(clean.photos.size, 3 + 1200 + 2, 'b0 and c1 each sit in two folders and are one row');
 
   // Alpha finishes and is recorded; Bravo dies after its first batch.
   const killed = fakeDb({ killAfter: 2 });
@@ -145,7 +147,7 @@ test('the changes-feed token is the one taken BEFORE the first walk, and --chang
   const full = db.runs.filter((x) => x.mode === 'apply');
   assert.strictEqual(full.length, 1);
   assert.strictEqual(full[0].start_page_token, 'tok-1');
-  assert.strictEqual(full[0].seen, 3 + 1201 + 2, 'the sum of every folder, both runs');
+  assert.strictEqual(full[0].seen, 3 + 1201 + 3, 'the sum of every folder, both runs');
 });
 
 test('the budget stops the run BETWEEN folders and says PARTIAL; it never starts a folder after the budget', async () => {
