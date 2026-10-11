@@ -1,0 +1,38 @@
+{
+  "name": "Citations + AI Visibility",
+  "job": "listing and AI-answer consistency",
+  "cadence": "the 15th of each month, 06:00 CT",
+  "max_cards": 2,
+  "sources": [
+    {
+      "type": "file",
+      "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md",
+      "required": true
+    },
+    {
+      "type": "site_crawl",
+      "label": "our own sites' home pages",
+      "pages_per_site": 3,
+      "sites": [
+        "thebridgebuilding.com",
+        "thebelltower.com",
+        "cherokeedock.com",
+        "saddlewoodsfarm.com",
+        "thecordelle.com",
+        "thesaintelle.com",
+        "estellenashville.com",
+        "nashvilleweddingvenue.com"
+      ]
+    },
+    {
+      "type": "pending",
+      "label": "third-party listings (Google, Apple Maps, Bing, Yelp, The Knot, WeddingWire, Zola, NCVC, Facebook)",
+      "why": "the listings list is Katherine's to confirm; directory sites block automated reads, so each is read by a person or a permitted API"
+    },
+    {
+      "type": "pending",
+      "label": "AI assistant answer checks",
+      "why": "not wired yet: needs a ruling on which assistants to ask and how often"
+    }
+  ]
+}

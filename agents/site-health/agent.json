@@ -1,0 +1,13 @@
+{
+  "name": "Site Health",
+  "job": "weekly site check",
+  "cadence": "Mondays 06:00 CT",
+  "max_cards": 2,
+  "sources": [
+    { "type": "site_crawl", "required": true, "label": "crawl of our 12 sites", "pages_per_site": 15,
+      "sites": ["infinityhospitalitygroup.com", "dreameventsandcatering.com", "dailydishcatering.com", "thebridgebuilding.com",
+                "thebelltower.com", "cherokeedock.com", "saddlewoodsfarm.com", "nashvilleeventbartending.com",
+                "thecordelle.com", "thesaintelle.com", "estellenashville.com", "nashvilleweddingvenue.com"] },
+    { "type": "file", "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md" }
+  ]
+}

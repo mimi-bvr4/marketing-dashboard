@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review · Marketing</title>
+<!-- ORDER #1015 Part 2: the Review tab. Every marketing agent's output lands
+     here as a DRAFT. Approve moves it to Ready; it never publishes, posts,
+     sends or spends. Token and component layer served by dispatch (#1210). -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  .tabs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); }
+  .tabs button[aria-pressed="true"] { background: var(--ihg-color-accent-subtle); font-weight: var(--ihg-weight-semibold); }
+  .runs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+  .run { border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-1) var(--ihg-space-2); }
+  .run.failed { border-color: var(--ihg-color-danger, #b42318); color: var(--ihg-color-danger, #b42318); }
+  .card { border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); background: var(--ihg-color-surface); padding: var(--ihg-space-4); display: grid; gap: var(--ihg-space-3); }
+  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); }
+  .badge { font-size: var(--ihg-text-xs); padding: 0 var(--ihg-space-2); border-radius: var(--ihg-radius); background: var(--ihg-color-surface-muted); }
+  .badge.bad { background: #fdecea; color: #b42318; }
+  .badge.good { background: #e8f5ee; color: #1d6b42; }
+  .body { font-size: var(--ihg-text-sm); line-height: 1.55; overflow-x: auto; }
+  .body table { border-collapse: collapse; font-size: var(--ihg-text-xs); }
+  .body td, .body th { border: var(--ihg-border-width) solid var(--ihg-color-border); padding: 2px 6px; text-align: left; vertical-align: top; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .actions input { flex: 1 1 16rem; min-height: var(--ihg-target-min); }
+  textarea { width: 100%; min-height: 16rem; font: inherit; font-size: var(--ihg-text-sm); }
+  .err { color: #b42318; font-size: var(--ihg-text-sm); }
+  details.check textarea { min-height: 8rem; }
+  .empty { color: var(--ihg-color-text-muted); }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Review</div>
+  <nav><a href="/">Dashboard</a> · <a href="/photos">Photos</a></nav>
+</div></header>
+<main class="container wrap">
+  <p class="empty" style="margin:0">Every marketing agent drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, posts, sends or spends.</p>
+  <div class="runs" id="runs"></div>
+  <div class="tabs" role="group" aria-label="Show">
+    <button data-s="draft" aria-pressed="true">Drafts</button>
+    <button data-s="ready" aria-pressed="false">Ready</button>
+    <button data-s="rejected" aria-pressed="false">Rejected</button>
+  </div>
+  <details class="check"><summary>Check text for AI tells</summary>
+    <p class="empty">Paste anything (an email, a caption, a page). Nothing is saved.</p>
+    <textarea id="checkText"></textarea>
+    <div class="actions"><button id="checkBtn">Check text</button><span id="checkOut"></span></div>
+  </details>
+  <div id="list"></div>
+</main>
+<script>
+(function () {
+  let status = 'draft';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (d) => { if (!d) return ''; const x = new Date(d); return x.toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '.'); };
+  function inline(s) {
+    return esc(s).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/_([^_]+)_/g, '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  function md(text) {
+    const lines = String(text || '').split('\n'); const out = []; let i = 0;
+    while (i < lines.length) {
+      const l = lines[i];
+      if (/^\|/.test(l)) {
+        const rows = []; while (i < lines.length && /^\|/.test(lines[i])) { rows.push(lines[i]); i++; }
+        const cells = (r) => r.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+        const body = rows.filter((r) => !/^\|[\s|:-]+\|$/.test(r));
+        out.push('<table>' + body.map((r, n) => '<tr>' + cells(r).map((c) => (n === 0 ? '<th>' : '<td>') + inline(c) + (n === 0 ? '</th>' : '</td>')).join('') + '</tr>').join('') + '</table>');
+        continue;
+      }
+      let m;
+      if ((m = l.match(/^(#{1,4})\s+(.*)$/))) out.push(`<h${m[1].length + 2}>${inline(m[2])}</h${m[1].length + 2}>`);
+      else if (/^\s*[-*]\s+/.test(l)) { const it = []; while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) { it.push('<li>' + inline(lines[i].replace(/^\s*[-*]\s+/, '')) + '</li>'); i++; } out.push('<ul>' + it.join('') + '</ul>'); continue; }
+      else if (l.trim()) out.push('<p>' + inline(l) + '</p>');
+      i++;
+    }
+    return out.join('');
+  }
+  async function api(url, opt) {
+    const r = await fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, opt || {}));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || ('error ' + r.status));
+    return j;
+  }
+  async function loadRuns() {
+    try {
+      const { runs } = await api('/api/review/runs');
+      $('#runs').innerHTML = runs.length ? runs.map((r) => `<span class="run ${r.status === 'failed' ? 'failed' : ''}">${esc(r.agent)}: ${esc(r.status)} ${fmt(r.started_at)}${(r.unavailable || []).length ? ` · ${(r.unavailable || []).length} source(s) missing` : ''}</span>`).join('') : '<span>No agent has run yet.</span>';
+    } catch (e) { $('#runs').textContent = 'Runs: ' + e.message; }
+  }
+  function cardHtml(c) {
+    const tells = (c.checks && c.checks.ai_tells_summary) || '';
+    const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
+    const missing = (c.sources || []).filter((s) => !s.ok).length;
+    return `<article class="card" data-id="${c.id}">
+      <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
+        ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
+      <h3 style="margin:0">${esc(c.title)}</h3>
+      <div class="body">${md(c.body)}</div>
+      ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
+      ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
+      <div class="actions">
+        <button data-a="copy">Copy text</button>
+        ${c.status === 'draft' ? `<button data-a="approve">Approve</button><button data-a="edit">Edit</button>
+        <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>` : ''}
+      </div>
+      <div class="edit" hidden><textarea>${esc(c.body)}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
+      <p class="err" hidden></p>
+    </article>`;
+  }
+  let cache = [];
+  async function load() {
+    $('#list').innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const { cards } = await api('/api/review/cards?status=' + status);
+      cache = cards;
+      $('#list').innerHTML = cards.length ? cards.map(cardHtml).join('') : '<p class="empty">Nothing here.</p>';
+    } catch (e) { $('#list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  }
+  document.querySelector('.tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-s]'); if (!b) return;
+    status = b.dataset.s;
+    document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    load();
+  });
+  $('#list').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const el = b.closest('.card'); const id = Number(el.dataset.id); const c = cache.find((x) => x.id === id);
+    const err = el.querySelector('.err'); err.hidden = true;
+    const act = async (body) => { try { await api('/api/review/cards/' + id, { method: 'POST', body: JSON.stringify(body) }); await load(); await loadRuns(); } catch (x) { err.textContent = x.message; err.hidden = false; } };
+    if (b.dataset.a === 'copy') { await navigator.clipboard.writeText(c.body); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy text'), 1500); }
+    if (b.dataset.a === 'approve') act({ action: 'approve' });
+    if (b.dataset.a === 'reject') act({ action: 'reject', reason: el.querySelector('[data-f=reason]').value });
+    if (b.dataset.a === 'edit') el.querySelector('.edit').hidden = false;
+    if (b.dataset.a === 'cancel') el.querySelector('.edit').hidden = true;
+    if (b.dataset.a === 'save') act({ action: 'edit', body: el.querySelector('.edit textarea').value });
+  });
+  $('#checkBtn').addEventListener('click', async () => {
+    try {
+      const r = await api('/api/review/lint', { method: 'POST', body: JSON.stringify({ text: $('#checkText').value }) });
+      const hits = [...r.fails, ...r.flags];
+      $('#checkOut').innerHTML = r.clean ? '<span class="badge good">Clean</span>' : hits.map((h) => `<span class="badge bad">${esc(h.rule)}${h.phrase ? ': ' + esc(h.phrase) : ''}${h.line ? ' (line ' + h.line + ')' : ''}</span>`).join(' ');
+    } catch (x) { $('#checkOut').textContent = x.message; }
+  });
+  load(); loadRuns();
+})();
+</script>
+</body>
+</html>

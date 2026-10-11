@@ -1,0 +1,18 @@
+{
+  "name": "Paid Ads Auditor",
+  "job": "weekly ads audit",
+  "cadence": "Mondays 06:00 CT",
+  "max_cards": 1,
+  "sources": [
+    {
+      "type": "pending",
+      "required": true,
+      "label": "Google + Meta ads export Sheet",
+      "why": "the export Sheet (Google Ads script + scheduled Meta report, #1011 Amd C) has not been created and shared to the service account yet; Katherine owns it"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/PAID_ADS_HUB_PLAYBOOK_09.29.2026.md"
+    }
+  ]
+}

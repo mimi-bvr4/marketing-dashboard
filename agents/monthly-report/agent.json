@@ -1,0 +1,39 @@
+{
+  "name": "Monthly Report",
+  "job": "monthly marketing report",
+  "cadence": "the 3rd of each month, 06:00 CT",
+  "max_cards": 1,
+  "max_tokens": 10000,
+  "sources": [
+    {
+      "type": "dashboard",
+      "required": true,
+      "label": "Marketing Dashboard GA4 numbers",
+      "paths": [
+        "/api/ga4/summary",
+        "/api/ga4/sessions",
+        "/api/ga4/elle/summary"
+      ]
+    },
+    {
+      "type": "file",
+      "newest": "07_Marketing_and_Brand/Venue_Review_Pulse_",
+      "label": "the newest review pulse"
+    },
+    {
+      "type": "file",
+      "newest": "07_Marketing_and_Brand/Blog_Agent/rank_reports/",
+      "label": "the newest blog rank report"
+    },
+    {
+      "type": "pending",
+      "label": "HubSpot leads, tours and bookings by source",
+      "why": "which stages count as tour and booked is Katherine's call (ORDER #1015 Part 4 item 9); read-only when wired"
+    },
+    {
+      "type": "pending",
+      "label": "Google + Meta ads export Sheet",
+      "why": "the export Sheet has not been created and shared yet"
+    }
+  ]
+}

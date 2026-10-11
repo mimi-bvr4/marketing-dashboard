@@ -67,6 +67,23 @@ app.use(pageGate);
   }
 }
 
+// ORDER #1015 Part 2: the Review tab, where every marketing agent's DRAFT lands.
+// Same placement rule as photos: below the gate (exec or Katherine only, #1370),
+// above express.static (public/review.html is never served around it).
+{
+  const { pool: reviewPool } = require('./db');
+  const { createReviewRouter } = require('./routes/review');
+  const { createPgStore: createAgentStore, ensureAgentTables } = require('./lib/agent-store');
+  const { lint } = require('./lib/ai-tells');
+  if (reviewPool) {
+    ensureAgentTables(reviewPool).catch(e => console.error('[review] ensureAgentTables:', e.message));
+    app.use(createReviewRouter({ store: createAgentStore(reviewPool, { lint }) }));
+  } else {
+    app.get(['/review', '/review.html', '/api/review/*'],
+      (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
+  }
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', require('./routes/fleet'));
 app.get('/settings/api-tokens', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api-tokens.html')));
