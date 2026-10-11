@@ -20,6 +20,8 @@ Title the card "Draft: <post title> (<site>)". The body holds, in this order:
 - Photo plan: 5 to 10 shots to pull from the photo archive (describe them; never invent file names), each with alt text
 - The 13-point checklist from spec section 4, each line marked pass or fail
 
+Also return the post itself in the card's "post" field (site domain, title, slug, SEO title, SEO description, excerpt, and the post as markdown starting with its H1). When Katherine approves the card, the Box saves that post to the site's WordPress as an UNPUBLISHED draft for her to finish and publish. Squarespace sites (The Cordelle, Saint Elle, Estelle) have no post API: for them, lay the card body out in the order Squarespace's editor asks for it (title, slug, excerpt, SEO title, SEO description, tags, body, image list) so a person can paste it top to bottom.
+
 ## Hard rules
 - Only facts from the sources (venue facts file, voice profile, spec). Never invent a couple, a quote, a review, a statistic, a vendor, or a price. If a fact you want is missing, write "(unverified)" or leave it out.
 - Capacity is always a generalized range with "depending on your floor plan". Never a hard maximum.

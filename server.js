@@ -77,9 +77,12 @@ app.use(pageGate);
   const { lint } = require('./lib/ai-tells');
   if (reviewPool) {
     ensureAgentTables(reviewPool).catch(e => console.error('[review] ensureAgentTables:', e.message));
-    app.use(createReviewRouter({ store: createAgentStore(reviewPool, { lint }) }));
+    const agentStore = createAgentStore(reviewPool, { lint });
+    app.use(createReviewRouter({ store: agentStore }));
+    // ORDER #1658: the Agents page (Katherine edits her bots; same gate, same store).
+    app.use(require('./routes/agents').createAgentsRouter({ store: agentStore }));
   } else {
-    app.get(['/review', '/review.html', '/api/review/*'],
+    app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }

@@ -39,7 +39,7 @@
 <body>
 <header class="topbar"><div class="container topbar-inner">
   <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Review</div>
-  <nav><a href="/">Dashboard</a> · <a href="/photos">Photos</a></nav>
+  <nav><a href="/">Dashboard</a> · <a href="/agents">Agents</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
   <p class="empty" style="margin:0">Every marketing agent drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, posts, sends or spends.</p>
@@ -97,6 +97,13 @@
       $('#runs').innerHTML = runs.length ? runs.map((r) => `<span class="run ${r.status === 'failed' ? 'failed' : ''}">${esc(r.agent)}: ${esc(r.status)} ${fmt(r.started_at)}${(r.unavailable || []).length ? ` · ${(r.unavailable || []).length} source(s) missing` : ''}</span>`).join('') : '<span>No agent has run yet.</span>';
     } catch (e) { $('#runs').textContent = 'Runs: ' + e.message; }
   }
+  function handoffHtml(c) {
+    const h = c.handoff; const post = c.payload && c.payload.post;
+    if (!post) return '';
+    if (!h) return c.status === 'ready' ? `<p class="meta">Waiting for the Box to save this as an unpublished WordPress draft on ${esc(post.site || 'the site')} (it checks every 15 minutes).</p>` : '';
+    if (h.ok) return `<p class="meta"><span class="badge good">WordPress draft saved</span> <a href="${esc(h.edit_link)}" target="_blank" rel="noopener">Open draft #${esc(h.wp_id)} in WordPress</a>. Not published; finish and publish it there.</p>`;
+    return `<p class="meta"><span class="badge bad">${h.alarm ? 'ALARM' : 'Not sent to WordPress'}</span> ${esc(h.why)}${h.edit_link ? ` <a href="${esc(h.edit_link)}" target="_blank" rel="noopener">open</a>` : ''}</p>`;
+  }
   function cardHtml(c) {
     const tells = (c.checks && c.checks.ai_tells_summary) || '';
     const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
@@ -106,6 +113,8 @@
         ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
       <h3 style="margin:0">${esc(c.title)}</h3>
       <div class="body">${md(c.body)}</div>
+      ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}
+      ${handoffHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
       <div class="actions">
@@ -113,7 +122,7 @@
         ${c.status === 'draft' ? `<button data-a="approve">Approve</button><button data-a="edit">Edit</button>
         <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>` : ''}
       </div>
-      <div class="edit" hidden><textarea>${esc(c.body)}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
+      <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : c.body)}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
       <p class="err" hidden></p>
     </article>`;
   }
@@ -137,7 +146,7 @@
     const el = b.closest('.card'); const id = Number(el.dataset.id); const c = cache.find((x) => x.id === id);
     const err = el.querySelector('.err'); err.hidden = true;
     const act = async (body) => { try { await api('/api/review/cards/' + id, { method: 'POST', body: JSON.stringify(body) }); await load(); await loadRuns(); } catch (x) { err.textContent = x.message; err.hidden = false; } };
-    if (b.dataset.a === 'copy') { await navigator.clipboard.writeText(c.body); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy text'), 1500); }
+    if (b.dataset.a === 'copy') { await navigator.clipboard.writeText(c.payload && c.payload.post ? c.payload.post.content_md : c.body); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy text'), 1500); }
     if (b.dataset.a === 'approve') act({ action: 'approve' });
     if (b.dataset.a === 'reject') act({ action: 'reject', reason: el.querySelector('[data-f=reason]').value });
     if (b.dataset.a === 'edit') el.querySelector('.edit').hidden = false;

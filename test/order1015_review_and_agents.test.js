@@ -263,8 +263,8 @@ test('file source: reads inside the tree, picks the newest matching file, refuse
 });
 
 test('dashboard source: no fleet key is "unavailable"; with one it sends the key as a Bearer', async () => {
-  const none = await gather([{ type: 'dashboard', paths: ['/api/ga4/summary'] }], { env: {}, lint });
-  assert.match(none.unavailable[0].why, /MARKETING_FLEET_KEY/);
+  const none = await gather([{ type: 'dashboard', paths: ['/api/ga4/summary'] }], { env: {}, lint, keychain: () => '' });
+  assert.match(none.unavailable[0].why, /marketing-fleet-key/);
   let seen;
   const web = async (url, opt) => { seen = opt.headers.Authorization; return { status: 200, json: async () => ({ sessions: 5 }) }; };
   const ok = await gather([{ type: 'dashboard', paths: ['/api/ga4/summary'] }], { env: { MARKETING_FLEET_KEY: 'mkt_test' }, fetch: web, lint });

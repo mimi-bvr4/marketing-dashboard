@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agents · Marketing</title>
+<!-- ORDER #1658: the Agents page. Katherine edits what each marketing bot does;
+     every save is a new version the Box's next run uses. The fence (drafts only,
+     nothing published, sent or spent, the AI-tells lint) is added by the runner
+     and cannot be edited here. Token layer served by dispatch (#1210). -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  .agent { border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); background: var(--ihg-color-surface); padding: var(--ihg-space-4); display: grid; gap: var(--ihg-space-3); }
+  .head { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); align-items: baseline; justify-content: space-between; }
+  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); }
+  .badge { font-size: var(--ihg-text-xs); padding: 0 var(--ihg-space-2); border-radius: var(--ihg-radius); background: var(--ihg-color-surface-muted); }
+  .badge.on { background: #e8f5ee; color: #1d6b42; }
+  .badge.off { background: #fdecea; color: #b42318; }
+  .badge.pending { background: #fff4e5; color: #8a5300; }
+  textarea { width: 100%; min-height: 22rem; font: 13px/1.5 ui-monospace, Menlo, monospace; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); align-items: center; }
+  .row input[type=text] { flex: 1 1 18rem; min-height: var(--ihg-target-min); }
+  .err { color: #b42318; font-size: var(--ihg-text-sm); }
+  .ok { color: #1d6b42; font-size: var(--ihg-text-sm); }
+  ul.src { margin: 0; padding-left: 1.2rem; font-size: var(--ihg-text-sm); }
+  table.hist { border-collapse: collapse; font-size: var(--ihg-text-xs); width: 100%; }
+  table.hist td, table.hist th { border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); padding: 4px 6px; text-align: left; }
+  .fence { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-muted); margin: 0; }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Agents</div>
+  <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/photos">Photos</a></nav>
+</div></header>
+<main class="container wrap">
+  <p class="fence">Edit what each bot does. Every save is a new version, the Box uses it on the bot's next run, and any earlier version can be put back. What no edit can change: bots only write <strong>drafts</strong> into Review, never publish, post, send or spend, and every draft is checked for em dashes and AI tells.</p>
+  <div id="list"><p class="meta">Loading…</p></div>
+</main>
+<script>
+(function () {
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (d) => d ? new Date(d).toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }).replace(/\//g, '.') : '';
+  async function api(url, opt) {
+    const r = await fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, opt || {}));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || ('error ' + r.status));
+    return j;
+  }
+  let agents = [];
+  function view(a) {
+    const c = a.current;
+    const on = c ? c.enabled : true;
+    const n = c ? c.max_cards : a.default_max_cards;
+    const run = a.last_run;
+    return `<section class="agent" data-slug="${a.slug}">
+      <div class="head"><h2 style="margin:0">${esc(a.name)}</h2>
+        <div class="meta"><span class="badge ${on ? 'on' : 'off'}">${on ? 'On' : 'Paused'}</span><span>${esc(a.job)}</span><span>${esc(a.cadence)}</span></div></div>
+      <div class="meta"><span>${c ? `Instructions v${c.version}, saved by ${esc(c.edited_by)} ${fmt(c.created_at)}${c.note ? ' (' + esc(c.note) + ')' : ''}` : 'Default instructions (never edited)'}</span>
+        <span>${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}${(run.unavailable || []).length ? ', ' + run.unavailable.length + ' source(s) missing' : ''}` : 'Has not run yet'}</span>
+        ${a.waiting ? '<span class="badge pending">Run waiting</span>' : ''}</div>
+      <details><summary>What it reads (${a.sources.length})</summary><ul class="src">${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="badge pending">not connected</span> ${esc(s.why || '')}` : ''}</li>`).join('')}</ul>
+        <p class="meta">Adding a source is a code change; ask Mimi.</p></details>
+      <details><summary>Run it now</summary>
+        <div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request"><button data-a="run">Run now</button></div>
+        <p class="meta">The Box picks it up within 15 minutes; the draft lands in Review.</p></details>
+      <details><summary>Edit instructions and settings</summary>
+        <textarea data-f="skill" aria-label="Instructions">${esc(c ? c.skill_md : a.default_skill)}</textarea>
+        <div class="row">
+          <label><input type="checkbox" data-f="enabled" ${on ? 'checked' : ''}> On (runs on its schedule)</label>
+          <label>Drafts per run <select data-f="max">${[1, 2, 3, 4, 5, 6, 8, 10].map((x) => `<option ${x === n ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+          <input type="text" data-f="note" placeholder="What you changed (optional)" aria-label="Note">
+          <button data-a="save">Save as a new version</button><button data-a="default">Back to the default</button>
+        </div></details>
+      <details data-h><summary>Version history</summary><div data-f="hist"><p class="meta">Open to load.</p></div></details>
+      <p class="msg" hidden></p>
+    </section>`;
+  }
+  async function load() {
+    try { agents = (await api('/api/agents')).agents; document.getElementById('list').innerHTML = agents.map(view).join(''); }
+    catch (e) { document.getElementById('list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  }
+  function say(el, text, ok) { const m = el.querySelector('.msg'); m.className = 'msg ' + (ok ? 'ok' : 'err'); m.textContent = text; m.hidden = false; }
+  document.getElementById('list').addEventListener('toggle', async (e) => {
+    const d = e.target; if (!d.matches || !d.matches('details[data-h]') || !d.open) return;
+    const el = d.closest('.agent'); const slug = el.dataset.slug;
+    try {
+      const { versions } = await api(`/api/agents/${slug}/history`);
+      el.querySelector('[data-f=hist]').innerHTML = versions.length ? `<table class="hist"><tr><th>Version</th><th>Saved</th><th>By</th><th>On</th><th>Drafts</th><th>Note</th><th></th></tr>${versions.map((v) => `<tr><td>v${v.version}</td><td>${fmt(v.created_at)}</td><td>${esc(v.edited_by)}</td><td>${v.enabled ? 'yes' : 'paused'}</td><td>${v.max_cards}</td><td>${esc(v.note || '')}</td><td><button data-a="revert" data-v="${v.version}">Put back</button></td></tr>`).join('')}</table>` : '<p class="meta">Never edited; it runs the default instructions.</p>';
+    } catch (x) { say(el, x.message); }
+  }, true);
+  document.getElementById('list').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const el = b.closest('.agent'); const slug = el.dataset.slug; const a = agents.find((x) => x.slug === slug);
+    const q = (f) => el.querySelector(`[data-f=${f}]`);
+    try {
+      if (b.dataset.a === 'run') { await api(`/api/agents/${slug}/run`, { method: 'POST', body: JSON.stringify({ ask: q('ask').value }) }); say(el, 'Queued. The draft will be in Review within about 15 minutes.', true); }
+      if (b.dataset.a === 'save') { const r = await api(`/api/agents/${slug}`, { method: 'POST', body: JSON.stringify({ skill_md: q('skill').value, enabled: q('enabled').checked, max_cards: Number(q('max').value), note: q('note').value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), `Saved as v${r.settings.version}. The next run uses it.`, true); }
+      if (b.dataset.a === 'default') { q('skill').value = a.default_skill; say(el, 'Default text loaded. Press Save to make it the new version.', true); }
+      if (b.dataset.a === 'revert') { const r = await api(`/api/agents/${slug}/revert`, { method: 'POST', body: JSON.stringify({ version: Number(b.dataset.v) }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), `Put back as v${r.settings.version}.`, true); }
+    } catch (x) { say(el, x.message); }
+  });
+  load();
+})();
+</script>
+</body>
+</html>

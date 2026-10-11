@@ -1,0 +1,22 @@
+#!/bin/bash
+# ORDER #1658: the marketing agents' 15-minute job, by
+# com.infinitybrain.marketing-handoff.plist.
+#   1. kh_route.js      Katherine's GREEN Drive orders that name one agent run that agent now.
+#   2. agent_requests.js "Run now" requests from the Agents page; then mirrors each
+#                       agent's current instructions into 07_Marketing_and_Brand/Agents/.
+#   3. agent_handoff.js approved Bloggy Bob cards become UNPUBLISHED WordPress drafts.
+# Drafts only; a person publishes. Each step runs even if an earlier one fails.
+set -u
+cd "$HOME/repos/marketing-dashboard" || { echo "agents_handoff: no ~/repos/marketing-dashboard"; exit 1; }
+echo "=== agents 15-minute job $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT') ==="
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/kh_route.js'
+r1=$?
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_requests.js'
+r3=$?
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_handoff.js'
+r2=$?
+echo "=== done: route exit $r1, requests exit $r3, handoff exit $r2 ==="
+[ "$r1" -eq 0 ] && [ "$r2" -eq 0 ] && [ "$r3" -eq 0 ]

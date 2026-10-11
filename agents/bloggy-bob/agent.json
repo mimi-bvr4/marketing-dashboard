@@ -1,19 +1,54 @@
 {
   "name": "Bloggy Bob",
   "job": "blog draft",
-  "cadence": "on request (Katherine's order or --ask); keyword map refresh Mondays",
+  "cadence": "on request (--ask, or a Katherine order naming Bob)",
   "max_cards": 1,
   "max_tokens": 12000,
   "sources": [
-    { "type": "request", "required": true, "label": "the request" },
-    { "type": "file", "path": "07_Marketing_and_Brand/BLOG_AGENT_SPEC_10.09.2026.md", "required": true },
-    { "type": "file", "path": "07_Marketing_and_Brand/BLOGGY_BOB_VOICE_PROFILE_10.09.2026.md" },
-    { "type": "file", "path": "07_Marketing_and_Brand/IH_Brand_Voice_Guide_DRAFT_09.29.2026.md" },
-    { "type": "file", "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md" },
-    { "type": "file", "path": "07_Marketing_and_Brand/Blog_Agent/KEYWORD_MAP.md" },
-    { "type": "file", "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md" },
-    { "type": "wp_posts", "label": "posts already published on our WordPress sites",
-      "sites": ["infinityhospitalitygroup.com", "dreameventsandcatering.com", "dailydishcatering.com", "thebridgebuilding.com",
-                "thebelltower.com", "cherokeedock.com", "saddlewoodsfarm.com", "nashvilleeventbartending.com"] }
-  ]
+    {
+      "type": "request",
+      "required": true,
+      "label": "the request"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/BLOG_AGENT_SPEC_10.09.2026.md",
+      "required": true
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/BLOGGY_BOB_VOICE_PROFILE_10.09.2026.md"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/IH_Brand_Voice_Guide_DRAFT_09.29.2026.md"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/Blog_Agent/KEYWORD_MAP.md"
+    },
+    {
+      "type": "file",
+      "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md"
+    },
+    {
+      "type": "wp_posts",
+      "label": "posts already published on our WordPress sites",
+      "sites": [
+        "infinityhospitalitygroup.com",
+        "dreameventsandcatering.com",
+        "dailydishcatering.com",
+        "thebridgebuilding.com",
+        "thebelltower.com",
+        "cherokeedock.com",
+        "saddlewoodsfarm.com",
+        "nashvilleeventbartending.com"
+      ]
+    }
+  ],
+  "post_fields": true
 }

@@ -69,8 +69,16 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     log(model ? `model ${model.model}; key from ${k.source}` : 'NO MODEL KEY: agents will record measured sources only');
   }
   let failed = 0;
+  const ymd = args.date || nashvilleYmd();
+  if (args.due && !args.dry && new Date(ymd + 'T12:00:00Z').getUTCDay() === 1) {
+    const { writeDigest } = require('../lib/agent-digest');
+    const d = await writeDigest({ store });
+    log(`digest: card #${d.id}`);
+  }
   for (const slug of slugs) {
-    const r = await runAgent({ slug, store, llm: model, ask: args.ask, env, fetchImpl: fetchImpl || globalThis.fetch, log, dryRun: args.dry });
+    const r = await runAgent({ slug, store, llm: model, ask: args.ask, env, fetchImpl: fetchImpl || globalThis.fetch, log, dryRun: args.dry,
+      scheduled: args.due });
+    if (r.skipped) { log(`${slug}: skipped (${r.skipped})`); continue; }
     log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
     if (args.dry) for (const c of r.cards) log(`\n----- ${c.title} -----\n${c.body}\n`);
     if (!r.ok) failed++;
