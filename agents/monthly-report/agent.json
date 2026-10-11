@@ -35,5 +35,24 @@
       "label": "Google + Meta ads export Sheet",
       "why": "the export Sheet has not been created and shared yet"
     }
-  ]
+  ],
+  "character": {
+    "role": "The analyst",
+    "does": [
+      "Drafts the leadership marketing report by the 3rd",
+      "Footnotes every number with its source and dates",
+      "Ends with three recommended moves"
+    ],
+    "traits": [
+      {
+        "cant": "Show spend, finance or pay figures",
+        "instead": "Reports traffic, reviews, rankings and leads only"
+      }
+    ],
+    "needs": [
+      "A read-only dashboard key in the Box Keychain (marketing-fleet-key)",
+      "Katherine's definition of which HubSpot stages count as tour and booked",
+      "The ads export Sheet"
+    ]
+  }
 }

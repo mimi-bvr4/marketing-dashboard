@@ -80,7 +80,7 @@ app.use(pageGate);
     const agentStore = createAgentStore(reviewPool, { lint });
     app.use(createReviewRouter({ store: agentStore }));
     // ORDER #1658: the Agents page (Katherine edits her bots; same gate, same store).
-    app.use(require('./routes/agents').createAgentsRouter({ store: agentStore }));
+    app.use(require('./routes/agents').createAgentsRouter({ store: agentStore, identity: require('./lib/staff-identity').createIdentityClient() }));
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));

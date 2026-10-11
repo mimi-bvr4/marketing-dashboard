@@ -7,6 +7,12 @@
 //   POST /api/agents/:slug              { skill_md, enabled, max_cards, note }  -> a NEW version
 //   POST /api/agents/:slug/revert       { version }  -> a new version copying that one
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
+//   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
+//   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
+//
+// CHARACTER CARDS: each agent is shown as a character: Does / Traits / Needs
+// (agent.json "character"), plus every ask and where it stands. Asks the Box
+// sorted as "cant" show under Traits with what the bot does instead.
 //
 // ACCESS: below the #654/#1370 page gate, exec or Katherine only (req.mktUser),
 // recorded by email. A fleet key never reaches here.
@@ -29,7 +35,29 @@ function sourceView(src) {
   return { label, type: src.type, required: !!src.required, pending: src.type === 'pending', why: src.why || null };
 }
 
-function createAgentsRouter({ store }) {
+// Mimi's ruling 10.11.2026: an instruction change from an ask waits for her.
+// "Exec" is Dispatch's rung 3 (the #1370 rule), never a name string.
+async function isExec(req, identity) {
+  const email = personOf(req);
+  if (!email || !identity) return false;
+  const who = await identity.lookup(email);
+  return !!who.active && Number(who.rung) >= 3;
+}
+
+function characterOf(d, asks, run) {
+  const c = d.character || { role: d.job, does: [], traits: [], needs: [] };
+  const applied = asks.filter((a) => a.status === 'applied');
+  const cants = asks.filter((a) => a.status === 'cant');
+  const missing = ((run && run.unavailable) || []).map((u) => `${u.label}: ${u.why}`);
+  return {
+    role: c.role,
+    does: [...(c.does || []), ...applied.map((a) => `${a.ask} (added from ask #${a.id})`)],
+    traits: [...(c.traits || []), ...cants.map((a) => ({ cant: a.ask, instead: (a.triage && a.triage.instead) || '', ask_id: a.id }))],
+    needs: [...new Set([...(c.needs || []), ...missing])],
+  };
+}
+
+function createAgentsRouter({ store, identity }) {
   const r = express.Router();
   const need = (req, res, next) => (personOf(req) ? next() : res.status(403).json({ error: 'Signed-in leadership only.' }));
   const known = (req, res, next) => (listAgents().includes(req.params.slug) ? next() : res.status(404).json({ error: 'no such agent' }));
@@ -40,15 +68,23 @@ function createAgentsRouter({ store }) {
     const current = new Map((await store.allCurrentSettings()).map((s) => [s.agent, s]));
     const runs = new Map((await store.runs()).map((x) => [x.agent, x]));
     const queued = await store.runRequests(50);
-    res.json({ agents: listAgents().map((slug) => {
+    const allAsks = await store.listAsks();
+    const exec = await isExec(req, identity);
+    res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
+      const asks = allAsks.filter((a) => a.agent === slug);
       return { slug, name: d.name, job: d.job, cadence: d.cadence, sources: (d.sources || []).map(sourceView),
         default_skill: d.skill, default_max_cards: d.max_cards || 3,
         current: s ? { version: s.version, skill_md: s.skill_md, enabled: s.enabled, max_cards: s.max_cards,
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
-        waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length };
+        waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
+        character: characterOf(d, asks, runs.get(slug)),
+        asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
+          reason: a.triage ? a.triage.reason : null, instead: a.triage ? a.triage.instead : null,
+          proposed: a.status === 'awaiting_exec' && a.triage ? a.triage.proposed_skill_md : null,
+          order_file: a.order_file, decided_by: a.decided_by, note: a.note })) };
     }) });
   });
 
@@ -76,7 +112,39 @@ function createAgentsRouter({ store }) {
     res.json({ request: out.request });
   });
 
+  r.post('/api/agents/:slug/asks', need, known, async (req, res) => {
+    const out = await store.createAsk(req.params.slug, (req.body || {}).ask, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ ask: out.ask });
+  });
+
+  r.post('/api/agents/asks/:id/decide', need, async (req, res) => {
+    if (!(await isExec(req, identity))) return res.status(403).json({ error: 'Only an exec approves an instruction change from an ask.' });
+    const id = Number(req.params.id);
+    const a = Number.isInteger(id) ? await store.getAsk(id) : null;
+    if (!a) return res.status(404).json({ error: 'no such ask' });
+    if (a.status !== 'awaiting_exec' || !a.triage || !a.triage.proposed_skill_md) return res.status(409).json({ error: 'this ask is not waiting for approval' });
+    const who = personOf(req);
+    const { decision, note } = req.body || {};
+    if (decision === 'decline') {
+      const d = await store.updateAsk(id, { status: 'declined', decided_by: who, decided_at: new Date(), note: note ? String(note).slice(0, 400) : null });
+      return res.json({ ask: d });
+    }
+    if (decision !== 'apply') return res.status(400).json({ error: "decision must be 'apply' or 'decline'" });
+    const cur = await store.currentSettings(a.agent);
+    if ((cur ? cur.version : 0) !== a.triage.base_version) {
+      await store.updateAsk(id, { status: 'new', note: 'instructions changed after this was sorted; the Box sorts it again' });
+      return res.status(409).json({ error: 'The instructions changed since this was proposed. The Box will sort the ask again within 15 minutes.' });
+    }
+    const d = loadAgent(a.agent);
+    const saved = await store.saveSettings(a.agent, { skill_md: a.triage.proposed_skill_md, enabled: cur ? cur.enabled : true,
+      max_cards: cur ? cur.max_cards : (d.max_cards || 3), note: `ask #${id} from ${a.asked_by}, approved by ${who}`, who });
+    if (saved.error) return res.status(400).json({ error: saved.error });
+    const done = await store.updateAsk(id, { status: 'applied', decided_by: who, decided_at: new Date() });
+    res.json({ ask: done, settings: saved.settings });
+  });
+
   return r;
 }
 
-module.exports = { createAgentsRouter, sourceView };
+module.exports = { createAgentsRouter, sourceView, characterOf, isExec };

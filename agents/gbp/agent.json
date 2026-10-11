@@ -27,5 +27,29 @@
       "label": "Google Business Profile API",
       "why": "API access requested 10.09.2026 (case 2-2788000041229); re-probe on or after 10.20.2026 (ORDER #1589). Until then replies are drafted from the public reviews in the review pulse."
     }
-  ]
+  ],
+  "character": {
+    "role": "The concierge",
+    "does": [
+      "Drafts a reply to each new public review, warm for 5 stars, calm and flagged RED for 3 stars or less",
+      "Suggests a Google Business post for the quietest venue"
+    ],
+    "traits": [
+      {
+        "cant": "Post a reply or a Google post",
+        "instead": "Drafts it with a copy button for a person to post"
+      },
+      {
+        "cant": "Read Google reviews directly yet",
+        "instead": "Works from the monthly review pulse until Google approves API access"
+      },
+      {
+        "cant": "Promise a refund, discount or change",
+        "instead": "Offers a direct line to sales@"
+      }
+    ],
+    "needs": [
+      "Google Business Profile API approval (re-check on or after 10.20.2026)"
+    ]
+  }
 }

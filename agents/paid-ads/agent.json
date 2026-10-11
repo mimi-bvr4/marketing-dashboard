@@ -14,5 +14,24 @@
       "type": "file",
       "path": "07_Marketing_and_Brand/PAID_ADS_HUB_PLAYBOOK_09.29.2026.md"
     }
-  ]
+  ],
+  "character": {
+    "role": "The auditor",
+    "does": [
+      "Weekly audit of Google and Meta ads: wasted search terms, wrong landing pages, our venues bidding against each other"
+    ],
+    "traits": [
+      {
+        "cant": "Change a campaign, budget, bid or ad",
+        "instead": "Writes the change for the agency (K&M) to make"
+      },
+      {
+        "cant": "Show dollar figures",
+        "instead": "Shows trend arrows and percentages"
+      }
+    ],
+    "needs": [
+      "The Google + Meta ads export Sheet, shared to the service account"
+    ]
+  }
 }

@@ -19,5 +19,24 @@
       "newest": "07_Marketing_and_Brand/Venue_Review_Pulse_",
       "label": "the newest review pulse"
     }
-  ]
+  ],
+  "character": {
+    "role": "The publicist",
+    "does": [
+      "Quarterly refresh packs for The Knot, WeddingWire, Zola and the rest: new description, photo picks with alt text, a review-request message"
+    ],
+    "traits": [
+      {
+        "cant": "Log in to a directory",
+        "instead": "Writes the pack; a person pastes it"
+      },
+      {
+        "cant": "Quote prices from HubSpot",
+        "instead": "Uses 'starting at' wording only from a source Katherine approves"
+      }
+    ],
+    "needs": [
+      "Katherine's directory list, which are paid, and who owns each login"
+    ]
+  }
 }

@@ -14,26 +14,26 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
-  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
-  .tabs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); }
+  .wrap { display: grid; gap: var(--ihg-space-6, 24px); padding-block: var(--ihg-space-6, 24px) var(--ihg-space-12, 48px); }
+  .tabs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2, 8px); }
   .tabs button[aria-pressed="true"] { background: var(--ihg-color-accent-subtle); font-weight: var(--ihg-weight-semibold); }
-  .runs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
-  .run { border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-1) var(--ihg-space-2); }
+  .runs { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2, 8px); font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); }
+  .run { border: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); border-radius: var(--ihg-radius, 6px); padding: var(--ihg-space-1, 4px) var(--ihg-space-2, 8px); }
   .run.failed { border-color: var(--ihg-color-danger, #b42318); color: var(--ihg-color-danger, #b42318); }
-  .card { border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); background: var(--ihg-color-surface); padding: var(--ihg-space-4); display: grid; gap: var(--ihg-space-3); }
-  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); }
-  .badge { font-size: var(--ihg-text-xs); padding: 0 var(--ihg-space-2); border-radius: var(--ihg-radius); background: var(--ihg-color-surface-muted); }
+  .card { border: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface, #fff); padding: var(--ihg-space-4, 16px); display: grid; gap: var(--ihg-space-3, 12px); }
+  .meta { font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); }
+  .badge { font-size: var(--ihg-text-xs, 12px); padding: 0 var(--ihg-space-2, 8px); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface-muted, #f4f5f7); }
   .badge.bad { background: #fdecea; color: #b42318; }
   .badge.good { background: #e8f5ee; color: #1d6b42; }
-  .body { font-size: var(--ihg-text-sm); line-height: 1.55; overflow-x: auto; }
-  .body table { border-collapse: collapse; font-size: var(--ihg-text-xs); }
-  .body td, .body th { border: var(--ihg-border-width) solid var(--ihg-color-border); padding: 2px 6px; text-align: left; vertical-align: top; }
-  .actions { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .body { font-size: var(--ihg-text-sm, 14px); line-height: 1.55; overflow-x: auto; }
+  .body table { border-collapse: collapse; font-size: var(--ihg-text-xs, 12px); }
+  .body td, .body th { border: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); padding: 2px 6px; text-align: left; vertical-align: top; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2, 8px); align-items: center; }
   .actions input { flex: 1 1 16rem; min-height: var(--ihg-target-min); }
-  textarea { width: 100%; min-height: 16rem; font: inherit; font-size: var(--ihg-text-sm); }
-  .err { color: #b42318; font-size: var(--ihg-text-sm); }
+  textarea { width: 100%; min-height: 16rem; font: inherit; font-size: var(--ihg-text-sm, 14px); }
+  .err { color: #b42318; font-size: var(--ihg-text-sm, 14px); }
   details.check textarea { min-height: 8rem; }
-  .empty { color: var(--ihg-color-text-muted); }
+  .empty { color: var(--ihg-color-text-muted, #6d6e71); }
 </style>
 </head>
 <body>

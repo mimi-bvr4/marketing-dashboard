@@ -15,23 +15,36 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
-  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
-  .agent { border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); background: var(--ihg-color-surface); padding: var(--ihg-space-4); display: grid; gap: var(--ihg-space-3); }
-  .head { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); align-items: baseline; justify-content: space-between; }
-  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); }
-  .badge { font-size: var(--ihg-text-xs); padding: 0 var(--ihg-space-2); border-radius: var(--ihg-radius); background: var(--ihg-color-surface-muted); }
+  .wrap { display: grid; gap: var(--ihg-space-6, 24px); padding-block: var(--ihg-space-6, 24px) var(--ihg-space-12, 48px); }
+  .agent { border: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface, #fff); padding: var(--ihg-space-4, 16px); display: grid; gap: var(--ihg-space-3, 12px); }
+  .head { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); align-items: baseline; justify-content: space-between; }
+  .meta { font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); }
+  .badge { font-size: var(--ihg-text-xs, 12px); padding: 0 var(--ihg-space-2, 8px); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface-muted, #f4f5f7); }
   .badge.on { background: #e8f5ee; color: #1d6b42; }
   .badge.off { background: #fdecea; color: #b42318; }
   .badge.pending { background: #fff4e5; color: #8a5300; }
   textarea { width: 100%; min-height: 22rem; font: 13px/1.5 ui-monospace, Menlo, monospace; }
-  .row { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); align-items: center; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); align-items: center; }
   .row input[type=text] { flex: 1 1 18rem; min-height: var(--ihg-target-min); }
-  .err { color: #b42318; font-size: var(--ihg-text-sm); }
-  .ok { color: #1d6b42; font-size: var(--ihg-text-sm); }
-  ul.src { margin: 0; padding-left: 1.2rem; font-size: var(--ihg-text-sm); }
-  table.hist { border-collapse: collapse; font-size: var(--ihg-text-xs); width: 100%; }
-  table.hist td, table.hist th { border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); padding: 4px 6px; text-align: left; }
-  .fence { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-muted); margin: 0; }
+  .err { color: #b42318; font-size: var(--ihg-text-sm, 14px); }
+  .ok { color: #1d6b42; font-size: var(--ihg-text-sm, 14px); }
+  ul.src { margin: 0; padding-left: 1.2rem; font-size: var(--ihg-text-sm, 14px); }
+  table.hist { border-collapse: collapse; font-size: var(--ihg-text-xs, 12px); width: 100%; }
+  table.hist td, table.hist th { border-bottom: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); padding: 4px 6px; text-align: left; }
+  .fence { font-size: var(--ihg-text-sm, 14px); color: var(--ihg-color-text-muted, #6d6e71); margin: 0; }
+  .role { font-size: var(--ihg-text-sm, 14px); color: var(--ihg-color-text-muted, #6d6e71); font-style: italic; }
+  .cols { display: grid; gap: var(--ihg-space-4, 16px); }
+  @media (min-width: 56rem) { .cols { grid-template-columns: 1fr 1fr 1fr; } }
+  .cols h3 { font-size: var(--ihg-text-sm, 14px); margin: 0 0 var(--ihg-space-1, 4px); text-transform: uppercase; letter-spacing: .04em; }
+  .cols ul { margin: 0; padding-left: 1.1rem; font-size: var(--ihg-text-sm, 14px); }
+  .cols li { margin-bottom: 4px; }
+  .instead { color: var(--ihg-color-text-muted, #6d6e71); }
+  .asks { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--ihg-space-2, 8px); font-size: var(--ihg-text-sm, 14px); }
+  .asks li { border-left: 3px solid var(--ihg-color-border, #d9dbe0); padding-left: var(--ihg-space-2, 8px); }
+  .st-applied, .st-built { border-left-color: #1d6b42 !important; }
+  .st-cant, .st-declined, .st-failed { border-left-color: #b42318 !important; }
+  .st-awaiting_exec, .st-building, .st-new, .st-sorting { border-left-color: #8a5300 !important; }
+  pre.proposed { white-space: pre-wrap; font-size: 12px; max-height: 20rem; overflow: auto; background: var(--ihg-color-surface-muted, #f4f5f7); padding: var(--ihg-space-2, 8px); }
 </style>
 </head>
 <body>
@@ -40,7 +53,7 @@
   <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
-  <p class="fence">Edit what each bot does. Every save is a new version, the Box uses it on the bot's next run, and any earlier version can be put back. What no edit can change: bots only write <strong>drafts</strong> into Review, never publish, post, send or spend, and every draft is checked for em dashes and AI tells.</p>
+  <p class="fence">Each bot is a character: what it <strong>does</strong>, its <strong>traits</strong> (what it can't do, and what it does instead), and what it still <strong>needs</strong>. Ask any of them for a new ability: the Box sorts the ask within 15 minutes into an instruction change (Mimi approves it), a build (filed to the Box), or a can't (added to its traits, with what it can do instead). You can also edit what each bot does directly. Every save is a new version, the Box uses it on the bot's next run, and any earlier version can be put back. What no edit can change: bots only write <strong>drafts</strong> into Review, never publish, post, send or spend, and every draft is checked for em dashes and AI tells.</p>
   <div id="list"><p class="meta">Loading…</p></div>
 </main>
 <script>
@@ -54,6 +67,33 @@
     return j;
   }
   let agents = [];
+  let exec = false;
+  const STATUS = { new: 'Waiting for the Box to sort it', sorting: 'Being sorted', awaiting_exec: 'Instruction change proposed, waiting for Mimi',
+    applied: 'Added', declined: 'Declined', building: 'Being built', built: 'Built', cant: "Can't", failed: 'The Box could not sort it' };
+  function askHtml(a) {
+    return `<li class="st-${a.status}"><strong>${esc(STATUS[a.status] || a.status)}:</strong> ${esc(a.ask)} <span class="meta">#${a.id}, ${esc(a.asked_by)} ${fmt(a.created_at)}</span>
+      ${a.reason ? `<div class="meta">${esc(a.reason)}</div>` : ''}
+      ${a.status === 'cant' && a.instead ? `<div>Instead: ${esc(a.instead)}</div>` : ''}
+      ${a.status === 'building' && a.order_file ? `<div class="meta">Filed to the Box as ${esc(a.order_file)}</div>` : ''}
+      ${a.status === 'declined' && a.note ? `<div class="meta">Mimi: ${esc(a.note)}</div>` : ''}
+      ${a.status === 'failed' && a.note ? `<div class="meta">${esc(a.note)}</div>` : ''}
+      ${a.proposed ? `<details><summary>The proposed new instructions</summary><pre class="proposed">${esc(a.proposed)}</pre></details>
+        ${exec ? `<div class="row"><input type="text" data-f="dnote" placeholder="Note (optional)" aria-label="Note"><button data-a="apply" data-id="${a.id}">Apply</button><button data-a="decline" data-id="${a.id}">Decline</button></div>` : ''}` : ''}
+    </li>`;
+  }
+  function characterHtml(a) {
+    const c = a.character;
+    const list = (xs, f) => xs.length ? `<ul>${xs.map(f).join('')}</ul>` : '<p class="meta">Nothing listed.</p>';
+    return `<p class="role">${esc(c.role)}</p>
+      <div class="cols">
+        <div><h3>Does</h3>${list(c.does, (x) => `<li>${esc(x)}</li>`)}</div>
+        <div><h3>Traits</h3>${list(c.traits, (t) => `<li>Can't: ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</li>`)}</div>
+        <div><h3>Needs</h3>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}</div>
+      </div>
+      <div><h3 style="font-size:var(--ihg-text-sm, 14px);margin:0 0 var(--ihg-space-1, 4px)">Ask for a new ability</h3>
+        <div class="row"><input type="text" data-f="newask" placeholder="e.g. add a short FAQ to every post, or reply to Knot reviews too" aria-label="New ability"><button data-a="ask">Ask</button></div></div>
+      ${a.asks.length ? `<details ${a.asks.some((x) => ['awaiting_exec', 'new', 'sorting'].includes(x.status)) ? 'open' : ''}><summary>Asked for (${a.asks.length})</summary><ul class="asks">${a.asks.map(askHtml).join('')}</ul></details>` : ''}`;
+  }
   function view(a) {
     const c = a.current;
     const on = c ? c.enabled : true;
@@ -62,6 +102,7 @@
     return `<section class="agent" data-slug="${a.slug}">
       <div class="head"><h2 style="margin:0">${esc(a.name)}</h2>
         <div class="meta"><span class="badge ${on ? 'on' : 'off'}">${on ? 'On' : 'Paused'}</span><span>${esc(a.job)}</span><span>${esc(a.cadence)}</span></div></div>
+      ${characterHtml(a)}
       <div class="meta"><span>${c ? `Instructions v${c.version}, saved by ${esc(c.edited_by)} ${fmt(c.created_at)}${c.note ? ' (' + esc(c.note) + ')' : ''}` : 'Default instructions (never edited)'}</span>
         <span>${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}${(run.unavailable || []).length ? ', ' + run.unavailable.length + ' source(s) missing' : ''}` : 'Has not run yet'}</span>
         ${a.waiting ? '<span class="badge pending">Run waiting</span>' : ''}</div>
@@ -83,7 +124,7 @@
     </section>`;
   }
   async function load() {
-    try { agents = (await api('/api/agents')).agents; document.getElementById('list').innerHTML = agents.map(view).join(''); }
+    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; document.getElementById('list').innerHTML = agents.map(view).join(''); }
     catch (e) { document.getElementById('list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
   function say(el, text, ok) { const m = el.querySelector('.msg'); m.className = 'msg ' + (ok ? 'ok' : 'err'); m.textContent = text; m.hidden = false; }
@@ -100,6 +141,8 @@
     const el = b.closest('.agent'); const slug = el.dataset.slug; const a = agents.find((x) => x.slug === slug);
     const q = (f) => el.querySelector(`[data-f=${f}]`);
     try {
+      if (b.dataset.a === 'ask') { await api(`/api/agents/${slug}/asks`, { method: 'POST', body: JSON.stringify({ ask: q('newask').value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), 'Asked. The Box sorts it within about 15 minutes.', true); }
+      if (b.dataset.a === 'apply' || b.dataset.a === 'decline') { const li = b.closest('li'); await api(`/api/agents/asks/${b.dataset.id}/decide`, { method: 'POST', body: JSON.stringify({ decision: b.dataset.a, note: (li.querySelector('[data-f=dnote]') || {}).value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), b.dataset.a === 'apply' ? 'Applied as a new version.' : 'Declined.', true); }
       if (b.dataset.a === 'run') { await api(`/api/agents/${slug}/run`, { method: 'POST', body: JSON.stringify({ ask: q('ask').value }) }); say(el, 'Queued. The draft will be in Review within about 15 minutes.', true); }
       if (b.dataset.a === 'save') { const r = await api(`/api/agents/${slug}`, { method: 'POST', body: JSON.stringify({ skill_md: q('skill').value, enabled: q('enabled').checked, max_cards: Number(q('max').value), note: q('note').value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), `Saved as v${r.settings.version}. The next run uses it.`, true); }
       if (b.dataset.a === 'default') { q('skill').value = a.default_skill; say(el, 'Default text loaded. Press Save to make it the new version.', true); }

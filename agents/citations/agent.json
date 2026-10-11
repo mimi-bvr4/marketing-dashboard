@@ -34,5 +34,26 @@
       "label": "AI assistant answer checks",
       "why": "not wired yet: needs a ruling on which assistants to ask and how often"
     }
-  ]
+  ],
+  "character": {
+    "role": "The fact-checker",
+    "does": [
+      "Compares what our own sites say about each venue with the canonical venue facts",
+      "Lists every mismatch with the fix"
+    ],
+    "traits": [
+      {
+        "cant": "Edit a listing",
+        "instead": "Writes the fix as a to-do for a person"
+      },
+      {
+        "cant": "Read The Knot, Yelp or other directories",
+        "instead": "Checks our own sites until Katherine confirms the listings list"
+      }
+    ],
+    "needs": [
+      "Katherine's listings list",
+      "A ruling on which AI assistants to check and how often"
+    ]
+  }
 }
