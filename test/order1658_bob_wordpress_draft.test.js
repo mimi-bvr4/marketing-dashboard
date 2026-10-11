@@ -159,3 +159,53 @@ test('parseCards: a post without a title or body is dropped, the card is kept', 
   const c = parseCards(JSON.stringify({ cards: [{ title: 'a', body: 'b', post: { site: 'x.com' } }] }), 1)[0];
   assert.strictEqual(c.post, null);
 });
+
+// ------------------------------------------------------------- 10.11.2026 live run fixes
+
+const { unquoted, replaceDashes } = require('../lib/ai-tells');
+const { modelText } = require('../lib/agent-runner');
+
+test('lint: words a bot QUOTES (the ban list, a review) are not its own; dashes still count everywhere', () => {
+  assert.strictEqual(lint('Checklist: no "delve", no "seamless", no `elevate`.').flags.length, 0);
+  assert.strictEqual(lint('We delve into it.').flags.length, 1);
+  assert.strictEqual(lint(`Quote: "great day ${EM} truly".`).fails.length, 1);
+  assert.strictEqual(unquoted('a "b" c').length, 'a "b" c'.length, 'positions are kept, so line numbers stay right');
+});
+
+test('replaceDashes: a range becomes "to", any other dash a comma, and the count is returned', () => {
+  assert.deepStrictEqual(replaceDashes(`RED ${EM} Reply, 5 – 7 p.m., 150${EM}200 guests`), { text: 'RED, Reply, 5 to 7 p.m., 150 to 200 guests', replaced: 3 });
+  assert.deepStrictEqual(replaceDashes('clean text'), { text: 'clean text', replaced: 0 });
+});
+
+test('runner: a dash that survives the rewrite is replaced and the card says so; the lint ignores the appended tables', async () => {
+  const store = createMemoryStore({ lint });
+  const def = { slug: 'gbp', name: 'Google Business', job: 'replies', max_cards: 1, skill: '# GBP',
+    sources: [{ type: 'request', required: true, label: 'the request' }] };
+  const stubborn = JSON.stringify({ cards: [{ title: `RED ${EM} Reply draft`, body: `Thank you ${EM} truly.` }] });
+  const llm = { model: 'fake', calls: 0, async complete() { this.calls++; return stubborn; } };
+  await runAgent({ def, store, llm, ask: 'x' });
+  const c = store.cards[0];
+  assert.strictEqual(c.title, 'RED, Reply draft');
+  assert.match(c.body, /^Thank you, truly\./);
+  assert.strictEqual(c.checks.ai_tells.fails.length, 0);
+  assert.match(c.checks.ai_tells_summary, /2 dashes replaced by the Box/);
+  assert.strictEqual(modelText('Mine.\n\n### Measured: crawl (x)\n\n| a | AI-tell words: seamless |'), 'Mine.\n');
+});
+
+test('store: approve reads only the bot\'s own words, so a measured table cannot block it', async () => {
+  const s = createMemoryStore({ lint });
+  const c = await s.insert({ agent: 'site-health', agent_name: 'Site Health', job: 'j', title: 'Week',
+    body: `Fix list.\n\n### Measured: crawl (10.11.2026 CT)\n\n| site | page | quoted copy: "a ${EM} b" |` });
+  assert.strictEqual((await s.decide(c.id, { action: 'approve', who: 'k@x' })).card.status, 'ready');
+});
+
+test('relint: recomputes checks from the bot\'s own words and never touches title or body', async () => {
+  const { relint } = require('../jobs/agent_relint');
+  const row = { id: 1, title: 'Week', body: 'Clean words.\n\n### Measured: crawl (x)\n\n| AI-tell words: seamless, delve |', payload: null, checks: { ai_tells_summary: 'AI-tells: 173 flags' } };
+  const writes = [];
+  const pool = { async query(sql, args) { if (/^SELECT/.test(sql)) return { rows: [row] }; writes.push({ sql, args }); return { rows: [] }; } };
+  await relint(pool, () => {});
+  assert.strictEqual(writes.length, 1);
+  assert.match(writes[0].sql, /^UPDATE agent_cards SET checks = \$2 WHERE id = \$1$/);
+  assert.strictEqual(JSON.parse(writes[0].args[1]).ai_tells_summary, 'AI-tells: clean');
+});
