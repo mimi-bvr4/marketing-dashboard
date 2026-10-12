@@ -13,6 +13,7 @@
       "type": "web_trends",
       "queries": [
         "newest and viral wedding trends this month (The Knot, Brides, Vogue weddings, Martha Stewart Weddings, Over The Moon, Pinterest)",
+        "latest celebrity weddings and engagements (People, Vogue, Harper's Bazaar, Brides, E! News): the couple, the venue, and the specific details like dress, flowers, food, music and decor",
         "wedding reception, ceremony and venue styling trends couples are booking right now",
         "Nashville wedding and event news, including new event venues opening in or near Nashville",
         "wedding catering, food and bar trends right now",
@@ -34,6 +35,7 @@
     "does": [
       "Every Monday, checks the competitor websites Katherine lists and reports only what changed since last week: new pages, new packages or offers, rewritten pages",
       "Searches the wedding press and Pinterest for what is new and rising in the last 14 days, with a link for every item",
+      "Reads the latest celebrity weddings (People, Vogue and the like) and picks out the details couples will start asking for: dresses, flowers, food, music, venues",
       "Ends with what it means for our venues and up to three moves, including blog topics Bloggy Bob could write"
     ],
     "traits": [
