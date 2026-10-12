@@ -31,14 +31,16 @@ function fnSource(name) {
 function pageSandbox(extra = {}) {
   const ctx = vm.createContext({ ...extra });
   for (const c of ['IHG_VENUES', 'SALES_PIPELINE', 'EVENT_PIPELINE_DEFAULT', 'BOOKED_DATE_FIELD', 'TOUR_DATE_FIELD']) ctx[c] = constant(c);
-  for (const f of ['monthRange', 'toEpochMs', 'normalizeDealName', 'groupByVenue', 'fetchUniqueTours', 'fetchUniqueBookings']) vm.runInContext(fnSource(f), ctx);
+  for (const f of ['monthRange', 'toEpochMs', 'normalizeDealName', 'groupByVenue', 'isCancelledBooking', 'splitCancelled', 'fetchUniqueTours', 'fetchUniqueBookings']) vm.runInContext(fnSource(f), ctx);
   return ctx;
 }
 
 const SEP = F.monthRange('2026-09');
-const deal = (pipeline, dealname, venue) => ({ properties: { pipeline, dealname, venue } });
-const SALES = [deal(F.SALES_PIPELINE, 'Smith Wedding (Sales Deal)', 'TBB'), deal(F.SALES_PIPELINE, 'Lee  Gala', 'SWF;TBT')];
-const EVENT = [deal('default', 'smith wedding', 'TBB'), deal('default', 'Jones Party', 'ECD'), deal('default', 'lee gala', 'SWF')];
+const deal = (pipeline, dealname, venue, status) => ({ properties: { pipeline, dealname, venue, ...(status ? { booked_cancelled__reporting_use_only_: status } : {}) } });
+const SALES = [deal(F.SALES_PIPELINE, 'Smith Wedding (Sales Deal)', 'TBB', 'Booked'), deal(F.SALES_PIPELINE, 'Lee  Gala', 'SWF;TBT'),
+  deal(F.SALES_PIPELINE, 'Ray Party (Sales Deal)', 'TBT')];
+const EVENT = [deal('default', 'smith wedding', 'TBB', 'Booked'), deal('default', 'Jones Party', 'ECD', 'Cancelled'), deal('default', 'lee gala', 'SWF'),
+  deal('default', 'ray party', 'TBT', 'Cancelled')];   // cancelled only on the Event Planning twin
 
 test('constants match the page', () => {
   for (const c of ['IHG_VENUES', 'SALES_PIPELINE', 'EVENT_PIPELINE_DEFAULT', 'BOOKED_DATE_FIELD', 'TOUR_DATE_FIELD']) {
@@ -47,14 +49,14 @@ test('constants match the page', () => {
 });
 
 test('helper functions are the page\'s, character for character (whitespace aside)', () => {
-  for (const f of ['monthRange', 'toEpochMs', 'normalizeDealName', 'groupByVenue']) {
+  for (const f of ['monthRange', 'toEpochMs', 'normalizeDealName', 'groupByVenue', 'isCancelledBooking', 'splitCancelled']) {
     assert.strictEqual(squash(F[f].toString()), squash(fnSource(f)), f);
   }
 });
 
-for (const [kind, pageFn, libFilters, libProps] of [
-  ['tours', 'fetchUniqueTours', F.tourFilters, F.TOUR_PROPS],
-  ['bookings', 'fetchUniqueBookings', F.bookingFilters, F.BOOKING_PROPS],
+for (const [kind, pageFn, libFilters, libProps, libDedupe] of [
+  ['tours', 'fetchUniqueTours', F.tourFilters, F.TOUR_PROPS, F.dedupe],
+  ['bookings', 'fetchUniqueBookings', F.bookingFilters, F.BOOKING_PROPS, F.dedupeBookings],
 ]) {
   test(`${kind}: the page and the lib send the same searches and get the same deduped count`, async () => {
     const seen = [];
@@ -66,10 +68,17 @@ for (const [kind, pageFn, libFilters, libProps] of [
     assert.strictEqual(seen.length, 2);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(seen.map((s) => s.groups))), [[{ filters: libFilters(SEP, F.SALES_PIPELINE) }], [{ filters: libFilters(SEP, F.EVENT_PIPELINE_DEFAULT) }]]);
     for (const s of seen) { assert.strictEqual(s.objectType, 'deals'); assert.deepStrictEqual([...s.props], libProps); }
-    const lib = F.dedupe(SALES, EVENT);
+    const lib = libDedupe(SALES, EVENT);
     assert.strictEqual(lib.all.length, page.all.length);
     assert.strictEqual(lib.eventOnlyCount, page.eventOnlyCount);
     assert.deepStrictEqual(F.groupByVenue(lib.all, 'venue'), { ...vm.runInContext('groupByVenue', ctx)(page.all, 'venue') });
+    if (kind === 'bookings') {
+      assert.deepStrictEqual([lib.all.length, lib.cancelled.length], [2, 2]);        // Smith + Lee live; Jones + Ray cancelled
+      assert.strictEqual(page.cancelled.length, 2);
+      assert.deepStrictEqual(F.groupByVenue(lib.cancelled, 'venue'), { ...vm.runInContext('groupByVenue', ctx)(page.cancelled, 'venue') });
+    } else {
+      assert.strictEqual(page.cancelled, undefined, 'tours are never split');
+    }
   });
 }
 
@@ -107,8 +116,15 @@ test('paging: the page pages 200 at a time for up to 60 pages, as the lib does',
   assert.ok(lib.includes('maxPages = 60') && lib.includes('limit: 200') && lib.includes('batch.length < 200'));
 });
 
-test('the page still does not drop booked_cancelled deals from the bookings count (the lib follows it)', () => {
-  const src = fnSource('fetchUniqueBookings');
-  assert.ok(src.includes('booked_cancelled__reporting_use_only_'), 'property still requested');
-  assert.ok(!/filter\([^)]*booked_cancelled/.test(PAGE), 'if the page starts excluding cancelled bookings, port that rule to lib/funnel-defs.js dedupe');
+test('cancelled: same values count as cancelled on the page and in the lib; Booked and blank do not', () => {
+  const ctx = pageSandbox();
+  const pageIs = vm.runInContext('isCancelledBooking', ctx);
+  for (const v of ['Cancelled', 'cancelled', ' CANCELLED ', 'Canceled', 'true', 'Yes', 'Booked', '', null, undefined, 'No']) {
+    const d = { properties: { booked_cancelled__reporting_use_only_: v } };
+    assert.strictEqual(F.isCancelledBooking(d), pageIs(d), String(v));
+  }
+  assert.strictEqual(F.isCancelledBooking({ properties: { booked_cancelled__reporting_use_only_: 'Booked' } }), false);
+  assert.strictEqual(F.isCancelledBooking({ properties: { booked_cancelled__reporting_use_only_: 'Cancelled' } }), true);
+  assert.ok(PAGE.includes("const cancelledByV = groupByVenue(cancelled, 'venue');"), 'page counts cancelled per venue');
+  assert.ok(PAGE.includes('Bookings exclude cancellations, which are counted separately'), 'the help line is on the page');
 });

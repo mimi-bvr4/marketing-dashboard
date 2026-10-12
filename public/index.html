@@ -94,6 +94,7 @@ tbody tr:hover { background: #fafaf8; }
 .stage-leads    .funnel-bar { background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); }
 .stage-tours    .funnel-bar { background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%); }
 .stage-bookings .funnel-bar { background: linear-gradient(90deg, #c8a45c 0%, #a87f37 100%); }
+.stage-cancelled .funnel-bar { background: linear-gradient(90deg, #9ca3af 0%, #6b7280 100%); }
 .stage-revenue  .funnel-bar { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
 .funnel-stage .stage-conv { width: 132px; min-width: 132px; text-align: right; font-size: 11px; color: #6b7280; }
 .funnel-stage .stage-conv strong { display: block; color: #1a1a1a; font-size: 15px; font-weight: 700; }
@@ -169,7 +170,8 @@ tbody tr:hover { background: #fafaf8; }
   <div class="kpi-card spend"><div class="label">Fully Loaded Spend</div><div class="value" id="kpi-spend-fl">&mdash;</div><div class="sub">incl. salary, agency, software</div></div>
   <div class="kpi-card"><div class="label">Leads</div><div class="value" id="kpi-leads">&mdash;</div></div>
   <div class="kpi-card"><div class="label">Tours</div><div class="value" id="kpi-tours">&mdash;</div></div>
-  <div class="kpi-card"><div class="label">Bookings</div><div class="value" id="kpi-bookings">&mdash;</div></div>
+  <div class="kpi-card"><div class="label">Bookings</div><div class="value" id="kpi-bookings">&mdash;</div><div class="sub">cancellations not included</div></div>
+  <div class="kpi-card"><div class="label">Cancelled</div><div class="value" id="kpi-cancelled">&mdash;</div><div class="sub">signed, then cancelled</div></div>
   <div class="kpi-card"><div class="label">Completed Events</div><div class="value" id="kpi-events">&mdash;</div><div class="sub" id="kpi-events-sub">events that have happened</div></div>
   <div class="kpi-card revenue"><div class="label">Event Revenue</div><div class="value" id="kpi-revenue">&mdash;</div><div class="sub" id="kpi-revenue-sub">net of tax &middot; final totals only</div></div>
   <div class="kpi-card rate"><div class="label">Lead&rarr;Tour</div><div class="value" id="kpi-l2t">&mdash;</div></div>
@@ -204,7 +206,7 @@ tbody tr:hover { background: #fafaf8; }
   </div>
 </div>
 <div class="section">
-  <h2>Full Funnel by Venue <span class="hint"><span class="export-btns"><button class="btn" id="export-tours">Tours CSV</button><button class="btn" id="export-bookings">Bookings CSV</button></span></span></h2>
+  <h2>Full Funnel by Venue <span class="hint"><span class="export-btns"><button class="btn" id="export-tours">Tours CSV</button><button class="btn" id="export-bookings">Bookings CSV</button><button class="btn" id="export-cancelled">Cancelled CSV</button></span></span></h2>
   <table>
     <thead>
       <tr>
@@ -213,6 +215,7 @@ tbody tr:hover { background: #fafaf8; }
         <th class="num">Leads</th>
         <th class="num">Tours</th>
         <th class="num">Bookings</th>
+        <th class="num">Cancelled</th>
         <th class="num">Completed</th>
         <th class="num">Revenue</th>
         <th class="num">L&rarr;T</th>
@@ -222,14 +225,15 @@ tbody tr:hover { background: #fafaf8; }
         <th class="num">CPB (Paid)</th>
       </tr>
     </thead>
-    <tbody id="funnel-body"><tr><td colspan="12" class="skeleton">Loading&hellip;</td></tr></tbody>
+    <tbody id="funnel-body"><tr><td colspan="13" class="skeleton">Loading&hellip;</td></tr></tbody>
   </table>
   <div class="footnote">
     <strong>Tours</strong> = unique deals with <code>initial_tour_date</code> in window, pulled from both Sales and Event Planning pipelines, deduped by normalized <code>dealname</code> (pairs collapsed to one, event-pipeline-only tours counted once).
     <strong>Bookings</strong> = unique deals with <code>contract_signed_date</code> in window, pulled from both Sales and Event Planning pipelines, deduped by normalized <code>dealname</code>. Matches the HubSpot "Events Booked Per Month and Year" report.
+    Bookings exclude cancellations, which are counted separately in <strong>Cancelled</strong> (deals whose Booked/Cancelled field says Cancelled).
     <strong>Completed</strong> = deals currently in the Event Planning Pipeline (IHG) at the "Event Completed" stage. Mirrors Katherine's HubSpot pipeline view directly &mdash; one deal per finished event, source-of-truth for event count.
     <strong>Revenue</strong> = sum of <code>final_event_total_accounting</code> &times; 0.95 (net of sales tax, per CEO) for completed events that have been finance-locked. Revenue lags the Completed count until invoices close.
-    Use the Tours CSV / Bookings CSV buttons to export the underlying deal list for reconciliation against your master sheet.
+    Use the Tours CSV / Bookings CSV / Cancelled CSV buttons to export the underlying deal list for reconciliation against your master sheet.
   </div>
 </div>
 <div class="section">
@@ -384,7 +388,7 @@ tbody tr:hover { background: #fafaf8; }
   </div>
 </div>
 <div class="section">
-  <h2>2026 Monthly Trend &middot; Leads, Bookings, Revenue</h2>
+  <h2>2026 Monthly Trend &middot; Leads, Bookings, Cancelled, Revenue</h2>
   <div class="chart-wrap"><canvas id="trend-chart"></canvas></div>
 </div>
 </div><!-- /#panel-ihg -->
@@ -486,7 +490,7 @@ tbody tr:hover { background: #fafaf8; }
   const periodSel = document.getElementById('period');
   const statusEl = document.getElementById('status');
   // Stash the live datasets so export buttons can read them after render
-  let CURRENT = { period: null, tours: [], bookings: [] };
+  let CURRENT = { period: null, tours: [], bookings: [], cancelled: [] };
   // Funnel state — holds real per-venue funnel data + live GA4 sessions for the current period.
   let FUNNEL = { venue: 'all', token: null, real: null, ga4: null };
 
@@ -692,6 +696,20 @@ tbody tr:hover { background: #fafaf8; }
     return { all: [...salesTours, ...eventOnly], salesCount: salesTours.length, eventOnlyCount: eventOnly.length };
   }
 
+  // ORDER #1663 (Mimi, 10.12.2026: "we need cancelled in its own category, cancelled is an actual count").
+  // booked_cancelled__reporting_use_only_ is a HubSpot enumeration: "Booked" or "Cancelled".
+  // A booking is cancelled when ANY deal sharing its normalized dealname in the window says so
+  // (the Sales and Event Planning twins may not both carry the field). Cancelled is NOT a booking.
+  function isCancelledBooking(d) {
+    const v = String(d.properties?.booked_cancelled__reporting_use_only_ || '').trim().toLowerCase();
+    return v === 'cancelled' || v === 'canceled' || v === 'true' || v === 'yes';
+  }
+  function splitCancelled(result, everyDeal) {
+    const cancelledKeys = new Set(everyDeal.filter(isCancelledBooking).map(d => normalizeDealName(d.properties?.dealname)));
+    const live = result.all.filter(d => !cancelledKeys.has(normalizeDealName(d.properties?.dealname)));
+    const cancelled = result.all.filter(d => cancelledKeys.has(normalizeDealName(d.properties?.dealname)));
+    return { ...result, all: live, cancelled };
+  }
   async function fetchUniqueBookings(period) {
     const filtersFor = (pl) => [
       { propertyName: 'pipeline', operator: 'EQ', value: pl },
@@ -707,7 +725,7 @@ tbody tr:hover { background: #fafaf8; }
     const eventOnly = eventBookings.filter(d => !salesKeys.has(normalizeDealName(d.properties?.dealname)));
     salesBookings.forEach(d => d._origin = 'sales');
     eventOnly.forEach(d => d._origin = 'event-only');
-    return { all: [...salesBookings, ...eventOnly], salesCount: salesBookings.length, eventOnlyCount: eventOnly.length };
+    return splitCancelled({ all: [...salesBookings, ...eventOnly], salesCount: salesBookings.length, eventOnlyCount: eventOnly.length }, [...salesBookings, ...eventBookings]);
   }
 
   async function loadPeriod(period) {
@@ -767,7 +785,7 @@ tbody tr:hover { background: #fafaf8; }
       const labels = ['leads', 'tours', 'bookings', 'completedEvents', 'revenueDeals', 'typingLookup'];
       const settled = await Promise.allSettled([leadsP, toursResultP, bookingsResultP, completedEventsP, revenueP, typingLookupP]);
       const failed = [];
-      const emptyToursBookings = { all: [], salesCount: 0, eventOnlyCount: 0 };
+      const emptyToursBookings = { all: [], cancelled: [], salesCount: 0, eventOnlyCount: 0 };
       const fallback = { leads: [], tours: emptyToursBookings, bookings: emptyToursBookings, completedEvents: [], revenueDeals: [], typingLookup: [] };
       const out = {};
       settled.forEach((r, i) => {
@@ -783,22 +801,23 @@ tbody tr:hover { background: #fafaf8; }
       const typingMap = buildEventTypeMap(out.typingLookup);
       const tours = toursResult.all;
       const bookings = bookingsResult.all;
-      CURRENT = { period, tours, bookings, completedEvents, revenueDeals, typingMap };
-      renderAll(period, { leads, tours, bookings, completedEvents, revenueDeals, typingMap });
+      const cancelled = bookingsResult.cancelled || [];
+      CURRENT = { period, tours, bookings, cancelled, completedEvents, revenueDeals, typingMap };
+      renderAll(period, { leads, tours, bookings, cancelled, completedEvents, revenueDeals, typingMap });
       const tourExtra = toursResult.eventOnlyCount
         ? ` (${toursResult.salesCount} Sales + ${toursResult.eventOnlyCount} event-only)`
         : '';
       const bookExtra = bookingsResult.eventOnlyCount
         ? ` (${bookingsResult.salesCount} Sales + ${bookingsResult.eventOnlyCount} event-only, deduped)`
         : '';
-      const liveLine = `Live · ${period.label} · ${leads.length} leads · ${tours.length} tours${tourExtra} · ${bookings.length} bookings${bookExtra} · ${completedEvents.length} completed events (${revenueDeals.length} w/ final totals) · refreshed ${new Date().toLocaleTimeString()}`;
+      const liveLine = `Live · ${period.label} · ${leads.length} leads · ${tours.length} tours${tourExtra} · ${bookings.length} bookings${bookExtra} · ${cancelled.length} cancelled · ${completedEvents.length} completed events (${revenueDeals.length} w/ final totals) · refreshed ${new Date().toLocaleTimeString()}`;
       if (failed.length) {
         statusEl.textContent = `${liveLine}, ⚠️ failed to load: ${failed.join(', ')} (shown as empty, not guessed)`;
         statusEl.className = 'status error';
       } else {
         statusEl.textContent = liveLine;
       }
-      generateNarrative(period, { leads, tours, bookings, completedEvents, revenueDeals });
+      generateNarrative(period, { leads, tours, bookings, cancelled, completedEvents, revenueDeals });
     } catch (e) {
       statusEl.textContent = 'Error loading HubSpot: ' + (e.message || e);
       statusEl.className = 'status error';
@@ -806,20 +825,22 @@ tbody tr:hover { background: #fafaf8; }
     }
   }
 
-  function renderAll(period, { leads, tours, bookings, completedEvents, revenueDeals, typingMap }) {
+  function renderAll(period, { leads, tours, bookings, cancelled = [], completedEvents, revenueDeals, typingMap }) {
     const spend = aggregateSpend(period);
     const leadsByV = groupByVenue(leads, 'venue_s_');
     const toursByV = groupByVenue(tours, 'venue');
     const bookingsByV = groupByVenue(bookings, 'venue');
+    const cancelledByV = groupByVenue(cancelled, 'venue');
     const eventsByV = groupByVenue(completedEvents, 'venue');
     const rev = revenueByVenue(revenueDeals);
-    const totalL = leads.length, totalT = tours.length, totalB = bookings.length, totalE = completedEvents.length, totalR = rev.total;
+    const totalL = leads.length, totalT = tours.length, totalB = bookings.length, totalC = cancelled.length, totalE = completedEvents.length, totalR = rev.total;
     // KPI cards
     document.getElementById('kpi-spend').textContent = money(spend.paid);
     document.getElementById('kpi-spend-fl').textContent = money(spend.fullyLoaded);
     document.getElementById('kpi-leads').textContent = num(totalL);
     document.getElementById('kpi-tours').textContent = num(totalT);
     document.getElementById('kpi-bookings').textContent = num(totalB);
+    document.getElementById('kpi-cancelled').textContent = num(totalC);
     document.getElementById('kpi-events').textContent = num(totalE);
     document.getElementById('kpi-events-sub').textContent = `${revenueDeals.length} w/ final totals`;
     document.getElementById('kpi-revenue').textContent = money(totalR);
@@ -840,6 +861,7 @@ tbody tr:hover { background: #fafaf8; }
       const l = isTot ? totalL : leadsByV[v];
       const t = isTot ? totalT : toursByV[v];
       const b = isTot ? totalB : bookingsByV[v];
+      const c = isTot ? totalC : cancelledByV[v];
       const ev = isTot ? totalE : (eventsByV[v] || 0);
       const r = isTot ? totalR : (rev.byVenue[v] || 0);
       const l2t = l ? t / l : null, t2b = t ? b / t : null, l2b = l ? b / l : null;
@@ -850,6 +872,7 @@ tbody tr:hover { background: #fafaf8; }
         <td class="num">${num(l)}</td>
         <td class="num">${num(t)}</td>
         <td class="num">${num(b)}</td>
+        <td class="num">${num(c)}</td>
         <td class="num">${num(ev)}</td>
         <td class="num">${money(r)}</td>
         <td class="num">${l2t !== null ? pct(l2t) : '<span class="dash">-</span>'}</td>
@@ -936,12 +959,12 @@ tbody tr:hover { background: #fafaf8; }
     // Conversion funnel — stash real per-venue data, render, then refresh GA4 sessions.
     FUNNEL.real = {
       byVenue: {
-        TBB: { leads: leadsByV.TBB, tours: toursByV.TBB, bookings: bookingsByV.TBB, revenue: rev.byVenue.TBB },
-        TBT: { leads: leadsByV.TBT, tours: toursByV.TBT, bookings: bookingsByV.TBT, revenue: rev.byVenue.TBT },
-        ECD: { leads: leadsByV.ECD, tours: toursByV.ECD, bookings: bookingsByV.ECD, revenue: rev.byVenue.ECD },
-        SWF: { leads: leadsByV.SWF, tours: toursByV.SWF, bookings: bookingsByV.SWF, revenue: rev.byVenue.SWF }
+        TBB: { leads: leadsByV.TBB, tours: toursByV.TBB, bookings: bookingsByV.TBB, cancelled: cancelledByV.TBB, revenue: rev.byVenue.TBB },
+        TBT: { leads: leadsByV.TBT, tours: toursByV.TBT, bookings: bookingsByV.TBT, cancelled: cancelledByV.TBT, revenue: rev.byVenue.TBT },
+        ECD: { leads: leadsByV.ECD, tours: toursByV.ECD, bookings: bookingsByV.ECD, cancelled: cancelledByV.ECD, revenue: rev.byVenue.ECD },
+        SWF: { leads: leadsByV.SWF, tours: toursByV.SWF, bookings: bookingsByV.SWF, cancelled: cancelledByV.SWF, revenue: rev.byVenue.SWF }
       },
-      all: { leads: totalL, tours: totalT, bookings: totalB, revenue: totalR }
+      all: { leads: totalL, tours: totalT, bookings: totalB, cancelled: totalC, revenue: totalR }
     };
     FUNNEL.token = period.start + '|' + period.kind + '|' + (period.ym || '');
     renderFunnel();
@@ -992,7 +1015,7 @@ tbody tr:hover { background: #fafaf8; }
     if (!FUNNEL.real) { content.innerHTML = '<div class="footnote">Loading website traction…</div>'; return; }
     const venue = FUNNEL.venue;
     const real = venue === 'all' ? FUNNEL.real.all : FUNNEL.real.byVenue[venue];
-    const leads = real.leads || 0, tours = real.tours || 0, bookings = real.bookings || 0, revenue = real.revenue || 0;
+    const leads = real.leads || 0, tours = real.tours || 0, bookings = real.bookings || 0, cancelled = real.cancelled || 0, revenue = real.revenue || 0;
     const sessions = ga4SessionsForVenue(FUNNEL.ga4, venue);
     const gaPending = !FUNNEL.ga4;
     const gaLive = sessions != null;
@@ -1025,6 +1048,9 @@ tbody tr:hover { background: #fafaf8; }
     // Bookings
     stages.push({ cls: 'stage-bookings', name: 'Bookings', main: num(bookings), sub: 'contracts signed', width: widthPct(bookings),
       conv: '<strong>' + (tours ? pct(bookings / tours) : '-') + '</strong>tour → booking', empty: bookings === 0 });
+    // Cancelled: its own count, never folded into Bookings (ORDER #1663)
+    stages.push({ cls: 'stage-cancelled', name: 'Cancelled', main: num(cancelled), sub: 'signed, then cancelled', width: widthPct(cancelled),
+      conv: '<strong>' + num(cancelled) + '</strong>not in bookings', empty: cancelled === 0 });
     // Revenue (scaled vs bookings count for bar — revenue is dollars, so size by bookings share)
     stages.push({ cls: 'stage-revenue', name: 'Revenue', main: money(revenue), sub: 'net of tax', width: widthPct(bookings),
       conv: '<strong>' + (bookings ? money(avgBooking) : '-') + '</strong>avg / booking', empty: revenue === 0 });
@@ -1306,7 +1332,7 @@ tbody tr:hover { background: #fafaf8; }
     const months = [];
     for (let i = 0; i < endMonth; i++) months.push(`2026-${String(i + 1).padStart(2, '0')}`);
     const labels = months.map(m => monthRange(m).label);
-    const leadCounts = [], bookingCounts = [], revenues = [];
+    const leadCounts = [], bookingCounts = [], cancelledCounts = [], revenues = [];
     for (const ym of months) {
       const { start, end } = monthRange(ym);
       const monthPeriod = { start, end };
@@ -1326,6 +1352,7 @@ tbody tr:hover { background: #fafaf8; }
       ]);
       leadCounts.push(l);
       bookingCounts.push(bookingsResult.all.length);
+      cancelledCounts.push(bookingsResult.cancelled.length);
       revenues.push(revDeals.reduce((a, d) => a + (parseFloat(d.properties?.final_event_total_accounting || '0') || 0), 0) * REVENUE_NET_MULTIPLIER);
     }
     new Chart(document.getElementById('trend-chart').getContext('2d'), {
@@ -1335,6 +1362,7 @@ tbody tr:hover { background: #fafaf8; }
         datasets: [
           { type: 'bar', label: 'Leads', data: leadCounts, backgroundColor: '#1a365d', yAxisID: 'y' },
           { type: 'line', label: 'Bookings', data: bookingCounts, borderColor: '#c8a45c', backgroundColor: '#c8a45c', yAxisID: 'y2', tension: 0.2, pointRadius: 4 },
+          { type: 'line', label: 'Cancelled', data: cancelledCounts, borderColor: '#6b7280', backgroundColor: '#6b7280', yAxisID: 'y2', tension: 0.2, pointRadius: 3 },
           { type: 'line', label: 'Revenue ($)', data: revenues, borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y3', tension: 0.2, pointRadius: 4, borderDash: [5, 3] }
         ]
       },
@@ -1342,7 +1370,7 @@ tbody tr:hover { background: #fafaf8; }
         responsive: true, maintainAspectRatio: false,
         scales: {
           y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Leads' } },
-          y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Bookings' } },
+          y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Bookings / Cancelled' } },
           y3: { beginAtZero: true, display: false }
         },
         plugins: { legend: { position: 'bottom' } }
@@ -1356,6 +1384,7 @@ tbody tr:hover { background: #fafaf8; }
       const spend = aggregateSpend(period);
       const leadsByV = groupByVenue(data.leads, 'venue_s_');
       const bookingsByV = groupByVenue(data.bookings, 'venue');
+      const cancelledByV = groupByVenue(data.cancelled || [], 'venue');
       const rev = revenueByVenue(data.revenueDeals);
       const srcCount = {};
       for (const l of data.leads) { const s = l.properties?.lead_source || '(none)'; srcCount[s] = (srcCount[s] || 0) + 1; }
@@ -1367,12 +1396,14 @@ tbody tr:hover { background: #fafaf8; }
         total_leads: data.leads.length,
         total_tours: data.tours.length,
         total_bookings: data.bookings.length,
+        total_cancelled: (data.cancelled || []).length,
+        cancelled_note: 'Bookings exclude cancellations; cancelled is its own count.',
         total_completed_events: data.completedEvents?.length ?? 0,
         total_finalized_events: data.revenueDeals.length,
         total_revenue_net_of_tax: rev.total,
         revenue_note: 'All revenue figures are net of sales tax (final_event_total_accounting × 0.95) per CEO directive, these reflect Infinity\'s actual kept revenue.',
         by_venue: ['TBB','TBT','ECD','SWF'].map(v => ({
-          venue: v, spend: spend.venueTotals[v] || 0, leads: leadsByV[v], bookings: bookingsByV[v],
+          venue: v, spend: spend.venueTotals[v] || 0, leads: leadsByV[v], bookings: bookingsByV[v], cancelled: cancelledByV[v],
           revenue_net_of_tax: rev.byVenue[v] || 0,
           cpl: leadsByV[v] ? (spend.venueTotals[v] || 0) / leadsByV[v] : null,
           cpb: bookingsByV[v] ? (spend.venueTotals[v] || 0) / bookingsByV[v] : null,
@@ -1423,9 +1454,7 @@ tbody tr:hover { background: #fafaf8; }
     })).sort((a, b) => (b.initial_tour_date || '').localeCompare(a.initial_tour_date || ''));
     downloadCsv(`ihg_tours_${periodLabel}.csv`, rows);
   });
-  document.getElementById('export-bookings').addEventListener('click', () => {
-    const periodLabel = CURRENT.period?.label?.replace(/\s+/g, '_') || 'period';
-    const rows = CURRENT.bookings.map(d => ({
+  const bookingCsvRows = (deals) => deals.map(d => ({
       deal_id: d.id,
       pipeline: d.properties?.pipeline || '',
       origin: d._origin || '',
@@ -1435,7 +1464,13 @@ tbody tr:hover { background: #fafaf8; }
       event_type_sales: d.properties?.event_type_sales || '',
       dealname: d.properties?.dealname || ''
     })).sort((a, b) => (b.contract_signed_date || '').localeCompare(a.contract_signed_date || ''));
-    downloadCsv(`ihg_bookings_${periodLabel}.csv`, rows);
+  document.getElementById('export-bookings').addEventListener('click', () => {
+    const periodLabel = CURRENT.period?.label?.replace(/\s+/g, '_') || 'period';
+    downloadCsv(`ihg_bookings_${periodLabel}.csv`, bookingCsvRows(CURRENT.bookings));
+  });
+  document.getElementById('export-cancelled').addEventListener('click', () => {
+    const periodLabel = CURRENT.period?.label?.replace(/\s+/g, '_') || 'period';
+    downloadCsv(`ihg_cancelled_${periodLabel}.csv`, bookingCsvRows(CURRENT.cancelled || []));
   });
 
   // Funnel venue filter — re-renders from already-loaded data, no refetch.

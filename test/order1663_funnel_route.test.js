@@ -135,8 +135,9 @@ test('counts leads by venue and source, tours and bookings by venue, with the da
   assert.strictEqual(j.tours.total, 3);                       // Smith (pair collapsed), Jones (event-only), Lee
   assert.deepStrictEqual(j.tours.by_venue, { TBB: 1, TBT: 0, ECD: 1, SWF: 1, OS: 0 });
   assert.strictEqual(j.tours.event_only, 1);
-  assert.strictEqual(j.bookings.total, 2);                    // Smith collapsed; cancelled still counted, as the page does
-  assert.deepStrictEqual(j.bookings.by_venue, { TBB: 1, TBT: 1, ECD: 0, SWF: 0, OS: 0 });
+  assert.strictEqual(j.bookings.total, 1);                    // Smith collapsed; the cancelled one is not a booking
+  assert.deepStrictEqual(j.bookings.by_venue, { TBB: 1, TBT: 0, ECD: 0, SWF: 0, OS: 0 });
+  assert.deepStrictEqual(j.cancelled, { total: 1, by_venue: { TBB: 0, TBT: 1, ECD: 0, SWF: 0, OS: 0 } });
   // every deal search carried the test-deal exclusion
   for (const c of hs.calls.filter((x) => x.objectType === 'deals')) assert.ok(c.body.filterGroups.every((g) => g.filters.some((f) => f.propertyName === 'test_deal')));
 });
@@ -196,4 +197,19 @@ test('pages through results over 200 with the cursor, as the page does', async (
   const j = JSON.parse((await call(s, '/api/funnel/monthly?month=2026-09', key)).body);
   assert.strictEqual(j.leads.total, 450);
   assert.strictEqual(j.leads.by_venue.SWF, 450);
+});
+
+test('one cancelled and one live booking per venue: bookings 1 and cancelled 1 at each venue', async (t) => {
+  const deals = [];
+  for (const v of ['TBB', 'TBT', 'ECD', 'SWF', 'OS']) {
+    deals.push(D({ pipeline: S, dealname: `${v} Live`, venue: v, contract_signed_date: '2026-09-10', booked_cancelled__reporting_use_only_: 'Booked' }));
+    deals.push(D({ pipeline: 'default', dealname: `${v} Gone`, venue: v, contract_signed_date: '2026-09-11', booked_cancelled__reporting_use_only_: 'Cancelled' }));
+  }
+  const s = await serve(t, app(fakeHubSpot({ contacts: [], deals }).search, OCT));
+  const j = JSON.parse((await call(s, '/api/funnel/monthly?month=2026-09', key)).body);
+  const ones = { TBB: 1, TBT: 1, ECD: 1, SWF: 1, OS: 1 };
+  assert.deepStrictEqual(j.bookings.by_venue, ones);
+  assert.deepStrictEqual(j.cancelled.by_venue, ones);
+  assert.strictEqual(j.bookings.total, 5);
+  assert.strictEqual(j.cancelled.total, 5);
 });
