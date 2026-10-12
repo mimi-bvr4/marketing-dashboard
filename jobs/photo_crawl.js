@@ -15,6 +15,9 @@
 //   --budget-min <n>                      (--resume) start no new top folder after n
 //                                         minutes (default 20); the run ends PARTIAL
 //   --concurrency <n>                     folders listed at once (default 1; --resume 8)
+//   --thumbs                              ORDER #1672: backfill thumbnails for indexed photos
+//                                         that have none, NEWEST FIRST, until --budget-min
+//                                         (default 45) runs out. Concurrency default 8.
 //
 // --apply and --changes need MARKETING_DATABASE_URL in the environment. The
 // dry run never opens a database connection at all.
@@ -32,7 +35,7 @@ const kindOf = (mime) => (/^image\//.test(mime || '') ? 'image' : /^video\//.tes
 const TOP_REPORTED = ['Venues', 'NLP', 'Culinary', 'Misc.'];
 
 function parseArgs(argv) {
-  const modes = ['--dry-run', '--apply', '--changes'].filter((m) => argv.includes(m));
+  const modes = ['--dry-run', '--apply', '--changes', '--thumbs'].filter((m) => argv.includes(m));
   if (modes.length > 1) throw new Error(`pick one of ${modes.join(', ')}`);
   const val = (flag) => { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] : null; };
   const mode = (modes[0] || '--dry-run').slice(2);
@@ -45,8 +48,9 @@ function parseArgs(argv) {
     if (!(n > 0)) throw new Error(`${flag} wants a number above 0, got ${v}`);
     return n;
   };
+  const backfill = mode === 'thumbs';
   return { mode, thumbs: !argv.includes('--no-thumbs'), listingOut: val('--listing-out'), resume,
-    budgetMin: num('--budget-min', 20), concurrency: num('--concurrency', resume ? 8 : 1) };
+    budgetMin: num('--budget-min', backfill ? 45 : 20), concurrency: num('--concurrency', resume || backfill ? 8 : 1) };
 }
 
 // ------------------------------------------------------------- the report
@@ -388,6 +392,57 @@ async function applyChanges({ client, pool, log, thumbs }) {
   return { counts, newStartPageToken };
 }
 
+// ------------------------------------------------------------- ORDER #1672
+
+// The #1624 first load ran --no-thumbs (110,737 rows had to finish), and the
+// nightly --changes only fetches thumbnails for new or changed files, so the
+// archive had no picture to show and nothing for the tagger to read. This
+// fills them in, newest photos first, a timed slice per night. Mimi's ruling
+// 10.12.2026 (popup): "All, nightly, newest first".
+const THUMB_QUEUE_SQL = `SELECT drive_id FROM photos
+  WHERE thumb IS NULL AND removed_at IS NULL
+    AND (thumb_missing_at IS NULL OR thumb_missing_at < now() - interval '30 days')
+  ORDER BY taken_date DESC NULLS LAST, created_time DESC NULLS LAST, drive_id
+  LIMIT $1`;
+const THUMB_SET_SQL = 'UPDATE photos SET thumb = $2, thumb_w = $3, thumb_h = $4, thumb_missing_at = NULL WHERE drive_id = $1 AND thumb IS NULL';
+const THUMB_MISSING_SQL = 'UPDATE photos SET thumb_missing_at = now() WHERE drive_id = $1';
+const THUMB_LEFT_SQL = `SELECT count(*)::int AS n FROM photos WHERE thumb IS NULL AND removed_at IS NULL
+  AND (thumb_missing_at IS NULL OR thumb_missing_at < now() - interval '30 days')`;
+
+async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency = 8, batch = 200, now = Date.now }) {
+  await ensurePhotoTables(pool);
+  const stopAt = now() + budgetMin * 60000;
+  const c = { filled: 0, missing: 0, failed: 0, bytes: 0 };
+  let more = true;
+  while (more && now() < stopAt) {
+    const ids = (await pool.query(THUMB_QUEUE_SQL, [batch])).rows.map((r) => r.drive_id);
+    if (!ids.length) { more = false; break; }
+    let progressed = 0;
+    for (let i = 0; i < ids.length; i += concurrency) {
+      await Promise.all(ids.slice(i, i + concurrency).map(async (id) => {
+        try {
+          const file = await client.getFile(id, 'id, thumbnailLink');
+          const t = file && file.thumbnailLink ? await client.thumbnail(file) : null;
+          if (!t) { await pool.query(THUMB_MISSING_SQL, [id]); c.missing++; progressed++; return; }
+          await pool.query(THUMB_SET_SQL, [id, t.bytes, t.w, t.h]);
+          c.filled++; c.bytes += t.bytes.length; progressed++;
+        } catch (e) {
+          // A file deleted from Drive since the index, or one this account cannot
+          // read: stamp it so the queue moves on; the nightly --changes handles removals.
+          if (/Drive 40[34]/.test(e.message)) { await pool.query(THUMB_MISSING_SQL, [id]); c.missing++; progressed++; return; }
+          c.failed++;
+        }
+      }));
+      if (now() >= stopAt) break;
+    }
+    if (!progressed) { log('THUMBS: a whole batch failed; stopping this run so it does not spin'); break; }
+  }
+  const left = (await pool.query(THUMB_LEFT_SQL)).rows[0].n;
+  const avg = c.filled ? Math.round(c.bytes / c.filled / 1024) : 0;
+  log(`THUMBS: filled ${c.filled}, no thumbnail from Drive ${c.missing}, failed ${c.failed}, average ${avg} KB, still to do ${left}`);
+  return { ...c, left, avgKb: avg };
+}
+
 // `client` and `pool` are handed in so a test can run every mode with mocks.
 // The dry run is never given a pool and never asks for one.
 async function main({ argv = process.argv.slice(2), client, pool, makePool, log = console.log, now = Date.now } = {}) {
@@ -396,6 +451,7 @@ async function main({ argv = process.argv.slice(2), client, pool, makePool, log 
   if (mode === 'dry-run') return dryRun({ client, log, listingOut, concurrency });
   const db = pool || (makePool && makePool());
   if (!db) throw new Error(`--${mode} needs MARKETING_DATABASE_URL`);
+  if (mode === 'thumbs') return backfillThumbs({ client, pool: db, log, budgetMin, concurrency, now });
   if (mode === 'apply' && resume) return applyResume({ client, pool: db, log, thumbs, budgetMin, concurrency, now });
   return mode === 'apply' ? applyFull({ client, pool: db, log, thumbs }) : applyChanges({ client, pool: db, log, thumbs });
 }
@@ -413,4 +469,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`photo_crawl FAILED: ${e.message}`); process.exitCode = 1; if (pool) pool.end(); });
 }
 
-module.exports = { main, summarize, rowFor, parseArgs, UPSERT_SQL, kindOf, BATCH, upsertSql };
+module.exports = { main, summarize, rowFor, parseArgs, UPSERT_SQL, kindOf, BATCH, upsertSql, backfillThumbs, THUMB_QUEUE_SQL };
