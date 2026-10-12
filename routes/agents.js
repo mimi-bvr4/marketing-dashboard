@@ -9,6 +9,14 @@
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
 //   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
+//   POST /api/agents/:slug/name         { name }  -> #1664, '' puts the default back
+//   PUT  /api/agents/:slug/portrait     raw PNG/JPG/WebP body, 1.5 MB max  -> #1664
+//   DELETE /api/agents/:slug/portrait   -> back to the drawn portrait
+//   GET  /api/agents/:slug/portrait     the picture
+//   GET  /api/agents/:slug/profile-log  every name and portrait change
+//
+// #1664 NAMES AND PORTRAITS ARE COSMETIC (Mimi, 10.12.2026): they save at once,
+// no exec approval, because they change nothing about what an agent may do.
 //
 // CHARACTER CARDS: each agent is shown as a character: Does / Traits / Needs
 // (agent.json "character"), plus every ask and where it stands. Asks the Box
@@ -27,6 +35,7 @@ const express = require('express');
 const path = require('path');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
 const { personOf } = require('./review');
+const { displayName } = require('../lib/agent-profile');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 
@@ -70,11 +79,15 @@ function createAgentsRouter({ store, identity }) {
     const queued = await store.runRequests(50);
     const allAsks = await store.listAsks();
     const exec = await isExec(req, identity);
+    const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
     res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
       const asks = allAsks.filter((a) => a.agent === slug);
-      return { slug, name: d.name, job: d.job, cadence: d.cadence, sources: (d.sources || []).map(sourceView),
+      const p = profiles.get(slug);
+      return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
+        portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
+        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, sources: (d.sources || []).map(sourceView),
         default_skill: d.skill, default_max_cards: d.max_cards || 3,
         current: s ? { version: s.version, skill_md: s.skill_md, enabled: s.enabled, max_cards: s.max_cards,
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
@@ -87,6 +100,31 @@ function createAgentsRouter({ store, identity }) {
           order_file: a.order_file, decided_by: a.decided_by, note: a.note })) };
     }) });
   });
+
+  // #1664 names and portraits.
+  r.post('/api/agents/:slug/name', need, known, async (req, res) => {
+    const out = await store.setName(req.params.slug, (req.body || {}).name, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ name: displayName(loadAgent(req.params.slug), out.profile), profile: out.profile });
+  });
+  const raw = express.raw({ type: () => true, limit: '2mb' });
+  r.put('/api/agents/:slug/portrait', need, known, raw, async (req, res) => {
+    const out = await store.setPortrait(req.params.slug, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ profile: out.profile });
+  });
+  r.delete('/api/agents/:slug/portrait', need, known, async (req, res) => {
+    const out = await store.setPortrait(req.params.slug, null, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ profile: out.profile });
+  });
+  r.get('/api/agents/:slug/portrait', need, known, async (req, res) => {
+    const p = await store.portrait(req.params.slug);
+    if (!p) return res.status(404).json({ error: 'no portrait' });
+    res.set({ 'Content-Type': p.portrait_type, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
+    res.send(p.portrait);
+  });
+  r.get('/api/agents/:slug/profile-log', need, known, async (req, res) => res.json({ changes: await store.profileLog(req.params.slug) }));
 
   r.get('/api/agents/:slug/history', need, known, async (req, res) => res.json({ versions: await store.settingsHistory(req.params.slug) }));
 

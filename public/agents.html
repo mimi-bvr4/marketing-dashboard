@@ -7,44 +7,82 @@
 <!-- ORDER #1658: the Agents page. Katherine edits what each marketing bot does;
      every save is a new version the Box's next run uses. The fence (drafts only,
      nothing published, sent or spent, the AI-tells lint) is added by the runner
-     and cannot be edited here. Token layer served by dispatch (#1210). -->
+     and cannot be edited here. Token layer served by dispatch (#1210).
+     ORDER #1664: the roster. Each agent is a character card with a portrait and
+     a name Katherine sets; names and portraits are cosmetic and save at once.
+     Open a character (#slug) for everything #1658 had: asks, instructions,
+     versions, Run now with a request. -->
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
-  .wrap { display: grid; gap: var(--ihg-space-6, 24px); padding-block: var(--ihg-space-6, 24px) var(--ihg-space-12, 48px); }
-  .agent { border: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface, #fff); padding: var(--ihg-space-4, 16px); display: grid; gap: var(--ihg-space-3, 12px); }
-  .head { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); align-items: baseline; justify-content: space-between; }
-  .meta { font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); }
-  .badge { font-size: var(--ihg-text-xs, 12px); padding: 0 var(--ihg-space-2, 8px); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface-muted, #f4f5f7); }
-  .badge.on { background: #e8f5ee; color: #1d6b42; }
-  .badge.off { background: #fdecea; color: #b42318; }
-  .badge.pending { background: #fff4e5; color: #8a5300; }
-  textarea { width: 100%; min-height: 22rem; font: 13px/1.5 ui-monospace, Menlo, monospace; }
-  .row { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3, 12px); align-items: center; }
-  .row input[type=text] { flex: 1 1 18rem; min-height: var(--ihg-target-min); }
-  .err { color: #b42318; font-size: var(--ihg-text-sm, 14px); }
-  .ok { color: #1d6b42; font-size: var(--ihg-text-sm, 14px); }
-  ul.src { margin: 0; padding-left: 1.2rem; font-size: var(--ihg-text-sm, 14px); }
-  table.hist { border-collapse: collapse; font-size: var(--ihg-text-xs, 12px); width: 100%; }
-  table.hist td, table.hist th { border-bottom: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); padding: 4px 6px; text-align: left; }
-  .fence { font-size: var(--ihg-text-sm, 14px); color: var(--ihg-color-text-muted, #6d6e71); margin: 0; }
-  .role { font-size: var(--ihg-text-sm, 14px); color: var(--ihg-color-text-muted, #6d6e71); font-style: italic; }
-  .cols { display: grid; gap: var(--ihg-space-4, 16px); }
-  @media (min-width: 56rem) { .cols { grid-template-columns: 1fr 1fr 1fr; } }
-  .cols h3 { font-size: var(--ihg-text-sm, 14px); margin: 0 0 var(--ihg-space-1, 4px); text-transform: uppercase; letter-spacing: .04em; }
-  .cols ul { margin: 0; padding-left: 1.1rem; font-size: var(--ihg-text-sm, 14px); }
-  .cols li { margin-bottom: 4px; }
-  .instead { color: var(--ihg-color-text-muted, #6d6e71); }
-  .asks { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--ihg-space-2, 8px); font-size: var(--ihg-text-sm, 14px); }
-  .asks li { border-left: 3px solid var(--ihg-color-border, #d9dbe0); padding-left: var(--ihg-space-2, 8px); }
+  :root { --cream: #F7F4EF; --ink: #211E1B; --muted: #5a534c; --line: #E4DDD3; --terra: #BD574E; --rust: #8A4832; }
+  body { background: var(--cream); }
+  .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; }
+  .wrap { display: grid; gap: 24px; padding-block: 28px 56px; color: var(--ink); }
+  .intro { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; }
+  .intro h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+  .intro p { margin: 6px 0 0; max-width: 680px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+  .s-ok { background: #E3EFE8; color: #1F5A3F; } .s-part { background: #F7EBD3; color: #7A4E0E; } .s-wait { background: #F5E1DE; color: #8A2B22; } .s-off { background: #E7E3DD; color: #4D453D; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 20px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .who { display: flex; gap: 14px; align-items: center; }
+  .face { flex: 0 0 auto; border-radius: 50%; overflow: hidden; display: block; }
+  .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .who .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .role { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--rust); }
+  .name { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: clamp(19px, 5.4vw, 24px); color: var(--ink); border: 1px dashed transparent; border-radius: 6px; padding: 2px 4px; margin-left: -5px; background: transparent; width: 100%; box-sizing: border-box; min-width: 0; }
+  .name:hover { border-color: var(--line); }
+  .name:focus { outline: 2px solid var(--terra); outline-offset: 2px; }
+  .job { font-size: 14px; color: var(--muted); }
+  .line { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .does { margin: 0; font-size: 15px; line-height: 1.5; }
+  .need { background: #FBF7F1; border: 1px solid #EFE6D8; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.45; }
+  .acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
+  .btn { min-height: 44px; padding: 0 18px; border-radius: 10px; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; }
+  .btn.primary { border: none; background: var(--terra); color: #fff; }
+  .btn.ghost { border: 1px solid #D8CFC2; background: #fff; color: var(--ink); }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .msg { font-size: 13px; margin: 0; } .ok { color: #1d6b42; } .err { color: #b42318; }
+  .note { font-size: 13px; color: var(--muted); margin: 0; }
+  /* one character */
+  .back { font-weight: 600; text-decoration: none; color: var(--rust); }
+  .hero { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 24px; display: flex; flex-wrap: wrap; gap: 28px; align-items: center; }
+  .hero .pic { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 0 0 210px; }
+  .hero .name { font-size: clamp(30px, 5vw, 42px); border-color: var(--line); }
+  .hero .info { flex: 1 1 380px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .up { position: relative; }
+  .up input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .up:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 10px; }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .panel h2 { margin: 0; font-size: 21px; }
+  .panel ul { margin: 0; padding-left: 1.1rem; font-size: 15px; line-height: 1.5; }
+  .rule { border-left: 3px solid var(--terra); padding-left: 12px; font-size: 15px; }
+  .rule .instead { color: var(--muted); font-size: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .row input[type=text] { flex: 1 1 16rem; min-height: 44px; font: inherit; border: 1px solid #D8CFC2; border-radius: 10px; padding: 0 10px; }
+  textarea { width: 100%; box-sizing: border-box; font: inherit; border: 1px solid #D8CFC2; border-radius: 10px; padding: 10px; }
+  textarea.code { min-height: 22rem; font: 13px/1.5 ui-monospace, Menlo, monospace; }
+  .asks { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; font-size: 14px; }
+  .asks li { border-left: 3px solid var(--line); padding-left: 10px; }
   .st-applied, .st-built { border-left-color: #1d6b42 !important; }
   .st-cant, .st-declined, .st-failed { border-left-color: #b42318 !important; }
   .st-awaiting_exec, .st-building, .st-new, .st-sorting { border-left-color: #8a5300 !important; }
-  pre.proposed { white-space: pre-wrap; font-size: 12px; max-height: 20rem; overflow: auto; background: var(--ihg-color-surface-muted, #f4f5f7); padding: var(--ihg-space-2, 8px); }
+  pre.proposed { white-space: pre-wrap; font-size: 12px; max-height: 20rem; overflow: auto; background: #f4f5f7; padding: 8px; }
+  details > summary { cursor: pointer; font-weight: 600; }
+  .tbl { overflow-x: auto; }
+  table.hist { border-collapse: collapse; font-size: 13px; width: 100%; }
+  table.hist td, table.hist th { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: top; }
+  .meta { font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -52,10 +90,7 @@
   <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Agents</div>
   <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/photos">Photos</a></nav>
 </div></header>
-<main class="container wrap">
-  <p class="fence">Each bot is a character: what it <strong>does</strong>, its <strong>traits</strong> (what it can't do, and what it does instead), and what it still <strong>needs</strong>. Ask any of them for a new ability: the Box sorts the ask within 15 minutes into an instruction change (Mimi approves it), a build (filed to the Box), or a can't (added to its traits, with what it can do instead). You can also edit what each bot does directly. Every save is a new version, the Box uses it on the bot's next run, and any earlier version can be put back. What no edit can change: bots only write <strong>drafts</strong> into Review, never publish, post, send or spend, and every draft is checked for em dashes and AI tells.</p>
-  <div id="list"><p class="meta">Loading…</p></div>
-</main>
+<main class="container wrap" id="main"><p class="meta">Loading…</p></main>
 <script>
 (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,8 +101,62 @@
     if (!r.ok) throw new Error(j.error || ('error ' + r.status));
     return j;
   }
+  const main = document.getElementById('main');
   let agents = [];
   let exec = false;
+
+  // The drawn portrait each character has until someone uploads one.
+  const LOOK = {
+    'bloggy-bob': ['#F3DED8', '#8A4832', 'M2 20h4L17 9l-4-4L2 16v4z M11 7l4 4'],
+    'site-health': ['#DCE6E4', '#2F5D5A', 'M9 3a6 6 0 1 0 0 12 6 6 0 0 0 0-12z M14 14l5 5'],
+    'monthly-report': ['#E1E0EE', '#46407A', 'M3 20V11 M9 20V5 M15 20v-6 M2 20h19'],
+    'listings': ['#EFE3CF', '#7A5418', 'M3 10v4h3l8 5V5l-8 5H3z M17 9a4 4 0 0 1 0 6'],
+    'citations': ['#DDE8DF', '#2F5D3F', 'M11 2l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V5l7-3z M8 11l2 2 4-4'],
+    'gbp': ['#F2E0DC', '#8A2B22', 'M4 17h14 M6 17v-3a5 5 0 0 1 10 0v3 M11 7v2 M9 5h4'],
+    'paid-ads': ['#E7E3DD', '#4D453D', 'M8 3h6v3H8z M6 4H4v16h14V4h-2 M7 11h8 M7 15h5'],
+  };
+  function face(a, size) {
+    const label = `Portrait of ${a.name}`;
+    if (a.portrait) return `<span class="face" style="width:${size}px;height:${size}px"><img src="${esc(a.portrait)}" alt="${esc(label)}" width="${size}" height="${size}"></span>`;
+    const [tint, ink, icon] = LOOK[a.slug] || ['#E7E3DD', '#4D453D', 'M6 12h10 M11 7v10'];
+    return `<svg class="face" width="${size}" height="${size}" viewBox="0 0 88 88" role="img" aria-label="${esc(label)}">
+      <circle cx="44" cy="44" r="44" fill="${tint}"/><path d="M18 78c2-14 12-22 26-22s24 8 26 22" fill="${ink}"/><circle cx="44" cy="34" r="14" fill="${ink}"/>
+      <circle cx="69" cy="67" r="17" fill="#fff" stroke="${ink}" stroke-width="2"/>
+      <g transform="translate(57 55)"><path d="${icon}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
+  }
+  // Status from facts the page already has; never a guess.
+  function status(a) {
+    const on = a.current ? a.current.enabled : true;
+    if (!on) return { cls: 's-off', label: 'Paused' };
+    if (a.sources.some((s) => s.required && s.pending)) return { cls: 's-wait', label: 'Waiting on input' };
+    if (a.last_run && a.last_run.status === 'failed') return { cls: 's-wait', label: 'Last run failed' };
+    if (a.sources.some((s) => s.pending) || (a.last_run && (a.last_run.unavailable || []).length)) return { cls: 's-part', label: 'Partly working' };
+    return { cls: 's-ok', label: 'Working' };
+  }
+  const nameInput = (a, cls) => `<input class="name ${cls || ''}" data-name="${a.slug}" value="${esc(a.name)}" maxlength="40" aria-label="Name for ${esc(a.character.role)}" title="Click to rename">`;
+
+  function cardHtml(a) {
+    const st = status(a);
+    const need = a.character.needs[0];
+    return `<article class="card" data-slug="${a.slug}">
+      <div class="who">${face(a, 84)}<div class="txt"><span class="role">${esc(a.character.role)}</span>${nameInput(a)}<span class="job">${esc(a.job)}</span></div></div>
+      <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
+      <p class="does">${esc(a.character.does[0] || '')}</p>
+      ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
+      <div class="acts"><button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button><a class="btn ghost" href="#${a.slug}">Open character</a></div>
+      <p class="msg" hidden></p>
+    </article>`;
+  }
+  function rosterHtml() {
+    const c = { ok: 0, part: 0, wait: 0 };
+    agents.forEach((a) => { const s = status(a).cls; if (s === 's-ok') c.ok++; else if (s === 's-part') c.part++; else c.wait++; });
+    return `<div class="intro"><div><h1 class="serif">The marketing team you don't have to manage</h1>
+        <p>${agents.length} characters, each with one job. They only ever write drafts into Review: never publish, post, send or spend. Click a name to rename them; open a character to change what it does.</p></div>
+      <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
+      <div class="grid">${agents.map(cardHtml).join('')}</div>
+      <p class="note">A name or portrait shows everywhere the character appears (Review cards, the Monday digest) and saves at once. It changes nothing about what the character is allowed to do.</p>`;
+  }
+
   const STATUS = { new: 'Waiting for the Box to sort it', sorting: 'Being sorted', awaiting_exec: 'Instruction change proposed, waiting for Mimi',
     applied: 'Added', declined: 'Declined', building: 'Being built', built: 'Built', cant: "Can't", failed: 'The Box could not sort it' };
   function askHtml(a) {
@@ -78,76 +167,139 @@
       ${a.status === 'declined' && a.note ? `<div class="meta">Mimi: ${esc(a.note)}</div>` : ''}
       ${a.status === 'failed' && a.note ? `<div class="meta">${esc(a.note)}</div>` : ''}
       ${a.proposed ? `<details><summary>The proposed new instructions</summary><pre class="proposed">${esc(a.proposed)}</pre></details>
-        ${exec ? `<div class="row"><input type="text" data-f="dnote" placeholder="Note (optional)" aria-label="Note"><button data-a="apply" data-id="${a.id}">Apply</button><button data-a="decline" data-id="${a.id}">Decline</button></div>` : ''}` : ''}
+        ${exec ? `<div class="row"><input type="text" data-f="dnote" placeholder="Note (optional)" aria-label="Note"><button class="btn ghost" data-a="apply" data-id="${a.id}">Apply</button><button class="btn ghost" data-a="decline" data-id="${a.id}">Decline</button></div>` : ''}` : ''}
     </li>`;
   }
   function characterHtml(a) {
-    const c = a.character;
+    const c = a.character; const cur = a.current; const st = status(a); const run = a.last_run;
+    const on = cur ? cur.enabled : true; const n = cur ? cur.max_cards : a.default_max_cards;
     const list = (xs, f) => xs.length ? `<ul>${xs.map(f).join('')}</ul>` : '<p class="meta">Nothing listed.</p>';
-    return `<p class="role">${esc(c.role)}</p>
-      <div class="cols">
-        <div><h3>Does</h3>${list(c.does, (x) => `<li>${esc(x)}</li>`)}</div>
-        <div><h3>Traits</h3>${list(c.traits, (t) => `<li>Can't: ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</li>`)}</div>
-        <div><h3>Needs</h3>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}</div>
+    return `<a class="back" href="#">← All characters</a>
+    <section class="hero" data-slug="${a.slug}">
+      <div class="pic">${face(a, 190)}
+        <label class="btn ghost up">Upload portrait<input type="file" accept="image/png,image/jpeg,image/webp" data-a="portrait" aria-label="Upload a portrait for ${esc(a.name)}"></label>
+        ${a.portrait ? '<button class="btn ghost" data-a="noportrait" style="min-height:36px;font-size:13px">Use the drawn portrait</button>' : ''}
+        <span class="meta" style="text-align:center">PNG, JPG or WebP. Square works best; it is resized here before saving.</span></div>
+      <div class="info">
+        <span class="role">${esc(c.role)} · ${esc(a.job)}</span>
+        ${nameInput(a)}
+        <span class="meta">${a.named_by ? `Named by ${esc(a.named_by)}. ` : ''}Rename any time; it saves at once. Clear the box to go back to "${esc(a.default_name)}".</span>
+        <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
+          <span class="meta">${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}` : 'Has not run yet'}</span></div>
+        <div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
+          <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
+        <p class="meta" style="margin:0">The Box picks it up within 15 minutes; the draft lands in <a href="/review">Review</a>.</p>
+        <p class="msg" hidden></p>
       </div>
-      <div><h3 style="font-size:var(--ihg-text-sm, 14px);margin:0 0 var(--ihg-space-1, 4px)">Ask for a new ability</h3>
-        <div class="row"><input type="text" data-f="newask" placeholder="e.g. add a short FAQ to every post, or reply to Knot reviews too" aria-label="New ability"><button data-a="ask">Ask</button></div></div>
-      ${a.asks.length ? `<details ${a.asks.some((x) => ['awaiting_exec', 'new', 'sorting'].includes(x.status)) ? 'open' : ''}><summary>Asked for (${a.asks.length})</summary><ul class="asks">${a.asks.map(askHtml).join('')}</ul></details>` : ''}`;
-  }
-  function view(a) {
-    const c = a.current;
-    const on = c ? c.enabled : true;
-    const n = c ? c.max_cards : a.default_max_cards;
-    const run = a.last_run;
-    return `<section class="agent" data-slug="${a.slug}">
-      <div class="head"><h2 style="margin:0">${esc(a.name)}</h2>
-        <div class="meta"><span class="badge ${on ? 'on' : 'off'}">${on ? 'On' : 'Paused'}</span><span>${esc(a.job)}</span><span>${esc(a.cadence)}</span></div></div>
-      ${characterHtml(a)}
-      <div class="meta"><span>${c ? `Instructions v${c.version}, saved by ${esc(c.edited_by)} ${fmt(c.created_at)}${c.note ? ' (' + esc(c.note) + ')' : ''}` : 'Default instructions (never edited)'}</span>
-        <span>${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}${(run.unavailable || []).length ? ', ' + run.unavailable.length + ' source(s) missing' : ''}` : 'Has not run yet'}</span>
-        ${a.waiting ? '<span class="badge pending">Run waiting</span>' : ''}</div>
-      <details><summary>What it reads (${a.sources.length})</summary><ul class="src">${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="badge pending">not connected</span> ${esc(s.why || '')}` : ''}</li>`).join('')}</ul>
-        <p class="meta">Adding a source is a code change; ask Mimi.</p></details>
-      <details><summary>Run it now</summary>
-        <div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request"><button data-a="run">Run now</button></div>
-        <p class="meta">The Box picks it up within 15 minutes; the draft lands in Review.</p></details>
+    </section>
+    <div class="panels" data-slug="${a.slug}">
+      <section class="panel"><h2 class="serif">What ${esc(a.name)} does</h2>${list(c.does, (x) => `<li>${esc(x)}</li>`)}
+        <details><summary>What it reads (${a.sources.length})</summary><ul>${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="pill s-wait">not connected</span> ${esc(s.why || '')}` : ''}</li>`).join('')}</ul>
+        <p class="meta">Adding a source is a code change; ask Mimi.</p></details></section>
+      <section class="panel"><h2 class="serif">Rules</h2>${c.traits.length ? c.traits.map((t) => `<div class="rule"><strong>Can't:</strong> ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</div>`).join('') : '<p class="meta">Nothing listed.</p>'}</section>
+      <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}</section>
+      <section class="panel"><h2 class="serif">Ask for a new ability</h2>
+        <label class="meta" for="newask">The Box sorts it within 15 minutes: an instruction change (Mimi approves it), a build (filed to the Box), or a can't (added to the rules, with what it does instead).</label>
+        <textarea id="newask" data-f="newask" rows="3" placeholder="e.g. add a short FAQ to every post"></textarea>
+        <div><button class="btn ghost" data-a="ask">Ask</button></div>
+        ${a.asks.length ? `<details ${a.asks.some((x) => ['awaiting_exec', 'new', 'sorting'].includes(x.status)) ? 'open' : ''}><summary>Asked for (${a.asks.length})</summary><ul class="asks">${a.asks.map(askHtml).join('')}</ul></details>` : ''}</section>
+    </div>
+    <section class="panel" id="instr" data-slug="${a.slug}"><h2 class="serif">Instructions</h2>
+      <p class="meta" style="margin:0">${cur ? `Version ${cur.version}, saved by ${esc(cur.edited_by)} ${fmt(cur.created_at)}${cur.note ? ' (' + esc(cur.note) + ')' : ''}` : 'Default instructions (never edited)'}. What no edit can change: drafts only, never published, posted, sent or spent, and every draft is checked for em dashes and AI tells.</p>
       <details><summary>Edit instructions and settings</summary>
-        <textarea data-f="skill" aria-label="Instructions">${esc(c ? c.skill_md : a.default_skill)}</textarea>
+        <textarea class="code" data-f="skill" aria-label="Instructions">${esc(cur ? cur.skill_md : a.default_skill)}</textarea>
         <div class="row">
           <label><input type="checkbox" data-f="enabled" ${on ? 'checked' : ''}> On (runs on its schedule)</label>
           <label>Drafts per run <select data-f="max">${[1, 2, 3, 4, 5, 6, 8, 10].map((x) => `<option ${x === n ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           <input type="text" data-f="note" placeholder="What you changed (optional)" aria-label="Note">
-          <button data-a="save">Save as a new version</button><button data-a="default">Back to the default</button>
+          <button class="btn primary" data-a="save">Save as a new version</button><button class="btn ghost" data-a="default">Back to the default</button>
         </div></details>
-      <details data-h><summary>Version history</summary><div data-f="hist"><p class="meta">Open to load.</p></div></details>
-      <p class="msg" hidden></p>
-    </section>`;
+      <details data-h><summary>History</summary><div class="tbl" data-f="hist"><p class="meta">Open to load.</p></div></details>
+      <p class="msg" hidden></p></section>`;
+  }
+
+  function render() {
+    const slug = decodeURIComponent(location.hash.slice(1));
+    const a = agents.find((x) => x.slug === slug);
+    main.innerHTML = a ? characterHtml(a) : rosterHtml();
+    document.title = a ? `${a.name} · Agents` : 'Agents · Marketing';
   }
   async function load() {
-    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; document.getElementById('list').innerHTML = agents.map(view).join(''); }
-    catch (e) { document.getElementById('list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; render(); }
+    catch (e) { main.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
-  function say(el, text, ok) { const m = el.querySelector('.msg'); m.className = 'msg ' + (ok ? 'ok' : 'err'); m.textContent = text; m.hidden = false; }
-  document.getElementById('list').addEventListener('toggle', async (e) => {
+  function say(from, text, ok) {
+    const box = from.closest('[data-slug]') || main;
+    const m = box.querySelector('.msg') || main.querySelector('.msg');
+    if (!m) return; m.className = 'msg ' + (ok ? 'ok' : 'err'); m.textContent = text; m.hidden = false;
+  }
+  window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+
+  // Names save on Enter or when the box loses focus. Esc puts it back.
+  main.addEventListener('keydown', (e) => {
+    const i = e.target.closest('input[data-name]'); if (!i) return;
+    if (e.key === 'Enter') { e.preventDefault(); i.blur(); }
+    if (e.key === 'Escape') { i.value = agents.find((x) => x.slug === i.dataset.name).name; i.blur(); }
+  });
+  main.addEventListener('change', async (e) => {
+    const i = e.target.closest('input[data-name]');
+    if (i) {
+      const a = agents.find((x) => x.slug === i.dataset.name);
+      try { const r = await api(`/api/agents/${a.slug}/name`, { method: 'POST', body: JSON.stringify({ name: i.value }) });
+        a.name = r.name; a.named_by = r.profile && r.profile.display_name ? r.profile.updated_by : null; i.value = r.name; say(i, `Saved. Now "${r.name}" everywhere.`, true); }
+      catch (x) { i.value = a.name; say(i, x.message); }
+      return;
+    }
+    const f = e.target.closest('input[data-a=portrait]');
+    if (f && f.files && f.files[0]) {
+      const a = agents.find((x) => x.slug === f.closest('[data-slug]').dataset.slug);
+      try { say(f, 'Saving the portrait…', true); const blob = await squareImage(f.files[0]);
+        const r = await fetch(`/api/agents/${a.slug}/portrait`, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': blob.type }, body: blob });
+        const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || ('error ' + r.status));
+        await load(); say(main.querySelector('.hero') || main, 'Portrait saved.', true); }
+      catch (x) { say(f, x.message || 'Could not read that picture.'); }
+    }
+  });
+  // Crop to a centered square and shrink to 512px so any ChatGPT/Canva export fits.
+  function squareImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file); const img = new Image();
+      img.onload = () => {
+        const s = Math.min(img.naturalWidth, img.naturalHeight); const out = Math.min(512, s);
+        const c = document.createElement('canvas'); c.width = out; c.height = out;
+        c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, out, out);
+        URL.revokeObjectURL(url);
+        c.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not read that picture.'))), 'image/jpeg', 0.88);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not a picture this browser can open.')); };
+      img.src = url;
+    });
+  }
+  main.addEventListener('toggle', async (e) => {
     const d = e.target; if (!d.matches || !d.matches('details[data-h]') || !d.open) return;
-    const el = d.closest('.agent'); const slug = el.dataset.slug;
+    const slug = d.closest('[data-slug]').dataset.slug;
     try {
-      const { versions } = await api(`/api/agents/${slug}/history`);
-      el.querySelector('[data-f=hist]').innerHTML = versions.length ? `<table class="hist"><tr><th>Version</th><th>Saved</th><th>By</th><th>On</th><th>Drafts</th><th>Note</th><th></th></tr>${versions.map((v) => `<tr><td>v${v.version}</td><td>${fmt(v.created_at)}</td><td>${esc(v.edited_by)}</td><td>${v.enabled ? 'yes' : 'paused'}</td><td>${v.max_cards}</td><td>${esc(v.note || '')}</td><td><button data-a="revert" data-v="${v.version}">Put back</button></td></tr>`).join('')}</table>` : '<p class="meta">Never edited; it runs the default instructions.</p>';
-    } catch (x) { say(el, x.message); }
+      const [{ versions }, { changes }] = await Promise.all([api(`/api/agents/${slug}/history`), api(`/api/agents/${slug}/profile-log`)]);
+      const rows = [
+        ...versions.map((v) => ({ at: v.created_at, by: v.edited_by, what: `Instructions v${v.version}${v.enabled ? '' : ' (paused)'}, ${v.max_cards} drafts per run${v.note ? ': ' + v.note : ''}`, v: v.version })),
+        ...changes.map((c) => ({ at: c.changed_at, by: c.changed_by, what: c.field === 'name' ? `Renamed${c.old_value ? ` from "${c.old_value}"` : ''} to "${c.new_value || 'the default name'}"` : (c.new_value === 'removed' ? 'Portrait removed' : 'New portrait') })),
+      ].sort((x, y) => new Date(y.at) - new Date(x.at));
+      d.querySelector('[data-f=hist]').innerHTML = rows.length ? `<table class="hist"><tr><th>When</th><th>Who</th><th>What</th><th></th></tr>${rows.map((r) => `<tr><td>${fmt(r.at)}</td><td>${esc(r.by)}</td><td>${esc(r.what)}</td><td>${r.v ? `<button class="btn ghost" style="min-height:32px" data-a="revert" data-v="${r.v}">Put back</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="meta">Never changed; it runs the default instructions.</p>';
+    } catch (x) { say(d, x.message); }
   }, true);
-  document.getElementById('list').addEventListener('click', async (e) => {
+  main.addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-a]'); if (!b) return;
-    const el = b.closest('.agent'); const slug = el.dataset.slug; const a = agents.find((x) => x.slug === slug);
-    const q = (f) => el.querySelector(`[data-f=${f}]`);
+    const box = b.closest('[data-slug]'); const slug = box.dataset.slug; const a = agents.find((x) => x.slug === slug);
+    const q = (f) => main.querySelector(`[data-f=${f}]`);
     try {
-      if (b.dataset.a === 'ask') { await api(`/api/agents/${slug}/asks`, { method: 'POST', body: JSON.stringify({ ask: q('newask').value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), 'Asked. The Box sorts it within about 15 minutes.', true); }
-      if (b.dataset.a === 'apply' || b.dataset.a === 'decline') { const li = b.closest('li'); await api(`/api/agents/asks/${b.dataset.id}/decide`, { method: 'POST', body: JSON.stringify({ decision: b.dataset.a, note: (li.querySelector('[data-f=dnote]') || {}).value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), b.dataset.a === 'apply' ? 'Applied as a new version.' : 'Declined.', true); }
-      if (b.dataset.a === 'run') { await api(`/api/agents/${slug}/run`, { method: 'POST', body: JSON.stringify({ ask: q('ask').value }) }); say(el, 'Queued. The draft will be in Review within about 15 minutes.', true); }
-      if (b.dataset.a === 'save') { const r = await api(`/api/agents/${slug}`, { method: 'POST', body: JSON.stringify({ skill_md: q('skill').value, enabled: q('enabled').checked, max_cards: Number(q('max').value), note: q('note').value }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), `Saved as v${r.settings.version}. The next run uses it.`, true); }
-      if (b.dataset.a === 'default') { q('skill').value = a.default_skill; say(el, 'Default text loaded. Press Save to make it the new version.', true); }
-      if (b.dataset.a === 'revert') { const r = await api(`/api/agents/${slug}/revert`, { method: 'POST', body: JSON.stringify({ version: Number(b.dataset.v) }) }); await load(); say(document.querySelector(`[data-slug=${slug}]`), `Put back as v${r.settings.version}.`, true); }
-    } catch (x) { say(el, x.message); }
+      if (b.dataset.a === 'run') { b.disabled = true; await api(`/api/agents/${slug}/run`, { method: 'POST', body: JSON.stringify({ ask: q('ask') ? q('ask').value : '' }) }); a.waiting = 1; b.textContent = 'Run waiting'; say(b, 'Queued. The draft will be in Review within about 15 minutes.', true); }
+      if (b.dataset.a === 'noportrait') { await api(`/api/agents/${slug}/portrait`, { method: 'DELETE' }); await load(); }
+      if (b.dataset.a === 'ask') { await api(`/api/agents/${slug}/asks`, { method: 'POST', body: JSON.stringify({ ask: q('newask').value }) }); await load(); say(main.querySelector('.panels'), 'Asked. The Box sorts it within about 15 minutes.', true); }
+      if (b.dataset.a === 'apply' || b.dataset.a === 'decline') { const li = b.closest('li'); await api(`/api/agents/asks/${b.dataset.id}/decide`, { method: 'POST', body: JSON.stringify({ decision: b.dataset.a, note: (li.querySelector('[data-f=dnote]') || {}).value }) }); await load(); }
+      if (b.dataset.a === 'save') { const r = await api(`/api/agents/${slug}`, { method: 'POST', body: JSON.stringify({ skill_md: q('skill').value, enabled: q('enabled').checked, max_cards: Number(q('max').value), note: q('note').value }) }); await load(); say(main.querySelector('#instr'), `Saved as version ${r.settings.version}. The next run uses it.`, true); }
+      if (b.dataset.a === 'default') { q('skill').value = a.default_skill; say(b, 'Default text loaded. Press Save to make it the new version.', true); }
+      if (b.dataset.a === 'revert') { const r = await api(`/api/agents/${slug}/revert`, { method: 'POST', body: JSON.stringify({ version: Number(b.dataset.v) }) }); await load(); say(main.querySelector('#instr'), `Put back as version ${r.settings.version}.`, true); }
+    } catch (x) { b.disabled = false; say(b, x.message); }
   });
   load();
 })();

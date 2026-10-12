@@ -35,7 +35,10 @@ function createReviewRouter({ store }) {
   r.get('/api/review/cards', need, async (req, res) => {
     const status = STATUSES.has(req.query.status) ? req.query.status : 'draft';
     const agent = /^[a-z0-9-]+$/.test(req.query.agent || '') ? req.query.agent : undefined;
-    res.json({ cards: await store.list({ status, agent }) });
+    const cards = await store.list({ status, agent });
+    // #1664: show the name Katherine gave each agent, on old cards too.
+    const names = new Map((store.profiles ? await store.profiles() : []).filter((p) => p.display_name).map((p) => [p.agent, p.display_name]));
+    res.json({ cards: cards.map((c) => (names.has(c.agent) ? { ...c, agent_name: names.get(c.agent) } : c)) });
   });
   r.get('/api/review/runs', need, async (req, res) => res.json({ runs: await store.runs() }));
   r.post('/api/review/cards/:id', need, async (req, res) => {

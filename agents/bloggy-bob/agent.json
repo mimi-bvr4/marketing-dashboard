@@ -73,8 +73,6 @@
         "instead": "Writes (unverified) or leaves the fact out"
       }
     ],
-    "needs": [
-      "A WordPress key on the Box for The Bridge Building"
-    ]
+    "needs": []
   }
 }
