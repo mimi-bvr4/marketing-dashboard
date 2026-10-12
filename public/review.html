@@ -39,10 +39,10 @@
 <body>
 <header class="topbar"><div class="container topbar-inner">
   <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Review</div>
-  <nav><a href="/">Dashboard</a> · <a href="/agents">Agents</a> · <a href="/photos">Photos</a></nav>
+  <nav><a href="/">Dashboard</a> · <a href="/agents">Katherine's Team</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
-  <p class="empty" style="margin:0">Every marketing agent drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, posts, sends or spends.</p>
+  <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, posts, sends or spends.</p>
   <div class="runs" id="runs"></div>
   <div class="tabs" role="group" aria-label="Show">
     <button data-s="draft" aria-pressed="true">Drafts</button>
@@ -94,7 +94,7 @@
   async function loadRuns() {
     try {
       const { runs } = await api('/api/review/runs');
-      $('#runs').innerHTML = runs.length ? runs.map((r) => `<span class="run ${r.status === 'failed' ? 'failed' : ''}">${esc(r.agent)}: ${esc(r.status)} ${fmt(r.started_at)}${(r.unavailable || []).length ? ` · ${(r.unavailable || []).length} source(s) missing` : ''}</span>`).join('') : '<span>No agent has run yet.</span>';
+      $('#runs').innerHTML = runs.length ? runs.map((r) => `<span class="run ${r.status === 'failed' ? 'failed' : ''}">${esc(r.agent)}: ${esc(r.status)} ${fmt(r.started_at)}${(r.unavailable || []).length ? ` · ${(r.unavailable || []).length} source(s) missing` : ''}</span>`).join('') : '<span>No one on the team has run yet.</span>';
     } catch (e) { $('#runs').textContent = 'Runs: ' + e.message; }
   }
   function handoffHtml(c) {

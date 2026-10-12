@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agents · Marketing</title>
+<title>Katherine's Team · Marketing</title>
 <!-- ORDER #1658: the Agents page. Katherine edits what each marketing bot does;
      every save is a new version the Box's next run uses. The fence (drafts only,
      nothing published, sent or spent, the AI-tells lint) is added by the runner
@@ -87,7 +87,7 @@
 </head>
 <body>
 <header class="topbar"><div class="container topbar-inner">
-  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Agents</div>
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Katherine's Team</div>
   <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap" id="main"><p class="meta">Loading…</p></main>
@@ -143,18 +143,18 @@
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
-      <div class="acts"><button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button><a class="btn ghost" href="#${a.slug}">Open character</a></div>
+      <div class="acts"><button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button><a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
   }
   function rosterHtml() {
     const c = { ok: 0, part: 0, wait: 0 };
     agents.forEach((a) => { const s = status(a).cls; if (s === 's-ok') c.ok++; else if (s === 's-part') c.part++; else c.wait++; });
-    return `<div class="intro"><div><h1 class="serif">The marketing team you don't have to manage</h1>
-        <p>${agents.length} characters, each with one job. They only ever write drafts into Review: never publish, post, send or spend. Click a name to rename them; open a character to change what it does.</p></div>
+    return `<div class="intro"><div><h1 class="serif">Katherine's marketing team</h1>
+        <p>Katherine's ${agents.length} AI employees, each with one job. They work for her: every piece of work lands in Review as a draft for her to approve, and they never publish, post, send or spend on their own. Click a name to rename someone; open a profile to change what they do.</p></div>
       <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
       <div class="grid">${agents.map(cardHtml).join('')}</div>
-      <p class="note">A name or portrait shows everywhere the character appears (Review cards, the Monday digest) and saves at once. It changes nothing about what the character is allowed to do.</p>`;
+      <p class="note">A name or portrait shows everywhere that team member appears (Review cards, the Monday digest) and saves at once. It changes nothing about what they are allowed to do.</p>`;
   }
 
   const STATUS = { new: 'Waiting for the Box to sort it', sorting: 'Being sorted', awaiting_exec: 'Instruction change proposed, waiting for Mimi',
@@ -174,7 +174,7 @@
     const c = a.character; const cur = a.current; const st = status(a); const run = a.last_run;
     const on = cur ? cur.enabled : true; const n = cur ? cur.max_cards : a.default_max_cards;
     const list = (xs, f) => xs.length ? `<ul>${xs.map(f).join('')}</ul>` : '<p class="meta">Nothing listed.</p>';
-    return `<a class="back" href="#">← All characters</a>
+    return `<a class="back" href="#">← The whole team</a>
     <section class="hero" data-slug="${a.slug}">
       <div class="pic">${face(a, 190)}
         <label class="btn ghost up">Upload portrait<input type="file" accept="image/png,image/jpeg,image/webp" data-a="portrait" aria-label="Upload a portrait for ${esc(a.name)}"></label>
@@ -222,7 +222,7 @@
     const slug = decodeURIComponent(location.hash.slice(1));
     const a = agents.find((x) => x.slug === slug);
     main.innerHTML = a ? characterHtml(a) : rosterHtml();
-    document.title = a ? `${a.name} · Agents` : 'Agents · Marketing';
+    document.title = a ? `${a.name} · Katherine's Team` : "Katherine's Team · Marketing";
   }
   async function load() {
     try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; render(); }
