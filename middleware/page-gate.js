@@ -106,8 +106,10 @@ const { DENIED_MESSAGE, DENIED_PAGE } = require('../lib/access');
 // only the GA4 traffic routes, so a spend route written next week is closed to
 // keys by default, and so is index.html. If ARC needs spend later, it gets its
 // own order.
-const FLEET_READ_PREFIXES = ['/api/ga4/'];
-const FLEET_DENIED_MESSAGE = 'A fleet key can read website-traffic numbers only (/api/ga4/*).';
+// ORDER #1663: keys also read the monthly funnel COUNTS (leads, tours,
+// bookings; no money), so the Monthly Report agent can use them.
+const FLEET_READ_PREFIXES = ['/api/ga4/', '/api/funnel/'];
+const FLEET_DENIED_MESSAGE = 'A fleet key can read website-traffic numbers (/api/ga4/*) and funnel counts (/api/funnel/*) only.';
 function fleetMayRead(p) {
   return FLEET_READ_PREFIXES.some(prefix => p.startsWith(prefix));
 }

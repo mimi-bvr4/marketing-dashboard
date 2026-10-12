@@ -250,6 +250,17 @@ app.post('/api/hubspot/search', async (req, res) => {
   }
 });
 
+// ---- ORDER #1663: monthly funnel counts for the Monthly Report agent ----
+// Same HubSpot path as the proxy above: test deals excluded, rate-limit queue,
+// retry on 429. Read-only searches only; counts only.
+app.use(require('./routes/funnel').createFunnelRouter({
+  search: async (objectType, body) => {
+    const r = await enqueueHubSpot(() => hubspotFetch(objectType, excludeTestDeals(objectType, body)));
+    if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
+    return r.json();
+  },
+}));
+
 // ---- AI Narrative Proxy (Anthropic) ----
 app.post('/api/ai/narrative', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;

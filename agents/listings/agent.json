@@ -5,10 +5,10 @@
   "max_cards": 2,
   "sources": [
     {
-      "type": "pending",
-      "required": true,
-      "label": "the directory listings list (Knot, WeddingWire, Zola, Here Comes The Guide, NCVC and others)",
-      "why": "Katherine confirms the list, which are paid, and who owns each login"
+      "type": "file",
+      "newest": "07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_",
+      "label": "directory listings draft (Katherine confirms paid/logins)",
+      "required": true
     },
     {
       "type": "file",
@@ -36,7 +36,7 @@
       }
     ],
     "needs": [
-      "Katherine's directory list, which are paid, and who owns each login"
+      "Katherine confirms which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)"
     ]
   }
 }

@@ -24,11 +24,12 @@ router.get('/api/contract', (req,res)=>{
   res.json({ service:'marketing-dashboard', contract_version:'v0',
     auth:{ scheme:'bearer-v1', scope:'read', how:'Bearer <mkt_… token>. Mint at '+base+'/settings/api-tokens (admin login). GET/HEAD/OPTIONS only, else 403.' },
     // ORDER #1390: keys read website traffic only; /api/spend answers 403 to a key.
-    notes:'Read surface = GA4 website-traffic metrics (/api/ga4/*) only. Spend and cost routes are refused (403) to fleet tokens. Write endpoints (POST) are refused to fleet tokens.',
+    notes:'Read surface = GA4 website-traffic metrics (/api/ga4/*) and monthly funnel counts (/api/funnel/monthly, counts only, ORDER #1663). Spend and cost routes are refused (403) to fleet tokens. Write endpoints (POST) are refused to fleet tokens.',
     read_endpoints:[
       {method:'GET',path:'/health',desc:'Liveness.'},
       {method:'GET',path:'/api/ga4/summary',desc:'GA4 revenue/sessions summary.'},
-      {method:'GET',path:'/api/ga4/sessions',desc:'GA4 sessions detail.'} ] });
+      {method:'GET',path:'/api/ga4/sessions',desc:'GA4 sessions detail.'},
+      {method:'GET',path:'/api/funnel/monthly',desc:'Leads, tours and bookings counts for one month (?month=YYYY-MM), dashboard funnel definitions.'} ] });
 });
 // simple admin login -> short-lived JWT (bearer) used by the mint page
 // ═══════════════════════════════════════════════════════════════════════════

@@ -25,21 +25,64 @@
       ]
     },
     {
-      "type": "pending",
-      "label": "third-party listings (Google, Apple Maps, Bing, Yelp, The Knot, WeddingWire, Zola, NCVC, Facebook)",
-      "why": "the listings list is Katherine's to confirm; directory sites block automated reads, so each is read by a person or a permitted API"
+      "type": "file",
+      "newest": "07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_",
+      "label": "directory listings draft (Katherine confirms paid/logins)"
     },
     {
-      "type": "pending",
-      "label": "AI assistant answer checks",
-      "why": "not wired yet: needs a ruling on which assistants to ask and how often"
+      "type": "ai_answers",
+      "label": "AI assistant answers (Claude, ChatGPT, Gemini, Perplexity)",
+      "assistants": [
+        "claude",
+        "chatgpt",
+        "gemini",
+        "perplexity"
+      ],
+      "venues": [
+        {
+          "code": "TBB",
+          "name": "The Bridge Building",
+          "category": "wedding venues in downtown Nashville"
+        },
+        {
+          "code": "TBT",
+          "name": "The Bell Tower",
+          "category": "historic wedding venues in Nashville"
+        },
+        {
+          "code": "ECD",
+          "name": "The Estate at Cherokee Dock",
+          "category": "waterfront wedding venues near Nashville"
+        },
+        {
+          "code": "SWF",
+          "name": "Saddle Woods Farm",
+          "category": "farm wedding venues near Nashville"
+        },
+        {
+          "code": "STE",
+          "name": "Saint Elle",
+          "category": "small wedding venues in Nashville"
+        },
+        {
+          "code": "COR",
+          "name": "The Cordelle",
+          "category": "wedding venues near downtown Nashville"
+        },
+        {
+          "code": "EST",
+          "name": "Estelle",
+          "category": "wedding venues in East Nashville"
+        }
+      ]
     }
   ],
   "character": {
     "role": "The fact-checker",
     "does": [
       "Compares what our own sites say about each venue with the canonical venue facts",
-      "Lists every mismatch with the fix"
+      "Lists every mismatch with the fix",
+      "Asks Claude, ChatGPT, Gemini and Perplexity about each venue on the 15th and lists what they get wrong"
     ],
     "traits": [
       {
@@ -48,12 +91,12 @@
       },
       {
         "cant": "Read The Knot, Yelp or other directories",
-        "instead": "Checks our own sites until Katherine confirms the listings list"
+        "instead": "Checks our own sites and the directory listings draft until Katherine confirms it"
       }
     ],
     "needs": [
-      "Katherine's listings list",
-      "A ruling on which AI assistants to check and how often"
+      "Keys for ChatGPT, Gemini and Perplexity (Claude runs now)",
+      "Katherine confirms which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)"
     ]
   }
 }

@@ -12,7 +12,7 @@ One card titled "Marketing report, <Month YYYY> (draft)". Sections:
 2. **Website traffic**: by site and for the Elle venues, month vs the month before.
 3. **Reviews**: new reviews and ratings by venue from the review pulse; any red flags.
 4. **Blog**: rank movements from the rank report.
-5. **Leads and bookings**: only if a HubSpot source is listed as available. If not, one line saying it is not connected yet.
+5. **Leads, tours and bookings**: from the Marketing Dashboard funnel counts (/api/funnel/monthly). These use the dashboard funnel's own definitions (Mimi's ruling, 10.12.2026), so the numbers match the dashboard: leads by venue and by lead source, tours and bookings by venue. Do not redefine a stage. If the source is unavailable, one line saying so.
 6. **Three recommended moves** for next month, each tied to a number above.
 
 ## Rules

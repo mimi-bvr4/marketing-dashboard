@@ -26,9 +26,11 @@
       "label": "the newest blog rank report"
     },
     {
-      "type": "pending",
-      "label": "HubSpot leads, tours and bookings by source",
-      "why": "which stages count as tour and booked is Katherine's call (ORDER #1015 Part 4 item 9); read-only when wired"
+      "type": "dashboard",
+      "label": "Marketing Dashboard funnel counts (leads, tours, bookings)",
+      "paths": [
+        "/api/funnel/monthly"
+      ]
     },
     {
       "type": "pending",
@@ -51,7 +53,6 @@
     ],
     "needs": [
       "A read-only dashboard key in the Box Keychain (marketing-fleet-key)",
-      "Katherine's definition of which HubSpot stages count as tour and booked",
       "The ads export Sheet"
     ]
   }
