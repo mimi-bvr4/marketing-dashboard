@@ -114,6 +114,7 @@
     'citations': ['#DDE8DF', '#2F5D3F', 'M11 2l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V5l7-3z M8 11l2 2 4-4'],
     'gbp': ['#F2E0DC', '#8A2B22', 'M4 17h14 M6 17v-3a5 5 0 0 1 10 0v3 M11 7v2 M9 5h4'],
     'paid-ads': ['#E7E3DD', '#4D453D', 'M8 3h6v3H8z M6 4H4v16h14V4h-2 M7 11h8 M7 15h5'],
+    'scout': ['#E2E6EE', '#3B4A66', 'M2 15a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M12 15a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M10 15h2 M4 11l2-6h3l1 6 M18 11l-2-6h-3l-1 6'],
   };
   function face(a, size) {
     const label = `Portrait of ${a.name}`;
@@ -197,6 +198,11 @@
         <details><summary>What it reads (${a.sources.length})</summary><ul>${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="pill s-wait">not connected</span> ${esc(s.why || '')}` : ''}</li>`).join('')}</ul>
         <p class="meta">Adding a source is a code change; ask Mimi.</p></details></section>
       <section class="panel"><h2 class="serif">Rules</h2>${c.traits.length ? c.traits.map((t) => `<div class="rule"><strong>Can't:</strong> ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</div>`).join('') : '<p class="meta">Nothing listed.</p>'}</section>
+      ${a.watch ? `<section class="panel" data-watch><h2 class="serif">Competitors to watch</h2>
+        <p class="meta" style="margin:0">${esc(a.name)} reads up to a dozen public pages on each site every Monday and reports only what changed. The first week on a new site is a baseline. Up to 15 sites.</p>
+        ${a.watch.length ? `<ul class="asks">${a.watch.map((w) => `<li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><strong>${esc(w.label || w.site)}</strong>${w.label ? ` <span class="meta">${esc(w.site)}</span>` : ''}</span><button class="btn ghost" style="min-height:32px;font-size:13px" data-a="unwatch" data-id="${w.id}" aria-label="Stop watching ${esc(w.site)}">Remove</button></li>`).join('')}</ul>` : '<p class="meta">No competitors yet. Add the first one below.</p>'}
+        <div class="row"><input type="text" data-f="wsite" placeholder="Website, e.g. example.com" aria-label="Competitor website">
+          <input type="text" data-f="wlabel" placeholder="Name (optional)" aria-label="Competitor name"><button class="btn ghost" data-a="watch">Add</button></div></section>` : ''}
       <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}</section>
       <section class="panel"><h2 class="serif">Ask for a new ability</h2>
         <label class="meta" for="newask">The Box sorts it within 15 minutes: an instruction change (Mimi approves it), a build (filed to the Box), or a can't (added to the rules, with what it does instead).</label>
@@ -293,6 +299,8 @@
     const q = (f) => main.querySelector(`[data-f=${f}]`);
     try {
       if (b.dataset.a === 'run') { b.disabled = true; await api(`/api/agents/${slug}/run`, { method: 'POST', body: JSON.stringify({ ask: q('ask') ? q('ask').value : '' }) }); a.waiting = 1; b.textContent = 'Run waiting'; say(b, 'Queued. The draft will be in Review within about 15 minutes.', true); }
+      if (b.dataset.a === 'watch') { await api(`/api/agents/${slug}/watch`, { method: 'POST', body: JSON.stringify({ site: q('wsite').value, label: q('wlabel').value }) }); await load(); say(main.querySelector('.panels'), 'Added. It is read next Monday (first week is a baseline).', true); }
+      if (b.dataset.a === 'unwatch') { await api(`/api/agents/${slug}/watch/${b.dataset.id}`, { method: 'DELETE' }); await load(); }
       if (b.dataset.a === 'noportrait') { await api(`/api/agents/${slug}/portrait`, { method: 'DELETE' }); await load(); }
       if (b.dataset.a === 'ask') { await api(`/api/agents/${slug}/asks`, { method: 'POST', body: JSON.stringify({ ask: q('newask').value }) }); await load(); say(main.querySelector('.panels'), 'Asked. The Box sorts it within about 15 minutes.', true); }
       if (b.dataset.a === 'apply' || b.dataset.a === 'decline') { const li = b.closest('li'); await api(`/api/agents/asks/${b.dataset.id}/decide`, { method: 'POST', body: JSON.stringify({ decision: b.dataset.a, note: (li.querySelector('[data-f=dnote]') || {}).value }) }); await load(); }

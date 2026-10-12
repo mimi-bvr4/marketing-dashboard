@@ -14,6 +14,9 @@
 //   DELETE /api/agents/:slug/portrait   -> back to the drawn portrait
 //   GET  /api/agents/:slug/portrait     the picture
 //   GET  /api/agents/:slug/profile-log  every name and portrait change
+//   GET  /api/agents/:slug/watch        #1666 the competitor sites (Scout only)
+//   POST /api/agents/:slug/watch        { site, label }  add one (15 max)
+//   DELETE /api/agents/:slug/watch/:id  remove one (and what was seen on it)
 //
 // #1664 NAMES AND PORTRAITS ARE COSMETIC (Mimi, 10.12.2026): they save at once,
 // no exec approval, because they change nothing about what an agent may do.
@@ -66,6 +69,13 @@ function characterOf(d, asks, run) {
   };
 }
 
+// #1666: a watcher with an empty list says so under Waiting on.
+function watchNeed(c, list) {
+  if (!list || list.length) return c;
+  const n = "Katherine's list of competitor websites to watch (add them on this page)";
+  return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites Katherine listed:/.test(x))] };
+}
+
 function createAgentsRouter({ store, identity }) {
   const r = express.Router();
   const need = (req, res, next) => (personOf(req) ? next() : res.status(403).json({ error: 'Signed-in leadership only.' }));
@@ -80,6 +90,10 @@ function createAgentsRouter({ store, identity }) {
     const allAsks = await store.listAsks();
     const exec = await isExec(req, identity);
     const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
+    const watchers = {};
+    for (const slug of listAgents()) {
+      if ((loadAgent(slug).sources || []).some((x) => x.type === 'competitor_watch')) watchers[slug] = store.watchlist ? await store.watchlist(slug) : [];
+    }
     res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
@@ -93,7 +107,8 @@ function createAgentsRouter({ store, identity }) {
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
-        character: characterOf(d, asks, runs.get(slug)),
+        character: watchNeed(characterOf(d, asks, runs.get(slug)), watchers[slug]),
+        watch: watchers[slug] || null,
         asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
           reason: a.triage ? a.triage.reason : null, instead: a.triage ? a.triage.instead : null,
           proposed: a.status === 'awaiting_exec' && a.triage ? a.triage.proposed_skill_md : null,
@@ -125,6 +140,24 @@ function createAgentsRouter({ store, identity }) {
     res.send(p.portrait);
   });
   r.get('/api/agents/:slug/profile-log', need, known, async (req, res) => res.json({ changes: await store.profileLog(req.params.slug) }));
+
+  // #1666 the Scout's watch list.
+  const watcher = (req, res, next) => ((loadAgent(req.params.slug).sources || []).some((x) => x.type === 'competitor_watch')
+    ? next() : res.status(404).json({ error: 'this team member does not watch websites' }));
+  r.get('/api/agents/:slug/watch', need, known, watcher, async (req, res) => res.json({ watch: await store.watchlist(req.params.slug) }));
+  r.post('/api/agents/:slug/watch', need, known, watcher, async (req, res) => {
+    const b = req.body || {};
+    const out = await store.addWatch(req.params.slug, b.site, b.label, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ watch: out.watch });
+  });
+  r.delete('/api/agents/:slug/watch/:id', need, known, watcher, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'bad id' });
+    const out = await store.removeWatch(req.params.slug, id);
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json(out);
+  });
 
   r.get('/api/agents/:slug/history', need, known, async (req, res) => res.json({ versions: await store.settingsHistory(req.params.slug) }));
 
@@ -185,4 +218,4 @@ function createAgentsRouter({ store, identity }) {
   return r;
 }
 
-module.exports = { createAgentsRouter, sourceView, characterOf, isExec };
+module.exports = { createAgentsRouter, sourceView, characterOf, isExec, watchNeed };

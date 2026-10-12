@@ -20,7 +20,7 @@ function dueAgents(ymd) {
   const [y, m, d] = ymd.split('-').map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 Sunday
   const due = ['gbp'];
-  if (dow === 1) due.push('site-health', 'paid-ads');
+  if (dow === 1) due.push('site-health', 'paid-ads', 'scout');
   if (d === 3) due.push('monthly-report');
   if (d === 15) due.push('citations');
   if (dow === 1 && d <= 7 && [1, 4, 7, 10].includes(m)) due.push('listings');

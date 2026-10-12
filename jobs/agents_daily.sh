@@ -1,7 +1,7 @@
 #!/bin/bash
 # ORDER #1015 Part 5: the marketing agents' schedule, on the Box. Runs every day
 # at 06:00 CT; jobs/agent_run.js --due decides which agents fall today
-# (Google Business daily; Site Health and Paid Ads on Mondays; Monthly Report
+# (Google Business daily; Site Health, Paid Ads and Scout on Mondays; Monthly Report
 # on the 3rd; Citations on the 15th; Listings the first Monday of each quarter).
 # Bloggy Bob runs on request only.
 #
