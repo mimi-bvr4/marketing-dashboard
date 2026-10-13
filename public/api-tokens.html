@@ -12,20 +12,24 @@
      The shared nav (ihg-nav.js) was ALREADY present on this page; measured, not
      assumed, so it is not re-applied. -->
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
-body{font:15px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#141414;background:#faf8f5;margin:0;padding:32px 20px}
-.wrap{max-width:760px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}p.sub{color:#6b6b6b;margin:0 0 24px}
-.card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:18px 20px;margin-bottom:18px}
-label{display:block;font-size:13px;color:#6b6b6b;margin-bottom:6px}
-input{width:100%;padding:9px 11px;border:1px solid #e5e5e5;border-radius:7px;font-size:14px}
-button{background:#141414;color:#fff;border:0;border-radius:7px;padding:9px 15px;font-size:14px;cursor:pointer}
-button.mint{background:#BD574E}button.link{background:none;color:#BD574E;padding:4px 6px}
-.row{display:flex;gap:10px;align-items:flex-end}.row .grow{flex:1}
-table{width:100%;border-collapse:collapse;margin-top:6px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #e5e5e5;font-size:13px}
-th{color:#6b6b6b}code{background:#f2efe9;padding:2px 6px;border-radius:5px;font-size:13px;word-break:break-all}
-.reveal{background:#fff8e6;border:1px solid #f0d98a;border-radius:8px;padding:14px 16px;margin-top:14px}
-.reveal code{display:block;background:#fff;border:1px dashed #d8c05a;padding:10px;margin-top:8px}
-.revoked{color:#6b6b6b;text-decoration:line-through}.hint{color:#6b6b6b}.err{color:#8a2b22;font-size:13px;margin-top:6px}
+/* ORDER #1675: on the approved tokens (#1210), same selectors. */
+body{font-family:var(--ihg-font-ui);font-size:var(--ihg-text-sm);line-height:var(--ihg-line-height-body);color:var(--ihg-color-text);background:var(--ihg-color-bg);margin:0;padding:var(--ihg-space-8) var(--ihg-space-5)}
+.wrap{max-width:760px;margin:0 auto}h1{font-size:var(--ihg-text-2xl);letter-spacing:var(--ihg-tracking-heading);margin:0 0 var(--ihg-space-1)}p.sub{color:var(--ihg-color-text-secondary);margin:0 0 var(--ihg-space-6)}
+.card{background:var(--ihg-color-surface);border:1px solid var(--ihg-color-border);border-radius:var(--ihg-radius);box-shadow:var(--ihg-shadow-card);padding:var(--ihg-space-5) var(--ihg-space-6);margin-bottom:var(--ihg-space-4)}
+label{display:block;font-size:var(--ihg-text-xs);font-weight:var(--ihg-weight-semibold);color:var(--ihg-color-text-secondary);margin-bottom:var(--ihg-space-1)}
+input{width:100%;min-height:var(--ihg-target-min);padding:0 var(--ihg-space-3);border:1px solid var(--ihg-color-border-control);border-radius:var(--ihg-radius);font:inherit;box-sizing:border-box}
+button{background:var(--ihg-color-inverse-bg);color:var(--ihg-color-inverse-text);border:0;border-radius:var(--ihg-radius);min-height:var(--ihg-target-min);padding:0 var(--ihg-space-4);font:inherit;font-weight:var(--ihg-weight-semibold);cursor:pointer}
+button.mint{background:var(--ihg-color-action-bg);color:var(--ihg-color-action-text)}button.mint:hover{background:var(--ihg-color-action-hover)}button.link{background:none;color:var(--ihg-color-accent-text);min-height:0;padding:var(--ihg-space-1) var(--ihg-space-2)}
+:focus-visible{outline:var(--ihg-focus-width) solid var(--ihg-color-focus);outline-offset:var(--ihg-focus-offset)}
+.row{display:flex;gap:var(--ihg-space-3);align-items:flex-end}.row .grow{flex:1}
+table{width:100%;border-collapse:collapse;margin-top:var(--ihg-space-2)}th,td{text-align:left;padding:var(--ihg-space-2);border-bottom:1px solid var(--ihg-color-border);font-size:var(--ihg-text-sm)}
+th{color:var(--ihg-color-text-secondary);font-size:var(--ihg-text-xs);text-transform:uppercase;letter-spacing:var(--ihg-tracking-label)}code{font-family:var(--ihg-font-mono);background:var(--ihg-color-surface-muted);padding:2px 6px;border-radius:var(--ihg-radius-sm);font-size:.85em;word-break:break-all}
+.reveal{background:var(--ihg-status-attention-bg);border:1px solid var(--ihg-status-attention-mark);border-radius:var(--ihg-radius);padding:var(--ihg-space-4);margin-top:var(--ihg-space-4)}
+.reveal code{display:block;background:var(--ihg-color-surface);border:1px dashed var(--ihg-status-attention-mark);padding:var(--ihg-space-3);margin-top:var(--ihg-space-2)}
+.revoked{color:var(--ihg-color-text-muted);text-decoration:line-through}.hint{color:var(--ihg-color-text-muted)}.err{color:var(--ihg-status-late-fg);font-size:var(--ihg-text-sm);margin-top:var(--ihg-space-2)}
 </style></head><body><div class="wrap">
 <h1>Fleet API keys</h1><p class="sub">Read-only keys other Infinity apps (like ARC) use to read website-traffic numbers. A key cannot read spend or cost figures. A key can only read, never change anything, and you can revoke it anytime.</p>
 <!-- ORDER #1370: no password card. This page is behind the page gate, so the

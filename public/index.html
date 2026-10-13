@@ -17,116 +17,158 @@
      The shared nav (ihg-nav.js) was ALREADY present on this page; measured, not
      assumed, so it is not re-applied. -->
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<!-- ORDER #1675: the approved round-1 tokens (#1210) and Inter, the same as dispatch and planning. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
+/* ORDER #1675 (Mimi, 10.12.2026: "the marketing dashboard itself needs to be
+   polished ... make it look better, like the rest of the IH dashboard stuff").
+   Restyled IN PLACE on the approved round-1 tokens (ihg-tokens.css, #1210), the
+   same way #1288/#1331 moved dispatch: same selectors, so every script, number,
+   chart and the Elle GA4 tab are untouched. Colour, type, spacing, targets and
+   focus only. The Elle panel keeps its own plum on purpose (#654: nobody may
+   read Elle numbers as IHG). */
 :root { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: #f7f7f5; color: #1a1a1a; line-height: 1.4; padding: 20px; }
-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #1a365d; }
-h1 { font-size: 22px; font-weight: 700; color: #1a365d; letter-spacing: -0.3px; }
-h1 .sub { display: block; font-size: 12px; color: #6b7280; font-weight: 500; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
-.controls { display: flex; gap: 10px; align-items: center; }
-.controls label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
-select { padding: 8px 12px; border: 1px solid #d1d5db; background: white; border-radius: 6px; font-size: 14px; cursor: pointer; font-family: inherit; color: #1a1a1a; }
-.status { font-size: 12px; color: #6b7280; margin-bottom: 12px; }
-.status.error { color: #ef4444; font-weight: 600; }
-.goal-section { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #c8a45c; }
-.goal-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.goal-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600; }
-.goal-value { font-size: 13px; color: #1a1a1a; }
-.goal-value strong { color: #1a365d; font-size: 18px; font-weight: 700; }
-.progress-bar { height: 20px; background: #f3f4f6; border-radius: 10px; overflow: hidden; position: relative; margin-top: 4px; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #1a365d, #2c5282); transition: width 0.6s; }
-.progress-pace { position: absolute; top: 0; bottom: 0; width: 2px; background: #c8a45c; }
-.progress-pace::after { content: 'pace'; position: absolute; top: -16px; left: -14px; font-size: 9px; color: #c8a45c; font-weight: 600; }
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
-.kpi-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; border-left: 3px solid #1a365d; }
-.kpi-card .label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; font-weight: 600; }
-.kpi-card .value { font-size: 20px; font-weight: 700; color: #1a1a1a; }
-.kpi-card .sub { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-.kpi-card.spend { border-left-color: #c8a45c; }
-.kpi-card.revenue { border-left-color: #10b981; }
-.kpi-card.cost { border-left-color: #f59e0b; }
-.kpi-card.rate { border-left-color: #6366f1; }
-.section { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; color: #1a365d; margin-bottom: 12px; font-weight: 700; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
-.section h2 .hint { float: right; font-size: 10px; color: #9ca3af; text-transform: none; letter-spacing: 0; font-weight: 500; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th { text-align: left; padding: 8px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
-tbody td { padding: 8px; border-bottom: 1px solid #f3f4f6; }
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: #fafaf8; }
-.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.venue-label { font-weight: 700; color: #1a365d; }
-.total-row { font-weight: 700; background: #fafaf8; }
-.total-row td { border-top: 2px solid #1a365d; }
-.dash { color: #d1d5db; }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.three-col { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
-@media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
-.chart-wrap { height: 260px; position: relative; }
-.footnote { font-size: 11px; color: #9ca3af; margin-top: 10px; font-style: italic; }
-.skeleton { color: #d1d5db; }
-.ai-narrative { background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); border: 1px solid #fde68a; border-radius: 8px; padding: 18px; margin-bottom: 16px; border-left: 4px solid #c8a45c; }
-.ai-narrative h2 { color: #92400e; border-bottom: 1px solid #fde68a; }
-.ai-narrative .body { font-size: 13px; line-height: 1.6; color: #1a1a1a; white-space: pre-wrap; }
-.ai-narrative .loading { color: #92400e; font-style: italic; font-size: 12px; }
-.banner-note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; margin-bottom: 10px; }
-.export-btns { display: inline-flex; gap: 6px; margin-left: 10px; }
-.btn { padding: 4px 10px; font-size: 11px; border: 1px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-family: inherit; color: #1a365d; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
-.btn:hover { background: #f3f4f6; }
+body { font-family: var(--ihg-font-ui); background: var(--ihg-color-bg); color: var(--ihg-color-text); line-height: var(--ihg-line-height-ui); padding: var(--ihg-space-6) clamp(var(--ihg-space-4), 3vw, var(--ihg-space-8)) var(--ihg-space-16); max-width: 96rem; margin: 0 auto; -webkit-font-smoothing: antialiased; }
+code { font-family: var(--ihg-font-mono); font-size: .85em; background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); padding: 1px 5px; border-radius: var(--ihg-radius-sm); }
+:focus-visible { outline: var(--ihg-focus-width) solid var(--ihg-color-focus); outline-offset: var(--ihg-focus-offset); }
 
-/* ---- CONVERSION FUNNEL & WEBSITE TRACTION (light theme) ---- */
-.funnel-section { border-left: 4px solid #6366f1; }
-.funnel-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-.funnel-controls label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-.funnel-controls select { padding: 6px 10px; font-size: 13px; }
-.funnel-ga-status { font-size: 11px; color: #9ca3af; font-style: italic; margin-left: auto; }
-.funnel-ga-status.live { color: #10b981; font-style: normal; font-weight: 600; }
-.funnel-ga-status.offline { color: #f59e0b; font-style: normal; font-weight: 600; }
-.funnel-container { display: flex; flex-direction: column; gap: 8px; }
-.funnel-stage { display: flex; align-items: center; gap: 14px; }
-.funnel-stage .stage-name { width: 96px; min-width: 96px; font-size: 12px; font-weight: 700; color: #1a365d; text-transform: uppercase; letter-spacing: 0.4px; }
-.funnel-bar-track { flex: 1; display: flex; align-items: center; }
-.funnel-bar { height: 44px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; color: #fff; font-size: 13px; font-weight: 600; min-width: 96px; transition: width 0.6s ease; white-space: nowrap; overflow: hidden; }
-.funnel-bar .bar-sub { font-size: 11px; font-weight: 500; opacity: 0.85; }
-.funnel-bar.empty { background: #e5e7eb !important; color: #9ca3af; }
-.stage-sessions .funnel-bar { background: linear-gradient(90deg, #2c5282 0%, #1a365d 100%); }
-.stage-leads    .funnel-bar { background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); }
-.stage-tours    .funnel-bar { background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%); }
-.stage-bookings .funnel-bar { background: linear-gradient(90deg, #c8a45c 0%, #a87f37 100%); }
-.stage-cancelled .funnel-bar { background: linear-gradient(90deg, #9ca3af 0%, #6b7280 100%); }
-.stage-revenue  .funnel-bar { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
-.funnel-stage .stage-conv { width: 132px; min-width: 132px; text-align: right; font-size: 11px; color: #6b7280; }
-.funnel-stage .stage-conv strong { display: block; color: #1a1a1a; font-size: 15px; font-weight: 700; }
-.source-breakdown { margin-top: 20px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
-.source-breakdown-title { font-size: 12px; font-weight: 700; color: #1a365d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-.source-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-.source-pill { background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; }
-.source-pill strong { color: #1a365d; }
+/* ---- page header ---- */
+header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--ihg-space-4); margin: var(--ihg-space-4) 0 var(--ihg-space-6); }
+h1 { font-size: clamp(1.75rem, 3.2vw, var(--ihg-text-3xl)); font-weight: var(--ihg-weight-bold); color: var(--ihg-color-text); letter-spacing: var(--ihg-tracking-heading); line-height: var(--ihg-line-height-heading); }
+h1 .sub { display: block; font-size: var(--ihg-text-sm); color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-medium); margin-top: var(--ihg-space-2); letter-spacing: 0; text-transform: none; }
+.controls { display: flex; gap: var(--ihg-space-3); align-items: center; }
+.controls label, .funnel-controls label, .elle-controls label { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-secondary); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); font-weight: var(--ihg-weight-semibold); }
+select { min-height: var(--ihg-target-min); padding: 0 var(--ihg-space-8) 0 var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); background: var(--ihg-color-surface); border-radius: var(--ihg-radius); font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-medium); cursor: pointer; font-family: inherit; color: var(--ihg-color-text); }
+select:hover { border-color: var(--ihg-color-text-secondary); }
+.status { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); margin-bottom: var(--ihg-space-3); min-height: 1em; }
+.status.error { color: var(--ihg-status-late-fg); font-weight: var(--ihg-weight-semibold); }
+
+/* ---- tabs ---- */
+.tab-nav { display: flex; flex-wrap: wrap; gap: var(--ihg-space-1); margin: 0 0 var(--ihg-space-6); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); }
+.tab-btn { appearance: none; background: none; border: none; min-height: var(--ihg-target-min); padding: 0 var(--ihg-space-4); font: inherit; font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; transition: color var(--ihg-motion-fast) var(--ihg-ease-standard), border-color var(--ihg-motion-fast) var(--ihg-ease-standard); }
+.tab-btn:hover { color: var(--ihg-color-text); }
+.tab-btn.active { color: var(--ihg-color-text); border-bottom-color: var(--lens-accent); }
+.tab-btn.elle.active { color: #8b2f5f; border-bottom-color: #8b2f5f; }
+.tab-btn.tab-link { margin-left: 0; text-decoration: none; }
+.tab-btn.tab-link.first { margin-left: auto; }
+.tab-btn .tab-note { font-weight: var(--ihg-weight-regular); color: var(--ihg-color-text-muted); margin-left: var(--ihg-space-1); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ---- cards: goal, KPI tiles, sections ---- */
+.goal-section, .section, .kpi-card, .ai-narrative { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); box-shadow: var(--ihg-shadow-card); }
+.goal-section { padding: var(--ihg-space-6); margin-bottom: var(--ihg-space-4); }
+.goal-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--ihg-space-2); margin-bottom: var(--ihg-space-4); }
+.goal-label { font-size: var(--ihg-text-xs); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-semibold); }
+.goal-value { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-secondary); }
+.goal-value strong { color: var(--ihg-color-text); font-size: var(--ihg-text-xl); font-weight: var(--ihg-weight-bold); font-variant-numeric: tabular-nums; }
+.progress-bar { height: 12px; background: var(--ihg-color-surface-muted); border-radius: var(--ihg-radius-pill); overflow: visible; position: relative; margin-top: var(--ihg-space-5); }
+.progress-fill { height: 100%; border-radius: var(--ihg-radius-pill); background: var(--ihg-color-inverse-bg); transition: width var(--ihg-motion-slow) var(--ihg-ease-standard); }
+.progress-pace { position: absolute; top: -4px; bottom: -4px; width: 3px; border-radius: 2px; background: var(--lens-accent); }
+.progress-pace::after { content: 'pace'; position: absolute; top: -18px; left: -12px; font-size: 10px; color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-semibold); }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr)); gap: var(--ihg-space-3); margin-bottom: var(--ihg-space-6); }
+.kpi-card { padding: var(--ihg-space-4) var(--ihg-space-5); position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ihg-color-border); }
+.kpi-card .label { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-secondary); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); margin-bottom: var(--ihg-space-2); font-weight: var(--ihg-weight-semibold); }
+.kpi-card .value { font-size: var(--ihg-text-xl); font-weight: var(--ihg-weight-bold); color: var(--ihg-color-text); font-variant-numeric: tabular-nums; letter-spacing: var(--ihg-tracking-heading); }
+.kpi-card .sub { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); margin-top: var(--ihg-space-1); }
+/* One quiet mark per family; the word on the tile carries the meaning. */
+.kpi-card.spend::before { background: var(--ihg-status-attention-mark); }
+.kpi-card.revenue::before { background: var(--ihg-status-done-mark); }
+.kpi-card.cost::before { background: var(--ihg-status-late-mark); }
+.kpi-card.rate::before { background: var(--ihg-status-on-track-mark); }
+.kpi-card.elle::before { background: #8b2f5f; }
+.kpi-grid.two { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); margin-bottom: var(--ihg-space-4); }
+
+.section { padding: var(--ihg-space-6); margin-bottom: var(--ihg-space-4); }
+.section h2, .ai-narrative h2 { font-size: var(--ihg-text-md); letter-spacing: var(--ihg-tracking-heading); color: var(--ihg-color-text); margin-bottom: var(--ihg-space-4); font-weight: var(--ihg-weight-semibold); padding-bottom: var(--ihg-space-3); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); text-transform: none; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--ihg-space-2); }
+.section h2 .hint, .ai-narrative h2 .hint { float: none; font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); text-transform: none; letter-spacing: 0; font-weight: var(--ihg-weight-regular); }
+.section h3, .sub-head { margin: var(--ihg-space-6) 0 var(--ihg-space-2); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-secondary); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); font-weight: var(--ihg-weight-semibold); padding-bottom: var(--ihg-space-2); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--ihg-space-2); }
+.sub-head.attention { color: var(--ihg-status-attention-fg); border-bottom-color: var(--ihg-status-attention-mark); }
+.sub-head .count { text-transform: none; letter-spacing: 0; color: var(--ihg-color-text-muted); font-weight: var(--ihg-weight-regular); font-size: var(--ihg-text-xs); }
+.sub-head code { text-transform: none; letter-spacing: 0; }
+
+/* ---- tables ---- */
+.section { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: var(--ihg-text-sm); }
+table.compact { font-size: var(--ihg-text-xs); }
+thead th { text-align: left; padding: var(--ihg-space-2) var(--ihg-space-3); font-size: var(--ihg-text-xs); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-semibold); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); white-space: nowrap; background: var(--ihg-color-surface); }
+thead th.group { text-align: center; background: var(--ihg-color-surface-muted); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); }
+thead th.group-wedding { background: var(--ihg-status-attention-bg); color: var(--ihg-status-attention-fg); }
+thead th.group-social { background: var(--ihg-status-on-track-bg); color: var(--ihg-status-on-track-fg); }
+thead th.group-corp { background: var(--ihg-status-done-bg); color: var(--ihg-status-done-fg); }
+tbody td { padding: var(--ihg-space-2) var(--ihg-space-3); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--ihg-color-bg); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.venue-label { font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text); }
+.total-row { font-weight: var(--ihg-weight-bold); background: var(--ihg-color-bg); }
+.total-row td { border-top: var(--ihg-border-width-emphasis) solid var(--ihg-color-text); }
+.dash, .skeleton, .muted { color: var(--ihg-color-text-muted); }
+.hs-link { color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-semibold); text-decoration: none; white-space: nowrap; }
+.hs-link:hover { text-decoration: underline; }
+.warn-text { color: var(--ihg-status-attention-fg); }
+.err-text { color: var(--ihg-status-late-fg); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ihg-space-4); }
+.three-col { display: grid; grid-template-columns: 2fr 1fr; gap: var(--ihg-space-4); }
+@media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+.chart-wrap { height: 280px; position: relative; }
+.footnote { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); margin-top: var(--ihg-space-3); line-height: var(--ihg-line-height-body); }
+.footnote strong { color: var(--ihg-color-text-secondary); }
+
+/* ---- AI analysis ---- */
+.ai-narrative { padding: var(--ihg-space-6); margin-bottom: var(--ihg-space-4); background: var(--ihg-color-surface); border-left: 3px solid var(--lens-accent); }
+.ai-narrative .body { font-size: var(--ihg-text-sm); line-height: var(--ihg-line-height-body); color: var(--ihg-color-text); white-space: pre-wrap; max-width: 90ch; }
+.ai-narrative .loading { color: var(--ihg-color-text-muted); font-style: italic; font-size: var(--ihg-text-sm); }
+.banner-note { background: var(--ihg-status-on-track-bg); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-3) var(--ihg-space-4); font-size: var(--ihg-text-sm); color: var(--ihg-status-on-track-fg); margin-bottom: var(--ihg-space-3); }
+
+/* ---- buttons ---- */
+.export-btns { display: inline-flex; gap: var(--ihg-space-2); margin-left: var(--ihg-space-3); }
+.btn { min-height: 2.25rem; padding: 0 var(--ihg-space-3); font-size: var(--ihg-text-xs); border: var(--ihg-border-width) solid var(--ihg-color-border-control); background: var(--ihg-color-surface); border-radius: var(--ihg-radius); cursor: pointer; font-family: inherit; color: var(--ihg-color-text); font-weight: var(--ihg-weight-semibold); letter-spacing: var(--ihg-tracking-label); display: inline-flex; align-items: center; gap: var(--ihg-space-1); transition: background var(--ihg-motion-fast) var(--ihg-ease-standard); }
+.btn:hover { background: var(--ihg-color-surface-muted); }
+
+/* ---- conversion funnel ---- */
+.funnel-controls { display: flex; align-items: center; gap: var(--ihg-space-3); flex-wrap: wrap; margin-bottom: var(--ihg-space-5); }
+.funnel-ga-status, .elle-status { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); margin-left: auto; }
+.funnel-ga-status.live, .elle-status.live { color: var(--ihg-status-done-fg); font-weight: var(--ihg-weight-semibold); }
+.funnel-ga-status.offline, .elle-status.pending { color: var(--ihg-status-attention-fg); font-weight: var(--ihg-weight-semibold); }
+.funnel-container { display: flex; flex-direction: column; gap: var(--ihg-space-2); }
+.funnel-stage { display: flex; align-items: center; gap: var(--ihg-space-4); }
+.funnel-stage .stage-name { width: 96px; min-width: 96px; font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text-secondary); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); }
+.funnel-bar-track { flex: 1; display: flex; align-items: center; background: var(--ihg-color-bg); border-radius: var(--ihg-radius); }
+.funnel-bar { height: 40px; border-radius: var(--ihg-radius); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--ihg-space-4); color: var(--ihg-color-action-text); font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-semibold); min-width: 96px; transition: width var(--ihg-motion-slow) var(--ihg-ease-standard); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.funnel-bar .bar-sub { font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-medium); opacity: .9; }
+.funnel-bar.empty { background: var(--ihg-color-surface-muted) !important; color: var(--ihg-color-text-muted); }
+/* A warm sequence from the token palette, all >= 4.5:1 with cream text. */
+.stage-sessions  .funnel-bar { background: var(--ihg-status-on-track-fg); }
+.stage-leads     .funnel-bar { background: var(--ihg-color-text-secondary); }
+.stage-tours     .funnel-bar { background: var(--ihg-status-attention-fg); }
+.stage-bookings  .funnel-bar { background: var(--ihg-color-action-bg); }
+.stage-cancelled .funnel-bar { background: var(--ihg-color-text-muted); }
+.stage-revenue   .funnel-bar { background: var(--ihg-status-done-fg); }
+.funnel-stage .stage-conv { width: 132px; min-width: 132px; text-align: right; font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+.funnel-stage .stage-conv strong { display: block; color: var(--ihg-color-text); font-size: var(--ihg-text-md); font-weight: var(--ihg-weight-bold); font-variant-numeric: tabular-nums; }
+.source-breakdown { margin-top: var(--ihg-space-6); padding-top: var(--ihg-space-4); border-top: var(--ihg-border-width) solid var(--ihg-color-border); }
+.source-breakdown-title { font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text-secondary); text-transform: uppercase; letter-spacing: var(--ihg-tracking-label); margin-bottom: var(--ihg-space-3); }
+.source-pills { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); }
+.source-pill { background: var(--ihg-color-bg); border: var(--ihg-border-width) solid var(--ihg-color-border); color: var(--ihg-color-text-secondary); padding: var(--ihg-space-1) var(--ihg-space-3); border-radius: var(--ihg-radius-pill); font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-medium); }
+.source-pill strong { color: var(--ihg-color-text); }
 @media (max-width: 768px) {
   .funnel-stage { flex-wrap: wrap; }
   .funnel-stage .stage-name { width: 100%; }
   .funnel-stage .stage-conv { width: 100%; text-align: left; }
+  .tab-btn.tab-link.first { margin-left: 0; }
 }
-/* ---- Tabs (IHG vs Elle) ---- */
-.tab-nav { display: flex; gap: 4px; margin: 4px 0 18px; border-bottom: 2px solid #e5e7eb; }
-.tab-btn { appearance: none; background: none; border: none; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
-.tab-btn:hover { color: #1a365d; }
-.tab-btn.active { color: #1a365d; border-bottom-color: #1a365d; }
-.tab-btn.elle.active { color: #8b2f5f; border-bottom-color: #8b2f5f; }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-/* ---- Elle panel styling — deliberately distinct color so nobody reads it as IHG ---- */
-.elle-banner { background: #fbf0f6; border: 1px solid #e6b9d2; border-left: 4px solid #8b2f5f; color: #6b2148; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+
+/* ---- Elle panel: deliberately its own plum so nobody reads it as IHG ---- */
+.elle-banner { background: #fbf0f6; border: var(--ihg-border-width) solid #e6b9d2; border-left: 3px solid #8b2f5f; color: #6b2148; padding: var(--ihg-space-3) var(--ihg-space-4); border-radius: var(--ihg-radius); font-size: var(--ihg-text-sm); line-height: var(--ihg-line-height-body); margin-bottom: var(--ihg-space-5); }
 .elle-banner strong { color: #8b2f5f; }
-.elle-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.elle-controls label { font-size: 12px; font-weight: 600; color: #6b7280; }
-.elle-controls select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
-.elle-status { font-size: 11px; font-style: italic; color: #9ca3af; margin-left: auto; }
-.elle-status.live { color: #10b981; font-style: normal; font-weight: 600; }
-.elle-status.pending { color: #f59e0b; font-style: normal; font-weight: 600; }
-.kpi-card.elle { border-left-color: #8b2f5f; }
-.elle-venue-label { font-weight: 700; color: #8b2f5f; }
+.elle-controls { display: flex; align-items: center; gap: var(--ihg-space-3); margin-bottom: var(--ihg-space-4); }
+.elle-venue-label { font-weight: var(--ihg-weight-semibold); color: #8b2f5f; }
 </style>
 </head>
 <body>
@@ -146,11 +188,11 @@ tbody tr:hover { background: #fafaf8; }
 </header>
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="ihg" id="tabbtn-ihg">Infinity Hospitality</button>
-  <button class="tab-btn elle" data-tab="elle" id="tabbtn-elle">Elle Venues <span style="font-weight:400;opacity:.7">· acquisition</span></button>
+  <button class="tab-btn elle" data-tab="elle" id="tabbtn-elle">Elle Venues <span class="tab-note">· acquisition</span></button>
   <!-- ORDER #1015 Part 2: the agents' Review queue and the photo archive are their own pages. -->
-  <a class="tab-btn" href="/review" style="text-decoration:none;margin-left:auto">Review</a>
-  <a class="tab-btn" href="/agents" style="text-decoration:none">Katherine's Team</a>
-  <a class="tab-btn" href="/photos" style="text-decoration:none">Photos</a>
+  <a class="tab-btn tab-link first" href="/review">Review</a>
+  <a class="tab-btn tab-link" href="/agents">Katherine's Team</a>
+  <a class="tab-btn tab-link" href="/photos">Photos</a>
 </nav>
 <div id="panel-ihg" class="tab-panel active">
 <div id="status" class="status">Loading live data from HubSpot&hellip;</div>
@@ -202,7 +244,7 @@ tbody tr:hover { background: #fafaf8; }
   </div>
   <div id="funnel-content"><div class="footnote">Loading website traction&hellip;</div></div>
   <div class="footnote">
-    <strong>Sessions</strong> are pulled live from Google Analytics 4 across the four tracked venue sites (TBB, TBT, ECD, SWF). <strong>Leads, Tours, Bookings, and Revenue</strong> come from the same HubSpot data as the rest of this dashboard &mdash; these are real counts, not estimates. Revenue is net of sales tax (&times; 0.95). Percentages on the right are stage-to-stage conversion rates. If GA4 isn't connected yet, the Sessions stage shows &ldquo;&mdash;&rdquo; and the funnel begins at Leads; everything below Sessions still reflects live data.
+    <strong>Sessions</strong> are pulled live from Google Analytics 4 across the four tracked venue sites (TBB, TBT, ECD, SWF). <strong>Leads, Tours, Bookings, and Revenue</strong> come from the same HubSpot data as the rest of this dashboard, these are real counts, not estimates. Revenue is net of sales tax (&times; 0.95). Percentages on the right are stage-to-stage conversion rates. If GA4 isn't connected yet, the Sessions stage shows &ldquo;&mdash;&rdquo; and the funnel begins at Leads; everything below Sessions still reflects live data.
   </div>
 </div>
 <div class="section">
@@ -231,7 +273,7 @@ tbody tr:hover { background: #fafaf8; }
     <strong>Tours</strong> = unique deals with <code>initial_tour_date</code> in window, pulled from both Sales and Event Planning pipelines, deduped by normalized <code>dealname</code> (pairs collapsed to one, event-pipeline-only tours counted once).
     <strong>Bookings</strong> = unique deals with <code>contract_signed_date</code> in window, pulled from both Sales and Event Planning pipelines, deduped by normalized <code>dealname</code>. Matches the HubSpot "Events Booked Per Month and Year" report.
     Bookings exclude cancellations, which are counted separately in <strong>Cancelled</strong> (deals whose Booked/Cancelled field says Cancelled).
-    <strong>Completed</strong> = deals currently in the Event Planning Pipeline (IHG) at the "Event Completed" stage. Mirrors Katherine's HubSpot pipeline view directly &mdash; one deal per finished event, source-of-truth for event count.
+    <strong>Completed</strong> = deals currently in the Event Planning Pipeline (IHG) at the "Event Completed" stage. Mirrors Katherine's HubSpot pipeline view directly: one deal per finished event, source-of-truth for event count.
     <strong>Revenue</strong> = sum of <code>final_event_total_accounting</code> &times; 0.95 (net of sales tax, per CEO) for completed events that have been finance-locked. Revenue lags the Completed count until invoices close.
     Use the Tours CSV / Bookings CSV / Cancelled CSV buttons to export the underlying deal list for reconciliation against your master sheet.
   </div>
@@ -252,7 +294,7 @@ tbody tr:hover { background: #fafaf8; }
     </thead>
     <tbody id="source-body"><tr><td colspan="7" class="skeleton">Loading&hellip;</td></tr></tbody>
   </table>
-  <div class="footnote">Multi-venue leads (where <code>venue_s_</code> contains multiple venues like "TBB;TBT") are counted in their first listed venue only &mdash; consistent with all other Leads metrics on this dashboard. Sources sorted by total leads descending.</div>
+  <div class="footnote">Multi-venue leads (where <code>venue_s_</code> contains multiple venues like "TBB;TBT") are counted in their first listed venue only, consistent with all other Leads metrics on this dashboard. Sources sorted by total leads descending.</div>
 </div>
 <div class="section">
   <h2>Bookings by Event Type</h2>
@@ -286,14 +328,14 @@ tbody tr:hover { background: #fafaf8; }
 </div>
 <div class="section">
   <h2>Revenue by Event Type &times; Venue <span class="hint">CEO view &middot; finance-locked events in window &middot; net of sales tax (&times; 0.95)</span></h2>
-  <table style="font-size:12px;">
+  <table class="compact">
     <thead>
       <tr>
-        <th rowspan="2" style="vertical-align:bottom;">Venue</th>
-        <th colspan="3" style="text-align:center;background:#fef3c7;border-bottom:1px solid #fde68a;">Wedding</th>
-        <th colspan="3" style="text-align:center;background:#dbeafe;border-bottom:1px solid #bfdbfe;">Social</th>
-        <th colspan="3" style="text-align:center;background:#e0e7ff;border-bottom:1px solid #c7d2fe;">Corp/Non-Profit</th>
-        <th colspan="3" style="text-align:center;background:#f3f4f6;border-bottom:1px solid #e5e7eb;">Total</th>
+        <th rowspan="2" style="vertical-align:bottom">Venue</th>
+        <th colspan="3" class="group group-wedding">Wedding</th>
+        <th colspan="3" class="group group-social">Social</th>
+        <th colspan="3" class="group group-corp">Corp/Non-Profit</th>
+        <th colspan="3" class="group">Total</th>
       </tr>
       <tr>
         <th class="num">Revenue</th><th class="num">#</th><th class="num">IPE</th>
@@ -310,7 +352,7 @@ tbody tr:hover { background: #fafaf8; }
     <strong>IPE</strong> = Income Per Event = Revenue &divide; # Events for that cell, matching the format in your CEO's spreadsheet.
     <strong>Reconciliation:</strong> <span id="ceo-recon">&mdash;</span>
   </div>
-  <h3 style="margin-top:20px;font-size:12px;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #fde68a;margin-bottom:8px;">Events Missing Event Type <span style="float:right;text-transform:none;letter-spacing:0;color:#9ca3af;font-weight:500;font-size:10px;"><span id="ceo-missing-count">&mdash;</span> events &middot; tag <code style="font-size:10px;">event_type_sales</code> in HubSpot to clear</span></h3>
+  <h3 class="sub-head attention"><span>Events Missing Event Type</span> <span class="count"><span id="ceo-missing-count">&mdash;</span> events &middot; tag <code>event_type_sales</code> in HubSpot to clear</span></h3>
   <table>
     <thead>
       <tr><th>Event Date</th><th>Venue</th><th>Deal Name</th><th class="num">Net Revenue</th><th>Action</th></tr>
@@ -319,7 +361,7 @@ tbody tr:hover { background: #fafaf8; }
   </table>
 </div>
 <div class="section">
-  <h2>Completed Events &mdash; Revenue Detail <span class="hint">finance-locked events only (those with <code>final_event_total_accounting</code>) &middot; amounts shown net of sales tax (&times; 0.95)</span></h2>
+  <h2>Completed Events: Revenue Detail <span class="hint">finance-locked events only (those with <code>final_event_total_accounting</code>) &middot; amounts shown net of sales tax (&times; 0.95)</span></h2>
   <table>
     <thead><tr><th>Event Date</th><th>Venue</th><th>Type</th><th>Deal Name</th><th class="num">Net Total</th></tr></thead>
     <tbody id="revenue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
@@ -327,7 +369,7 @@ tbody tr:hover { background: #fafaf8; }
 </div>
 <div class="section">
   <h2>Projected Revenue <span class="hint">booked future events &middot; section ignores period filter</span></h2>
-  <div class="kpi-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 14px;">
+  <div class="kpi-grid two">
     <div class="kpi-card revenue">
       <div class="label">Booked Future Revenue</div>
       <div class="value" id="proj-confirmed">&mdash;</div>
@@ -341,7 +383,7 @@ tbody tr:hover { background: #fafaf8; }
       <div class="sub" style="font-style: italic;" id="proj-2026-est-sub">&nbsp;</div>
     </div>
   </div>
-  <h3 style="margin-top:18px;font-size:12px;color:#1a365d;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:8px;">Booked Future by Month</h3>
+  <h3 class="sub-head">Booked Future by Month</h3>
   <table>
     <thead>
       <tr>
@@ -354,7 +396,7 @@ tbody tr:hover { background: #fafaf8; }
     </thead>
     <tbody id="proj-month-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
   </table>
-  <h3 style="margin-top:20px;font-size:12px;color:#1a365d;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:8px;">Booked Future by Venue</h3>
+  <h3 class="sub-head">Booked Future by Venue</h3>
   <table>
     <thead>
       <tr>
@@ -367,7 +409,7 @@ tbody tr:hover { background: #fafaf8; }
     </thead>
     <tbody id="proj-venue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
   </table>
-  <h3 style="margin-top:20px;font-size:12px;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #fde68a;margin-bottom:8px;">Contracts Missing <code style="text-transform:none;letter-spacing:0;font-size:11px;">current_event_total</code> <span style="float:right;text-transform:none;letter-spacing:0;color:#9ca3af;font-weight:500;font-size:10px;"><span id="proj-missing-count">&mdash;</span> &middot; EP team punch list, sorted by event date</span></h3>
+  <h3 class="sub-head attention"><span>Contracts Missing <code>current_event_total</code></span> <span class="count"><span id="proj-missing-count">&mdash;</span> &middot; EP team punch list, sorted by event date</span></h3>
   <table>
     <thead>
       <tr>
@@ -382,7 +424,7 @@ tbody tr:hover { background: #fafaf8; }
   </table>
   <div class="footnote">
     <strong>Confirmed Booked</strong> = sum of <code>current_event_total</code> &times; 0.95 for booked-future events that have a value entered in HubSpot. Real, finance-verifiable data.
-    <strong>*Estimated Total</strong> = Confirmed Booked + (events without <code>current_event_total</code> &times; average <code>final_event_total_accounting</code> from completed events of the same venue+event type, fallback to venue average when the type sample is small). Estimates are clearly italicized and starred &mdash; they are NOT real data and should not be cited externally.
+    <strong>*Estimated Total</strong> = Confirmed Booked + (events without <code>current_event_total</code> &times; average <code>final_event_total_accounting</code> from completed events of the same venue+event type, fallback to venue average when the type sample is small). Estimates are clearly italicized and starred, they are NOT real data and should not be cited externally.
     All amounts net of sales tax (&times; 0.95) per CEO directive.
     This entire section ignores the period selector; it always shows booked future events from today forward.
   </div>
@@ -951,7 +993,7 @@ tbody tr:hover { background: #fafaf8; }
       const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
       const resolvedType = resolveEventTypeSales(d, typingMap);
       const bucket = classifyEventType(resolvedType, p.dealname);
-      const typeDisplay = resolvedType || (bucket ? `<em style="color:#9ca3af">${bucket} (derived)</em>` : '-');
+      const typeDisplay = resolvedType || (bucket ? `<em class="muted">${bucket} (derived)</em>` : '-');
       return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${typeDisplay}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td></tr>`;
     }).join('') : '<tr><td colspan="5" class="dash">No completed events in window.</td></tr>';
     // CEO View — revenue by event type × venue
@@ -1077,7 +1119,7 @@ tbody tr:hover { background: #fafaf8; }
       const rows = Object.entries(sources).sort((a, b) => b[1] - a[1]);
       html += '<div class="source-pills">';
       for (const [src, cnt] of rows) {
-        html += `<div class="source-pill">${src}: <strong>${((cnt / totalS) * 100).toFixed(0)}%</strong> <span style="color:#9ca3af">(${num(cnt)})</span></div>`;
+        html += `<div class="source-pill">${src}: <strong>${((cnt / totalS) * 100).toFixed(0)}%</strong> <span class="muted">(${num(cnt)})</span></div>`;
       }
       html += '</div>';
     } else {
@@ -1147,7 +1189,7 @@ tbody tr:hover { background: #fafaf8; }
       const amt = (parseFloat(p.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
       const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
       const url = `https://app.hubspot.com/contacts/49701209/record/0-3/${d.id}`;
-      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td><td><a href="${url}" target="_blank" rel="noopener" style="color:#1a365d;font-weight:600;">Open in HubSpot ↗</a></td></tr>`;
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td><td><a href="${url}" target="_blank" rel="noopener" class="hs-link">Open in HubSpot ↗</a></td></tr>`;
     }).join('') : '<tr><td colspan="5" class="dash">All revenue events classified into Wedding, Social, or Corp/Non-Profit. ✓</td></tr>';
     document.getElementById('ceo-missing-count').textContent = `${unclassified.length}`;
   }
@@ -1321,7 +1363,7 @@ tbody tr:hover { background: #fafaf8; }
       const p = d.properties || {};
       const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
       const url = `https://app.hubspot.com/contacts/49701209/record/0-3/${d.id}`;
-      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.event_type_sales || '-'}</td><td>${p.dealname || '-'}</td><td><a href="${url}" target="_blank" rel="noopener" style="color:#1a365d;font-weight:600;">Open in HubSpot ↗</a></td></tr>`;
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.event_type_sales || '-'}</td><td>${p.dealname || '-'}</td><td><a href="${url}" target="_blank" rel="noopener" class="hs-link">Open in HubSpot ↗</a></td></tr>`;
     }).join('') : '<tr><td colspan="5" class="dash">All booked future events have contract totals entered. ✓</td></tr>';
     document.getElementById('proj-missing-count').textContent = `${missing.length} of ${total}`;
   }
@@ -1355,15 +1397,31 @@ tbody tr:hover { background: #fafaf8; }
       cancelledCounts.push(bookingsResult.cancelled.length);
       revenues.push(revDeals.reduce((a, d) => a + (parseFloat(d.properties?.final_event_total_accounting || '0') || 0), 0) * REVENUE_NET_MULTIPLIER);
     }
+    // ORDER #1675: the chart reads the same tokens as the page (a canvas cannot
+    // use CSS variables, so they are read once here; the hex is the fallback).
+    const tok = (name, fallback) => (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
+    const C = {
+      leads: tok('--ihg-color-inverse-bg', '#211E1B'),
+      bookings: tok('--ihg-color-action-bg', '#A94B43'),
+      cancelled: tok('--ihg-color-border-control', '#89847C'),
+      revenue: tok('--ihg-status-done-mark', '#3E7050'),
+      text: tok('--ihg-color-text-secondary', '#565559'),
+      grid: tok('--ihg-color-border', '#E3DED4'),
+    };
+    if (window.Chart && Chart.defaults) {
+      Chart.defaults.font.family = tok('--ihg-font-ui', 'Inter, system-ui, sans-serif');
+      Chart.defaults.color = C.text;
+      Chart.defaults.borderColor = C.grid;
+    }
     new Chart(document.getElementById('trend-chart').getContext('2d'), {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { type: 'bar', label: 'Leads', data: leadCounts, backgroundColor: '#1a365d', yAxisID: 'y' },
-          { type: 'line', label: 'Bookings', data: bookingCounts, borderColor: '#c8a45c', backgroundColor: '#c8a45c', yAxisID: 'y2', tension: 0.2, pointRadius: 4 },
-          { type: 'line', label: 'Cancelled', data: cancelledCounts, borderColor: '#6b7280', backgroundColor: '#6b7280', yAxisID: 'y2', tension: 0.2, pointRadius: 3 },
-          { type: 'line', label: 'Revenue ($)', data: revenues, borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y3', tension: 0.2, pointRadius: 4, borderDash: [5, 3] }
+          { type: 'bar', label: 'Leads', data: leadCounts, backgroundColor: C.leads, borderRadius: 4, maxBarThickness: 36, yAxisID: 'y' },
+          { type: 'line', label: 'Bookings', data: bookingCounts, borderColor: C.bookings, backgroundColor: C.bookings, yAxisID: 'y2', tension: 0.2, pointRadius: 4 },
+          { type: 'line', label: 'Cancelled', data: cancelledCounts, borderColor: C.cancelled, backgroundColor: C.cancelled, yAxisID: 'y2', tension: 0.2, pointRadius: 3 },
+          { type: 'line', label: 'Revenue ($)', data: revenues, borderColor: C.revenue, backgroundColor: C.revenue, yAxisID: 'y3', tension: 0.2, pointRadius: 4, borderDash: [5, 3] }
         ]
       },
       options: {
@@ -1373,7 +1431,7 @@ tbody tr:hover { background: #fafaf8; }
           y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Bookings / Cancelled' } },
           y3: { beginAtZero: true, display: false }
         },
-        plugins: { legend: { position: 'bottom' } }
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 16 } } }
       }
     });
   }
@@ -1421,7 +1479,7 @@ tbody tr:hover { background: #fafaf8; }
       const result = await r.json();
       el.textContent = result.text || 'No narrative returned.';
     } catch (e) {
-      el.innerHTML = `<span style="color:#991b1b">Narrative failed: ${e.message || e}</span>`;
+      el.innerHTML = `<span class="err-text">Narrative failed: ${e.message || e}</span>`;
     }
   }
 
@@ -1548,7 +1606,7 @@ tbody tr:hover { background: #fafaf8; }
       document.getElementById('elle-kpi-newusers').textContent = '-';
       document.getElementById('elle-kpi-venues').textContent = '0';
       venueBody.innerHTML = Object.keys(ELLE_NAMES).map(v =>
-        `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
+        `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span class="muted">(${v})</span></td>`
         + `<td class="num">-</td><td class="num">-</td><td>awaiting GA4 property ID + service-account access</td><td class="num">-</td></tr>`
       ).join('');
       sourceBody.innerHTML = '<tr><td colspan="3" class="footnote">Traffic-by-source populates once the three Elle GA4 property IDs are filled in and the dashboard service account is granted Viewer on each property.</td></tr>';
@@ -1562,8 +1620,8 @@ tbody tr:hover { background: #fafaf8; }
     const rows = Object.keys(ELLE_NAMES).map(v => {
       const vd = venues[v];
       if (!vd || vd.error) {
-        return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
-          + `<td class="num">-</td><td class="num">-</td><td style="color:#f59e0b">${vd && vd.error ? 'GA4 error' : 'no data'}</td><td class="num">-</td></tr>`;
+        return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span class="muted">(${v})</span></td>`
+          + `<td class="num">-</td><td class="num">-</td><td class="warn-text">${vd && vd.error ? 'GA4 error' : 'no data'}</td><td class="num">-</td></tr>`;
       }
       reporting++;
       totalSessions += vd.totalSessions || 0;
@@ -1572,9 +1630,9 @@ tbody tr:hover { background: #fafaf8; }
         const key = s.sessionSource || '(direct)';
         sourceTotals[key] = (sourceTotals[key] || 0) + (s.sessions || 0);
       });
-      return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span style="color:#9ca3af">(${v})</span></td>`
+      return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span class="muted">(${v})</span></td>`
         + `<td class="num">${fmt(vd.totalSessions)}</td><td class="num">${fmt(vd.newUsers)}</td>`
-        + `<td>${topSource(vd.bySource)}</td><td class="num" style="color:#9ca3af">${vd.propertyId || '-'}</td></tr>`;
+        + `<td>${topSource(vd.bySource)}</td><td class="num muted">${vd.propertyId || '-'}</td></tr>`;
     }).join('');
 
     venueBody.innerHTML = rows;
