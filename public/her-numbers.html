@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Katherine's Numbers · Marketing</title>
+<!-- ORDER #1717: Katherine's Master Marketing Dashboard and IG follower sheet,
+     read nightly on the Box and shown as she has them, plus her Looker reports.
+     On the approved tokens (#1210). -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  .lede { margin: 0; color: var(--ihg-color-text-secondary); max-width: var(--ihg-content-reading-max); line-height: var(--ihg-line-height-body); }
+  .bar { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .bar button[aria-pressed="true"] { background: var(--ihg-color-accent-subtle); font-weight: var(--ihg-weight-semibold); }
+  .panel { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-5); overflow-x: auto; display: grid; gap: var(--ihg-space-4); }
+  .panel h2 { margin: 0; font-size: var(--ihg-text-lg); }
+  .panel h3 { margin: var(--ihg-space-2) 0 0; font-size: var(--ihg-text-md); }
+  table { border-collapse: collapse; font-size: var(--ihg-text-xs); width: 100%; }
+  th, td { padding: var(--ihg-space-2); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--ihg-color-surface); }
+  thead th { color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-semibold); vertical-align: bottom; white-space: normal; min-width: 4.5rem; }
+  tr.total td { font-weight: var(--ihg-weight-semibold); background: var(--ihg-color-surface-muted); }
+  .none { color: var(--ihg-color-text-muted); }
+  .src { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+  .looker { display: grid; gap: var(--ihg-space-2); }
+  .looker a { color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-semibold); }
+  .err { color: var(--ihg-status-late-fg); }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Katherine's Numbers</div>
+  <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/agents">Katherine's Team</a> · <a href="/competitors">Competitors</a></nav>
+</div></header>
+<main class="container wrap">
+  <p class="lede">Katherine's own marketing files, read every night. Her files stay where she types; these numbers are exactly what she has in them, never recalculated. A blank month means no reading, not zero.</p>
+  <div class="bar" role="group" aria-label="Show">
+    <button data-tab="spend" aria-pressed="true">Spend</button>
+    <button data-tab="leads" aria-pressed="false">Leads</button>
+    <button data-tab="followers" aria-pressed="false">Followers</button>
+    <button data-tab="looker" aria-pressed="false">Her Looker reports</button>
+  </div>
+  <div id="status" class="none" role="status">Loading&hellip;</div>
+  <section id="tab-spend" class="panel"></section>
+  <section id="tab-leads" class="panel" hidden></section>
+  <section id="tab-followers" class="panel" hidden></section>
+  <section id="tab-looker" class="panel" hidden></section>
+</main>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthLabel = (ym) => `${MON[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
+  const dateLabel = (iso) => { if (!iso) return 'unknown'; const d = new Date(iso); return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}.${d.getFullYear()}`; };
+  const money = (v) => (v == null ? '<span class="none">&mdash;</span>' : v.toLocaleString('en-US', { style: 'currency', currency: 'USD' }));
+  const count = (v) => (v == null ? '<span class="none">&mdash;</span>' : v.toLocaleString('en-US'));
+
+  // One table: a row per month, one column per header, her total row last.
+  function table(block, cols, fmt, label) {
+    const head = `<tr><th>Month</th>${cols.map((c) => `<th>${esc(label ? label(c) : c)}</th>`).join('')}</tr>`;
+    const body = block.months.map((m) => `<tr><td>${monthLabel(m.month)}${m.entered ? '' : ' <span class="none">(not entered yet)</span>'}</td>`
+      + cols.map((c) => `<td>${m.entered ? fmt(m.values[c]) : '<span class="none">&mdash;</span>'}</td>`).join('') + '</tr>').join('');
+    const tot = block.total ? `<tr class="total"><td>Her YTD total</td>${cols.map((c) => `<td>${fmt(block.total[c])}</td>`).join('')}</tr>` : '';
+    return `<table><thead>${head}</thead><tbody>${body}${tot}</tbody></table>`;
+  }
+  const source = (part, file) => `<p class="src">From <a href="${esc(file)}" target="_blank" rel="noopener">${esc(part.source_name || 'her file')}</a>, last edited ${dateLabel(part.source_modified)}; read ${dateLabel(part.read_at)}.</p>`;
+
+  function render(d) {
+    const m = d.master;
+    if (!m) {
+      $('#tab-spend').innerHTML = $('#tab-leads').innerHTML = '<p class="none">Her Master Marketing Dashboard has not been read yet. The Box reads it every night.</p>';
+    } else {
+      const sp = m.blocks.spend;
+      $('#tab-spend').innerHTML = '<h2>Marketing spend</h2>' + (sp ? table(sp, sp.columns, money) : '<p class="err">No MARKETING SPEND block in her file.</p>') + source(m, d.files.master);
+      const ld = m.blocks.leads;
+      if (ld) {
+        const venue = ld.columns.filter((c) => /^total \w+ leads$/i.test(c));
+        const src = ld.columns.filter((c) => !venue.includes(c));
+        $('#tab-leads').innerHTML = '<h2>Lead volume</h2><h3>By source</h3>' + table(ld, src, count)
+          + '<h3>By venue</h3>' + table(ld, venue, count, (c) => c.replace(/^total (\w+) leads$/i, '$1'))
+          + (m.blocks.tours ? '<h3>Tours completed</h3>' + table(m.blocks.tours, m.blocks.tours.columns, count) : '')
+          + (m.blocks.bookings ? '<h3>Bookings</h3>' + table(m.blocks.bookings, m.blocks.bookings.columns, count) : '')
+          + source(m, d.files.master);
+      } else $('#tab-leads').innerHTML = '<p class="err">No LEAD VOLUME block in her file.</p>';
+    }
+    const f = d.followers;
+    if (!f) $('#tab-followers').innerHTML = '<p class="none">Her IG follower sheet has not been read yet.</p>';
+    else {
+      const head = `<tr><th>Month</th>${f.accounts.map((a) => `<th>${esc(a)}</th>`).join('')}</tr>`;
+      const body = f.months.slice().reverse().map((x) => `<tr><td>${monthLabel(x.month)}</td>` + (x.missing
+        ? `<td colspan="${f.accounts.length}" class="none" style="text-align:left">No reading this month${x.note ? ` (her sheet says &ldquo;${esc(x.note)}&rdquo;)` : ''}</td>`
+        : f.accounts.map((a) => { const r = x.readings[a]; return `<td>${r ? (r.approx ? '~' : '') + count(r.followers) : '<span class="none">&mdash;</span>'}</td>`; }).join('')) + '</tr>').join('');
+      $('#tab-followers').innerHTML = '<h2>Instagram followers</h2><table><thead>' + head + '</thead><tbody>' + body + '</tbody></table>'
+        + '<p class="src">~ means she wrote a rounded number (for example 12.1K). A dash means that account had no number that month.</p>' + source(f, d.files.followers);
+    }
+    $('#tab-looker').innerHTML = '<h2>Her Looker Studio reports</h2><p class="lede">Linked until each chart is rebuilt here. Website charts come over from our GA4 connection; the ads charts wait on the ads export.</p><div class="looker">'
+      + d.looker.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>`).join('') + '</div>';
+  }
+
+  document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.querySelectorAll('section.panel').forEach((s) => { s.hidden = s.id !== `tab-${b.dataset.tab}`; });
+  }));
+
+  fetch('/api/her-numbers', { credentials: 'same-origin' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`answered ${r.status}`))))
+    .then((d) => { $('#status').textContent = ''; render(d); })
+    .catch((e) => { $('#status').className = 'err'; $('#status').textContent = `Could not load her numbers (${e.message}).`; });
+})();
+</script>
+</body>
+</html>
