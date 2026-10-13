@@ -44,7 +44,7 @@ test('routes: signed out refused; leadership sees all eight (#1666 Scout, #1688 
   assert.strictEqual((await call(s, '/api/agents')).status, 401);
   const r = await call(s, '/api/agents', { headers: as('khowe@infinityhospitality.net') });
   assert.strictEqual(r.status, 200);
-  assert.strictEqual(r.json.agents.length, 8);
+  assert.strictEqual(r.json.agents.length, 10); // #1704 SEO, #1705 PR Patty
   const bob = r.json.agents.find((a) => a.slug === 'bloggy-bob');
   assert.strictEqual(bob.current, null);
   assert.match(bob.default_skill, /Bloggy Bob/);
@@ -120,7 +120,7 @@ test('requests job: runs each queued request once and marks it; mirror writes th
   assert.strictEqual(store.requests[0].note, 'card(s) #7');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tree-'));
   await store.saveSettings('gbp', { skill_md: '# GBP v1 words', max_cards: 2, who: 'khowe@x', note: 'warmer' });
-  assert.strictEqual(await mirror({ store, root, log: () => {} }), 8); // #1688 the Cadet made nine; #1699 folds Listings into Citations
+  assert.strictEqual(await mirror({ store, root, log: () => {} }), 10); // #1704 + #1705 add two // #1688 the Cadet made nine; #1699 folds Listings into Citations
   const f = fs.readFileSync(path.join(root, '07_Marketing_and_Brand', 'Agents', 'gbp.SKILL.md'), 'utf8');
   assert.match(f, /Version 1, saved by khowe@x \(warmer\)\. ON, 2 draft/);
   assert.match(f, /# GBP v1 words$/);

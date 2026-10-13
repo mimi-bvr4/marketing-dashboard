@@ -1,0 +1,72 @@
+{
+  "name": "SEO",
+  "job": "weekly search check",
+  "cadence": "Mondays 06:00 CT",
+  "max_cards": 3,
+  "max_tokens": 9000,
+  "sources": [
+    {
+      "type": "search_console",
+      "required": true,
+      "sites": [
+        "infinityhospitalitygroup.com",
+        "dreameventsandcatering.com",
+        "dailydishcatering.com",
+        "thebridgebuilding.com",
+        "thebelltower.com",
+        "cherokeedock.com",
+        "saddlewoodsfarm.com",
+        "nashvilleeventbartending.com",
+        "thecordelle.com",
+        "thesaintelle.com",
+        "estellenashville.com",
+        "nashvilleweddingvenue.com"
+      ],
+      "label": "Google Search Console"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/Blog_Agent/KEYWORD_MAP.md",
+      "label": "the keyword map (which page owns which search)"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/BLOG_AGENT_SPEC_10.09.2026.md",
+      "label": "the SEO method (Wedding SEO Bootcamp, in our words)"
+    },
+    {
+      "type": "file",
+      "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md",
+      "label": "our venues (canonical)"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md"
+    }
+  ],
+  "character": {
+    "role": "The SEO lead",
+    "does": [
+      "Every Monday, reads Google Search Console for all 12 of our sites, last 28 days against the 28 before",
+      "Finds the quick wins: searches where we sit on page 2 to 5, and page-1 results nobody clicks",
+      "Rewrites the SEO title and description for each of those pages, from the title and description really on the page today",
+      "Catches two of our own pages competing for the same search, and says which page should own it",
+      "Flags pages that dropped 5 or more places, and hands Bloggy Bob ready-to-run requests for new posts"
+    ],
+    "traits": [
+      {
+        "cant": "Change a page, a title or a setting on a site",
+        "instead": "Writes the exact new title and description; a person pastes them in WordPress or Squarespace"
+      },
+      {
+        "cant": "Give search volumes or keyword difficulty",
+        "instead": "Works from Search Console, which shows what people actually searched to find us; volumes come once an SEO tool is connected"
+      },
+      {
+        "cant": "Write the blog posts",
+        "instead": "Hands Bloggy Bob the keyword, the site and the post type, ready to run"
+      }
+    ],
+    "needs": []
+  }
+}

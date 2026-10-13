@@ -23,8 +23,12 @@ const path = require('path');
 const { treeRoot } = require('../lib/agent-sources');
 
 const RULES = [
-  ['bloggy-bob', /\b(blog|blog post|post about|article|bob|keyword)\b/i],
-  ['site-health', /\b(site health|broken links?|404s?|crawl|seo audit|page speed|site audit)\b/i],
+  ['bloggy-bob', /\b(blog|blog post|post about|article|bob)\b|\bkeyword\b(?! (research|map|ranking))/i],
+  ['site-health', /\b(site health|broken links?|404s?|crawl|page speed|site audit)\b/i],
+  // #1704: the SEO agent owns rankings, Search Console, titles and descriptions, and the keyword map.
+  ['seo', /\b(seo|search console|rankings?|ranks?|keyword research|keyword map|cannibali[sz]\w*|meta (titles?|descriptions?)|seo titles?)\b/i],
+  // #1705: PR Patty.
+  ['pr-patty', /\b(pr|press|publicity|pitch(es)?|reporters?|journalists?|media requests?|qwoted|haro|be inspired)\b/i],
   ['gbp', /\b(google business|gbp|review repl(y|ies)|google post)\b|\brepl(y|ies)\b[^.]{0,40}\breviews?\b|\brespond\b[^.]{0,40}\breviews?\b/i],
   // #1699: one agent for listings and citations.
   ['citations', /\b(citations?|nap|ai visibility|ai answers?|chatgpt says|consisten(t|cy)|the knot|knot|weddingwire|wedding wire|zola|here comes the guide|directory|listing refresh|listings?)\b/i],
@@ -33,8 +37,10 @@ const RULES = [
 ];
 
 function matchAgent(text) {
-  const hits = RULES.filter(([, re]) => re.test(text)).map(([slug]) => slug);
-  return [...new Set(hits)];
+  let hits = [...new Set(RULES.filter(([, re]) => re.test(text)).map(([slug]) => slug))];
+  // #1704: "an SEO blog post about X" is Bob's job; the word SEO alone never pulls it to the SEO agent.
+  if (hits.includes('bloggy-bob') && hits.includes('seo')) hits = hits.filter((h) => h !== 'seo');
+  return hits;
 }
 
 function parseOrder(text) {
