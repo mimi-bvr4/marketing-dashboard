@@ -108,8 +108,10 @@ const { DENIED_MESSAGE, DENIED_PAGE } = require('../lib/access');
 // own order.
 // ORDER #1663: keys also read the monthly funnel COUNTS (leads, tours,
 // bookings; no money), so the Monthly Report agent can use them.
-const FLEET_READ_PREFIXES = ['/api/ga4/', '/api/funnel/'];
-const FLEET_DENIED_MESSAGE = 'A fleet key can read website-traffic numbers (/api/ga4/*) and funnel counts (/api/funnel/*) only.';
+// Open Date Filler: keys also read the open dates (dates only, no names or
+// money), so the sales boards show the same list as marketing.
+const FLEET_READ_PREFIXES = ['/api/ga4/', '/api/funnel/', '/api/open-dates'];
+const FLEET_DENIED_MESSAGE = 'A fleet key can read website-traffic numbers (/api/ga4/*), funnel counts (/api/funnel/*) and open dates (/api/open-dates) only.';
 function fleetMayRead(p) {
   return FLEET_READ_PREFIXES.some(prefix => p.startsWith(prefix));
 }

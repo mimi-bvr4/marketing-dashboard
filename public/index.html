@@ -254,6 +254,15 @@ tbody tr:hover { background: var(--ihg-color-surface-muted); }
   <h2>AI Analysis <span class="hint">auto-generated &middot; refreshes with the data</span></h2>
   <div class="body" id="ai-body"><span class="loading">Generating insight once data loads&hellip;</span></div>
 </div>
+<!-- Open Date Filler: open Fri/Sat/Sun dates at the 7 venues (same list the sales boards read). -->
+<div class="section" id="open-dates">
+  <h2>Open Dates <span class="hint">next 6 months &middot; Fridays, Saturdays and Sundays with no signed contract &middot; ignores period filter</span></h2>
+  <table class="compact">
+    <thead><tr><th>Venue</th><th class="num">Open Saturdays</th><th class="num">Open Fri/Sat/Sun</th><th>Next open Saturday</th><th>Next open dates</th></tr></thead>
+    <tbody id="open-dates-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="footnote" id="open-dates-note">Open = no deal at that venue with a signed contract on that day (cancelled bookings do not count). At The Bridge Building a booking in any space takes the date.</div>
+</div>
 <div class="section funnel-section">
   <h2>Conversion Funnel &amp; Website Traction <span class="hint">GA4 sessions &rarr; HubSpot leads &rarr; tours &rarr; bookings &rarr; revenue &middot; follows period filter</span></h2>
   <div class="funnel-controls">
@@ -1687,5 +1696,24 @@ tbody tr:hover { background: var(--ihg-color-surface-muted); }
 })();
 </script>
 <script src="https://dispatch.infinityhospitalitygroup.com/ihg-nav.js" defer></script>
+<script>
+// Open Date Filler card. Dates only; never names or money.
+(async () => {
+  const body = document.getElementById('open-dates-body');
+  if (!body) return;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  try {
+    const r = await fetch('/api/open-dates?months=6', { credentials: 'same-origin' });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ('server ' + r.status));
+    body.innerHTML = j.venues.map((v) => `<tr><td class="venue-label">${esc(v.name)} <span class="muted">(${esc(v.code)})</span></td>`
+      + `<td class="num">${v.open_saturdays}</td><td class="num">${v.open_count} of ${v.prime_days}</td>`
+      + `<td>${esc(v.next_open_saturday || 'none in 6 months')}</td>`
+      + `<td>${v.open.slice(0, 6).map((d) => esc(d.label)).join(' &middot; ') || '<span class="muted">fully booked</span>'}</td></tr>`).join('');
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="5" class="err-text">Open dates could not load right now (${esc(e.message)}).</td></tr>`;
+  }
+})();
+</script>
 </body>
 </html>

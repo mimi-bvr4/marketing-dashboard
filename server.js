@@ -263,6 +263,15 @@ app.use(require('./routes/funnel').createFunnelRouter({
   },
 }));
 
+// ---- Open Date Filler: open Fri/Sat/Sun dates at the 7 venues (marketing + sales boards) ----
+app.use(require('./routes/open-dates').createOpenDatesRouter({
+  search: async (objectType, body) => {
+    const r = await enqueueHubSpot(() => hubspotFetch(objectType, excludeTestDeals(objectType, body)));
+    if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
+    return r.json();
+  },
+}));
+
 // ---- AI Narrative Proxy (Anthropic) ----
 app.post('/api/ai/narrative', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
