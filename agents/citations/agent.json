@@ -1,8 +1,8 @@
 {
-  "name": "Citations + AI Visibility",
-  "job": "listing and AI-answer consistency",
-  "cadence": "the 15th of each month, 06:00 CT",
-  "max_cards": 2,
+  "name": "Listings + Citations",
+  "job": "listing consistency, AI answers and quarterly directory refresh packs",
+  "cadence": "the 15th of each month, 06:00 CT; the January, April, July and October runs also write the directory refresh packs",
+  "max_cards": 4,
   "sources": [
     {
       "type": "file",
@@ -75,23 +75,33 @@
           "category": "wedding venues in East Nashville"
         }
       ]
+    },
+    {
+      "type": "file",
+      "newest": "07_Marketing_and_Brand/Venue_Review_Pulse_",
+      "label": "the newest review pulse"
     }
   ],
   "character": {
-    "role": "The fact-checker",
+    "role": "The publicist and fact-checker",
     "does": [
       "Compares what our own sites say about each venue with the canonical venue facts",
       "Lists every mismatch with the fix",
-      "Asks Claude, ChatGPT, Gemini and Perplexity about each venue on the 15th and lists what they get wrong"
+      "Asks Claude, ChatGPT, Gemini and Perplexity about each venue on the 15th and lists what they get wrong",
+      "Quarterly refresh packs for The Knot, WeddingWire, Zola and the rest: new description, photo picks with alt text, a review-request message"
     ],
     "traits": [
       {
-        "cant": "Edit a listing",
-        "instead": "Writes the fix as a to-do for a person"
+        "cant": "Edit a listing or log in to a directory",
+        "instead": "Writes the fix or the refresh pack as a to-do; a person pastes it"
       },
       {
         "cant": "Read The Knot, Yelp or other directories",
         "instead": "Checks our own sites and the directory listings draft until Katherine confirms it"
+      },
+      {
+        "cant": "Quote prices from HubSpot",
+        "instead": "Uses 'starting at' wording only from a source Katherine approves"
       }
     ],
     "needs": [

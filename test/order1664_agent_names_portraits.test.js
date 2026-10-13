@@ -84,24 +84,24 @@ test('routes: signed out refused; Katherine renames with no approval step, it sh
 test('routes: portrait upload, served back with its real type, refused when not a picture, removable', async (t) => {
   const store = createMemoryStore({ lint });
   const s = await serve(app(store), t);
-  assert.strictEqual((await call(s, '/api/agents/listings/portrait', { headers: as(K) })).status, 404);
-  assert.strictEqual((await call(s, '/api/agents/listings/portrait', { method: 'PUT', raw: PNG, type: 'image/png' })).status, 401);
-  const up = await call(s, '/api/agents/listings/portrait', { headers: as(K), method: 'PUT', raw: PNG, type: 'image/jpeg' });
+  assert.strictEqual((await call(s, '/api/agents/gbp/portrait', { headers: as(K) })).status, 404);
+  assert.strictEqual((await call(s, '/api/agents/gbp/portrait', { method: 'PUT', raw: PNG, type: 'image/png' })).status, 401);
+  const up = await call(s, '/api/agents/gbp/portrait', { headers: as(K), method: 'PUT', raw: PNG, type: 'image/jpeg' });
   assert.strictEqual(up.status, 200);
   assert.strictEqual(up.json.profile.portrait_type, 'image/png', 'type from the bytes, not the header');
-  const got = await call(s, '/api/agents/listings/portrait', { headers: as(K) });
+  const got = await call(s, '/api/agents/gbp/portrait', { headers: as(K) });
   assert.strictEqual(got.status, 200);
   assert.strictEqual(got.headers['content-type'], 'image/png');
   assert.strictEqual(got.headers['x-content-type-options'], 'nosniff');
   assert.ok(got.buf.equals(PNG));
-  const a = (await call(s, '/api/agents', { headers: as(K) })).json.agents.find((x) => x.slug === 'listings');
-  assert.match(a.portrait, /^\/api\/agents\/listings\/portrait\?v=\d+$/);
-  const bad = await call(s, '/api/agents/listings/portrait', { headers: as(K), method: 'PUT', raw: Buffer.from('<html>'), type: 'image/png' });
+  const a = (await call(s, '/api/agents', { headers: as(K) })).json.agents.find((x) => x.slug === 'gbp');
+  assert.match(a.portrait, /^\/api\/agents\/gbp\/portrait\?v=\d+$/);
+  const bad = await call(s, '/api/agents/gbp/portrait', { headers: as(K), method: 'PUT', raw: Buffer.from('<html>'), type: 'image/png' });
   assert.strictEqual(bad.status, 400);
-  assert.ok((await call(s, '/api/agents/listings/portrait', { headers: as(K) })).buf.equals(PNG), 'a refused upload keeps the old one');
-  assert.strictEqual((await call(s, '/api/agents/listings/portrait', { headers: as(K), method: 'DELETE' })).status, 200);
-  assert.strictEqual((await call(s, '/api/agents/listings/portrait', { headers: as(K) })).status, 404);
-  assert.strictEqual((await call(s, '/api/agents', { headers: as(K) })).json.agents.find((x) => x.slug === 'listings').portrait, null);
+  assert.ok((await call(s, '/api/agents/gbp/portrait', { headers: as(K) })).buf.equals(PNG), 'a refused upload keeps the old one');
+  assert.strictEqual((await call(s, '/api/agents/gbp/portrait', { headers: as(K), method: 'DELETE' })).status, 200);
+  assert.strictEqual((await call(s, '/api/agents/gbp/portrait', { headers: as(K) })).status, 404);
+  assert.strictEqual((await call(s, '/api/agents', { headers: as(K) })).json.agents.find((x) => x.slug === 'gbp').portrait, null);
 });
 
 test('everywhere: Review shows the new name on old cards; new cards and the digest carry it; the fence is unchanged', async (t) => {

@@ -21,7 +21,7 @@ const fixedNow = () => new Date('2026-10-11T16:00:00Z');
 
 test('matchAgent: one clear agent, none, or ambiguous', () => {
   assert.deepStrictEqual(matchAgent('Blog post about winter weddings at TBT'), ['bloggy-bob']);
-  assert.deepStrictEqual(matchAgent('Audit our Knot listing for Saint Elle'), ['listings']);
+  assert.deepStrictEqual(matchAgent('Audit our Knot listing for Saint Elle'), ['citations']);
   assert.deepStrictEqual(matchAgent('Reply to the new SWF reviews'), ['gbp']);
   assert.deepStrictEqual(matchAgent('Make a new logo'), []);
   assert.strictEqual(matchAgent('Blog and Knot listing refresh').length, 2);

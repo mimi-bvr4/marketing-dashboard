@@ -113,7 +113,7 @@ test('an assistant error is reported on the card, the others still answer', asyn
 const EM = '—'; const EN = '–';
 
 test('agent.json sources validate: every type is registered, no pending source left where the order replaced it', () => {
-  for (const slug of ['monthly-report', 'citations', 'listings']) {
+  for (const slug of ['monthly-report', 'citations']) { // #1699: listings folded into citations
     const a = loadAgent(slug);
     for (const s of a.sources) {
       assert.ok(REGISTRY[s.type], `${slug}: unknown source type ${s.type}`);
@@ -138,12 +138,11 @@ test('agent.json sources validate: every type is registered, no pending source l
   assert.ok(c.sources.some((s) => s.type === 'file' && s.newest === '07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_'));
   assert.ok(c.character.needs.includes('Keys for ChatGPT, Gemini and Perplexity (Claude runs now)'));
   assert.ok(dueAgents('2026-10-15').includes('citations') && !dueAgents('2026-10-14').includes('citations'));
-  assert.strictEqual(c.cadence, 'the 15th of each month, 06:00 CT');
+  assert.match(c.cadence, /^the 15th of each month, 06:00 CT/); // #1699 adds the quarterly packs
 
-  const l = loadAgent('listings');
-  const req = l.sources.find((s) => s.required);
-  assert.deepStrictEqual([req.type, req.newest, req.label], ['file', '07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_', 'directory listings draft (Katherine confirms paid/logins)']);
-  assert.deepStrictEqual(l.character.needs, ['Katherine confirms which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)']);
+  // #1699: Listings lives inside Citations now; the listings draft is read but not required, so the monthly check still runs without it.
+  assert.ok(c.sources.some((s) => s.newest === '07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_' && !s.required));
+  assert.ok(c.character.needs.includes('Katherine confirms which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)'));
 });
 
 test('monthly report: the dashboard source asks /api/funnel/monthly with the fleet key', async () => {

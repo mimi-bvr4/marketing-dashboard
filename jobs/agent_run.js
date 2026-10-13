@@ -23,8 +23,8 @@ function dueAgents(ymd) {
   const due = ['gbp'];
   if (dow === 1) due.push('site-health', 'paid-ads', 'scout');
   if (d === 3) due.push('monthly-report');
+  // #1699: Listings folded into Citations; its 15th run in Jan/Apr/Jul/Oct also writes the refresh packs.
   if (d === 15) due.push('citations');
-  if (dow === 1 && d <= 7 && [1, 4, 7, 10].includes(m)) due.push('listings');
   return due;
 }
 

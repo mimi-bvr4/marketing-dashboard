@@ -162,8 +162,8 @@ test('routes: decline records the note; a cant shows under Traits with what it d
   const id = await proposed(store);
   const d = await call(s, `/api/agents/asks/${id}/decide`, { headers: m, method: 'POST', body: { decision: 'decline', note: 'keep them warm' } });
   assert.strictEqual(d.json.ask.status, 'declined');
-  const { ask } = await store.createAsk('listings', 'log in to The Knot and update it', 'khowe@x');
+  const { ask } = await store.createAsk('citations', 'log in to The Knot and update it', 'khowe@x');
   await store.updateAsk(ask.id, { status: 'cant', kind: 'cant', triage: { kind: 'cant', reason: 'fence', instead: 'Writes the pack for a person to paste' } });
-  const l = (await call(s, '/api/agents', { headers: m })).json.agents.find((a) => a.slug === 'listings');
+  const l = (await call(s, '/api/agents', { headers: m })).json.agents.find((a) => a.slug === 'citations');
   assert.ok(l.character.traits.some((tr) => tr.cant === 'log in to The Knot and update it' && /paste/.test(tr.instead)));
 });

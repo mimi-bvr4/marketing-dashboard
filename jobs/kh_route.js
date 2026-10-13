@@ -26,8 +26,8 @@ const RULES = [
   ['bloggy-bob', /\b(blog|blog post|post about|article|bob|keyword)\b/i],
   ['site-health', /\b(site health|broken links?|404s?|crawl|seo audit|page speed|site audit)\b/i],
   ['gbp', /\b(google business|gbp|review repl(y|ies)|google post)\b|\brepl(y|ies)\b[^.]{0,40}\breviews?\b|\brespond\b[^.]{0,40}\breviews?\b/i],
-  ['citations', /\b(citations?|nap|ai visibility|ai answers?|chatgpt says|consisten(t|cy))\b/i],
-  ['listings', /\b(the knot|knot|weddingwire|wedding wire|zola|here comes the guide|directory|listing refresh|listings?)\b/i],
+  // #1699: one agent for listings and citations.
+  ['citations', /\b(citations?|nap|ai visibility|ai answers?|chatgpt says|consisten(t|cy)|the knot|knot|weddingwire|wedding wire|zola|here comes the guide|directory|listing refresh|listings?)\b/i],
   ['monthly-report', /\b(monthly report|marketing report|report for (the )?month)\b/i],
   ['paid-ads', /\b(ads? audit|google ads|meta ads|facebook ads|ppc|paid ads|ad spend)\b/i],
 ];
