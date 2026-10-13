@@ -21,7 +21,7 @@ function dueAgents(ymd) {
   const [y, m, d] = ymd.split('-').map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 Sunday
   const due = ['gbp', 'pr-patty']; // #1705: Patty reads the press requests every morning
-  if (dow === 1) due.push('site-health', 'paid-ads', 'scout', 'seo'); // #1704
+  if (dow === 1) due.push('site-health', 'paid-ads', 'scout', 'seo', 'convention-connector'); // #1704, #1707
   if (d === 3) due.push('monthly-report');
   // #1699: Listings folded into Citations; its 15th run in Jan/Apr/Jul/Oct also writes the refresh packs.
   if (d === 15) due.push('citations');

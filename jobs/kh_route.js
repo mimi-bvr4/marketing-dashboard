@@ -27,6 +27,10 @@ const RULES = [
   ['site-health', /\b(site health|broken links?|404s?|crawl|page speed|site audit)\b/i],
   // #1704: the SEO agent owns rankings, Search Console, titles and descriptions, and the keyword map.
   ['seo', /\b(seo|search console|rankings?|ranks?|keyword research|keyword map|cannibali[sz]\w*|meta (titles?|descriptions?)|seo titles?)\b/i],
+  // #1706: the Copywriter checks text before it goes out.
+  ['copywriter', /\b(copywriter|copy ?edit(or|ing)?|proofread|check (this|my|the) (copy|text|email|caption|post)|copy check)\b/i],
+  // #1707: conventions coming to Nashville.
+  ['convention-connector', /\b(conventions?|trade shows?|dmcs?|destination management|music city center|gaylord)\b/i],
   // #1705: PR Patty.
   ['pr-patty', /\b(pr|press|publicity|pitch(es)?|reporters?|journalists?|media requests?|qwoted|haro|be inspired)\b/i],
   ['gbp', /\b(google business|gbp|review repl(y|ies)|google post)\b|\brepl(y|ies)\b[^.]{0,40}\breviews?\b|\brespond\b[^.]{0,40}\breviews?\b/i],

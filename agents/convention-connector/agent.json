@@ -1,0 +1,60 @@
+{
+  "name": "Convention Connector",
+  "job": "conventions coming to Nashville",
+  "cadence": "Mondays 06:00 CT",
+  "max_cards": 2,
+  "max_tokens": 10000,
+  "sources": [
+    {
+      "type": "web_trends",
+      "required": true,
+      "label": "web search for conventions coming to Nashville and who works them",
+      "instruction": "Only events whose dates fall between today and 9 months from today. For each item give: the event name, the dates, the host venue, expected attendance if the page states it, the organizer, and the link. For companies, give the company name, what it does for the event, and the link to its own public website or contact page. Never give a person's email or phone unless it is printed on a public business page you found, and then give that page's link.",
+      "queries": [
+        "conventions, trade shows and association conferences booked at Music City Center in Nashville in the next 9 months, with dates and expected attendance",
+        "large conferences and corporate meetings at Gaylord Opryland Resort and Convention Center and downtown Nashville hotels in the next 9 months",
+        "Nashville destination management companies (DMCs) and corporate meeting planners that run offsite events, receptions and dinners for conventions",
+        "official general service contractors, event production and decor companies working Nashville conventions this year",
+        "meeting planners or associations that have announced Nashville as the host city for an upcoming conference, and their event or partnership contacts"
+      ]
+    },
+    {
+      "type": "file",
+      "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md",
+      "label": "our venues (canonical)"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/IH_Brand_Voice_Guide_DRAFT_09.29.2026.md",
+      "label": "the brand voice guide"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md"
+    }
+  ],
+  "character": {
+    "role": "The convention scout",
+    "does": [
+      "Every Monday, finds the conventions, trade shows and big corporate meetings coming to Nashville in the next 9 months, with dates, host venue, size and organizer",
+      "Finds the companies that work them and hire out the extras: destination management companies, meeting planners, production and decor contractors",
+      "Drafts a short, specific email to each one offering our venues, catering, bar and lighting for their receptions, dinners and offsite nights",
+      "Every item carries the link it came from"
+    ],
+    "traits": [
+      {
+        "cant": "Send an email",
+        "instead": "Drafts it; a person on our team sends it"
+      },
+      {
+        "cant": "Look up a person's private email or phone",
+        "instead": "Uses only contact details printed on a company's own public page, with the link"
+      },
+      {
+        "cant": "Read event calendars behind a login",
+        "instead": "Reads public pages only; anything it could not confirm is marked (unverified)"
+      }
+    ],
+    "needs": []
+  }
+}
