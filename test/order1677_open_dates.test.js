@@ -77,3 +77,27 @@ test('fleet keys may read open dates (sales boards), GET only, nothing else new'
   assert.match(html, /id="open-dates-body"/);
   assert.match(html, /fetch\('\/api\/open-dates\?months=6'/);
 });
+
+// ORDER #1681 (Mimi 10.13.2026 popup, "EP deal = booked"): the Elle EP deals
+// imported from HoneyBook have no contract_signed_date, so every Saturday at
+// COR/EST/STE read open. Known-bad shaped on COR Evans 11.07.2026 (deal
+// 62413427123) and COR Thompson 12.05.2026 (62411182243), both Elle EP.
+test('#1681: an Event Planning deal is booked without a signed date; a Sales deal still needs one; cancelled never', () => {
+  const ep = (venue, day, pipeline, extra = {}) => deal(venue, day, { contract_signed_date: null, pipeline, ...extra });
+  const m = OD.bookedDays([
+    ep('COR', '2026-11-07', '916011843', { dealname: '11.07.2026 COR Evans Wedding' }),
+    ep('COR', '2026-12-05', '916011843', { dealname: '12.05.2026 COR Thompson Wedding' }),
+    ep('TBT', '2026-11-07', 'default'),
+    ep('ECD', '2026-11-07', '746391920'), // Sales pipeline, unsigned: not booked
+    ep('SWF', '2026-11-07', 'default', { booked_cancelled__reporting_use_only_: 'Cancelled' }),
+  ]);
+  assert.deepStrictEqual([...m.get('2026-11-07')].sort(), ['COR', 'TBT']);
+  assert.deepStrictEqual([...m.get('2026-12-05')], ['COR']);
+});
+
+test('#1681: the search asks HubSpot for the pipeline', async () => {
+  let asked;
+  await OD.computeOpenDates({ search: async (t, body) => { asked = body; return { results: [] }; }, months: 1, now: NOW });
+  assert.ok(asked.properties.includes('pipeline'));
+});
+
