@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Competitors · Marketing</title>
+<!-- ORDER #1668: Katherine's competitor sheet, what the Scout saw change, and a
+     weekly profile for every top competitor. On the approved tokens (#1210). -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  .lede { margin: 0; color: var(--ihg-color-text-secondary); max-width: var(--ihg-content-reading-max); line-height: var(--ihg-line-height-body); }
+  .bar { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .bar input { flex: 1 1 16rem; min-height: var(--ihg-target-min); padding: 0 var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); border-radius: var(--ihg-radius); font: inherit; background: var(--ihg-color-surface); }
+  .bar button[aria-pressed="true"] { background: var(--ihg-color-accent-subtle); font-weight: var(--ihg-weight-semibold); }
+  .grid { display: grid; gap: var(--ihg-space-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); }
+  .card { text-align: left; background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-4); display: grid; gap: var(--ihg-space-2); color: var(--ihg-color-text); font: inherit; cursor: pointer; min-height: var(--ihg-target-min); }
+  .card:hover { border-color: var(--ihg-color-border-control); }
+  .card h3 { margin: 0; font-size: var(--ihg-text-md); }
+  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .tag { font-size: var(--ihg-text-xs); padding: 1px var(--ihg-space-2); border-radius: var(--ihg-radius-sm); background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); }
+  .tag.top { background: var(--ihg-color-accent-subtle); color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-semibold); }
+  .changed { font-size: var(--ihg-text-sm); color: var(--ihg-status-attention-fg); }
+  .detail { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-6); display: grid; gap: var(--ihg-space-4); }
+  .detail h2 { margin: 0; }
+  .profile { line-height: var(--ihg-line-height-body); max-width: 72ch; }
+  .profile h3 { font-size: var(--ihg-text-md); margin: var(--ihg-space-5) 0 var(--ihg-space-1); }
+  .profile ul { margin: 0; padding-left: 1.2rem; }
+  .profile p { margin: 0 0 var(--ihg-space-2); }
+  pre.changes { white-space: pre-wrap; font-size: var(--ihg-text-xs); background: var(--ihg-color-bg); border-radius: var(--ihg-radius); padding: var(--ihg-space-3); max-height: 18rem; overflow: auto; }
+  textarea { width: 100%; min-height: 7rem; font: inherit; padding: var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); border-radius: var(--ihg-radius); box-sizing: border-box; }
+  .empty { color: var(--ihg-color-text-muted); }
+  .err { color: var(--ihg-status-late-fg); }
+  .ok { color: var(--ihg-status-done-fg); }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Competitors</div>
+  <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/agents">Katherine's Team</a> · <a href="/photos">Photos</a></nav>
+</div></header>
+<main class="container wrap">
+  <p class="lede">Every competitor on Katherine's competitor sheet. The top ones (on 3 or more of its tabs, or marked Top) get a profile the Scout refreshes every Monday from their public website. Profiles are for reading; nothing here is published.</p>
+  <div class="bar" role="group" aria-label="Filter">
+    <input id="q" type="search" placeholder="Find a competitor" aria-label="Find a competitor">
+    <button data-f="top" aria-pressed="true">Top</button>
+    <button data-f="all" aria-pressed="false">All</button>
+  </div>
+  <div id="status" class="empty" role="status"></div>
+  <section id="detail" class="detail" hidden></section>
+  <div id="list" class="grid"></div>
+</main>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const day = (d) => { if (!d) return ''; const x = new Date(d); return x.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '.'); };
+  let all = []; let filter = 'top';
+
+  // Small markdown: ## headings, bullets, **bold**, paragraphs. Escaped first.
+  function md(text) {
+    const out = []; let list = false;
+    for (const raw of String(text || '').split('\n')) {
+      const l = esc(raw).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      if (/^##\s+/.test(raw)) { if (list) { out.push('</ul>'); list = false; } out.push('<h3>' + l.replace(/^##\s+/, '') + '</h3>'); }
+      else if (/^\s*[-*]\s+/.test(raw)) { if (!list) { out.push('<ul>'); list = true; } out.push('<li>' + l.replace(/^\s*[-*]\s+/, '') + '</li>'); }
+      else if (raw.trim()) { if (list) { out.push('</ul>'); list = false; } out.push('<p>' + l + '</p>'); }
+    }
+    if (list) out.push('</ul>');
+    return out.join('');
+  }
+
+  function draw() {
+    const q = $('#q').value.trim().toLowerCase();
+    const rows = all.filter((c) => (filter === 'all' || c.top) && (!q || (c.name + ' ' + c.site).toLowerCase().includes(q)));
+    $('#list').innerHTML = rows.map((c) => `<button class="card" data-site="${esc(c.site)}">
+      <h3>${esc(c.name)}</h3>
+      <div class="meta">${c.top ? '<span class="tag top">Top</span>' : ''}${c.brands.map((b) => `<span class="tag">${esc(b)}</span>`).join('')}<span>${esc(c.site)}</span></div>
+      ${c.last_changes && !/^No change/.test(c.last_changes) ? `<div class="changed">Changed on their site ${esc(day(c.changes_at))}</div>` : ''}
+      <div class="meta">${c.has_profile ? `Profile updated ${esc(day(c.profile_at))}` : (c.top ? 'Profile comes with the next Monday run' : 'No profile (not a top competitor)')}</div>
+    </button>`).join('') || '<p class="empty">Nobody matches.</p>';
+  }
+
+  async function load() {
+    const r = await fetch('/api/competitors', { credentials: 'same-origin' });
+    if (!r.ok) { $('#status').textContent = 'The competitor list could not load right now.'; return; }
+    const j = await r.json(); all = j.competitors;
+    $('#status').textContent = all.length ? `${all.length} competitors on the sheet, ${j.top} top.` : 'Nothing yet: the list fills the first Monday the Scout reads the competitor sheet.';
+    draw();
+  }
+
+  async function open(site) {
+    const box = $('#detail'); box.hidden = false; box.innerHTML = '<p class="empty">Loading…</p>';
+    const r = await fetch('/api/competitors/' + encodeURIComponent(site), { credentials: 'same-origin' });
+    if (!r.ok) { box.innerHTML = '<p class="err">That competitor could not load.</p>'; return; }
+    const { competitor: c, profile_md, versions } = await r.json();
+    box.innerHTML = `<div class="bar" style="justify-content:space-between"><h2>${esc(c.name)}</h2><button id="close">Close</button></div>
+      <div class="meta"><a href="https://${esc(c.site)}" target="_blank" rel="noopener">${esc(c.site)}</a>${c.brands.map((b) => `<span class="tag">${esc(b)}</span>`).join('')}${c.segments.map((s) => `<span class="tag">${esc(s)}</span>`).join('')}</div>
+      ${c.sheet_notes.length ? `<div><strong>From the sheet:</strong> ${c.sheet_notes.map(esc).join(' · ')}</div>` : ''}
+      <div class="profile">${profile_md ? md(profile_md) + `<p class="meta">Version ${c.profile_version}, written ${esc(day(c.profile_at))}. Drafted by the Scout from their public site; check before quoting.</p>` : '<p class="empty">No profile yet.</p>'}</div>
+      ${c.last_changes ? `<details><summary>What the Scout saw change (${esc(day(c.changes_at))})</summary><pre class="changes">${esc(c.last_changes)}</pre></details>` : ''}
+      <div><label for="notes"><strong>Katherine's notes</strong> (the Scout reads these when it rewrites the profile)</label>
+        <textarea id="notes" maxlength="4000">${esc(c.kh_notes || '')}</textarea>
+        <div class="bar"><button id="save">Save notes</button><span id="saved" role="status"></span>${c.kh_notes_by ? `<span class="meta">Last by ${esc(c.kh_notes_by)} ${esc(day(c.kh_notes_at))}</span>` : ''}</div></div>
+      ${versions.length > 1 ? `<details><summary>Earlier versions (${versions.length - 1})</summary>${versions.slice(1).map((v) => `<details><summary>Version ${v.version}, ${esc(day(v.created_at))}</summary><div class="profile">${md(v.profile_md)}</div></details>`).join('')}</details>` : ''}`;
+    $('#close').onclick = () => { box.hidden = true; };
+    $('#save').onclick = async () => {
+      const btn = $('#save'); btn.disabled = true;
+      const s = await fetch('/api/competitors/' + encodeURIComponent(c.site) + '/notes', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: $('#notes').value }) });
+      btn.disabled = false;
+      const j = await s.json().catch(() => ({}));
+      $('#saved').className = s.ok ? 'ok' : 'err';
+      $('#saved').textContent = s.ok ? 'Saved.' : (j.error || 'Not saved. Please try again.');
+    };
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  $('#list').addEventListener('click', (e) => { const b = e.target.closest('[data-site]'); if (b) open(b.dataset.site); });
+  $('#q').addEventListener('input', draw);
+  document.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
+    filter = b.dataset.f; document.querySelectorAll('[data-f]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); draw();
+  }));
+  load();
+})();
+</script>
+</body>
+</html>

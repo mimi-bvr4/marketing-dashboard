@@ -4,6 +4,7 @@
 //   node jobs/agent_run.js <agent> [--ask "text"] [--dry]
 //   node jobs/agent_run.js --due [--date YYYY-MM-DD]   every agent whose cadence falls today (Nashville date)
 //   node jobs/agent_run.js --list
+//   node jobs/agent_run.js competitors   #1668: sync the competitor sheet and write the top profiles now
 //
 // --dry prints the cards and writes nothing. Otherwise cards go to the Review
 // tab through MARKETING_DATABASE_URL (jobs/agents_daily.sh supplies it with
@@ -48,8 +49,10 @@ function parseArgs(argv) {
 async function main({ argv = process.argv.slice(2), log = console.log, pool, llm, env = process.env, fetchImpl } = {}) {
   const args = parseArgs(argv);
   if (args.list) { listAgents().forEach((s) => { const d = loadAgent(s); log(`${s.padEnd(15)} ${d.name}: ${d.cadence}`); }); return 0; }
-  const slugs = args.due ? dueAgents(args.date || nashvilleYmd()) : args.agents;
-  if (!slugs.length) { log('usage: agent_run.js <agent> [--ask text] [--dry] | --due | --list'); return 2; }
+  const competitorsOnly = !args.due && args.agents.length === 1 && args.agents[0] === 'competitors';
+  const slugs = competitorsOnly ? [] : (args.due ? dueAgents(args.date || nashvilleYmd()) : args.agents);
+  if (competitorsOnly && args.dry) { log('competitors: --dry is not supported; it writes profiles'); return 2; }
+  if (!slugs.length && !competitorsOnly) { log('usage: agent_run.js <agent> [--ask text] [--dry] | --due | --list'); return 2; }
   let store;
   if (args.dry) store = createMemoryStore({ lint });
   else {
@@ -75,6 +78,15 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     const d = await writeDigest({ store });
     log(`digest: card #${d.id}`);
   }
+  // #1668: Monday (or on request), read Katherine's competitor sheet first, so
+  // the Scout reads every top competitor; profiles are written after it.
+  const C = require('../lib/competitor-profiles');
+  const weekly = competitorsOnly || (args.due && !args.dry && slugs.includes('scout'));
+  let drive = null;
+  if (weekly) {
+    try { drive = require('../lib/drive-client').createDriveClient(); } catch (e) { log(`competitors: no service account key (${e.message.slice(0, 80)})`); }
+    await C.syncFromSheet({ store, drive, log });
+  }
   for (const slug of slugs) {
     const r = await runAgent({ slug, store, llm: model, ask: args.ask, env, fetchImpl: fetchImpl || globalThis.fetch, log, dryRun: args.dry,
       scheduled: args.due });
@@ -82,6 +94,11 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
     if (args.dry) for (const c of r.cards) log(`\n----- ${c.title} -----\n${c.body}\n`);
     if (!r.ok) failed++;
+  }
+  if (weekly) {
+    if (competitorsOnly) await runAgent({ slug: 'scout', store, llm: model, env, fetchImpl: fetchImpl || globalThis.fetch, log, scheduled: true });
+    const w = await C.writeProfiles({ store, llm: model, log });
+    if (!w.ok) log(`competitors: profiles not written: ${w.why || 'every one failed'}`);
   }
   if (pool === undefined && store.end) await store.end();
   return failed ? 1 : 0;
