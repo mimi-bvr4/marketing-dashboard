@@ -43,8 +43,11 @@ function createCompetitorsRouter({ store }) {
     const site = siteOf(req, res); if (!site) return;
     const c = await store.competitor(site);
     if (!c) return res.status(404).json({ error: 'not on the competitor list' });
-    const versions = await store.profileVersions(site, 20);
-    res.json({ competitor: view(c), profile_md: c.profile_md || null,
+    // #1702: a profile or an earlier version that invented what an IHG code stands for is never shown.
+    const { inventedCodes } = require('../lib/competitor-profiles');
+    const versions = (await store.profileVersions(site, 20)).filter((v) => !inventedCodes(v.profile_md).length);
+    const live = c.profile_md && !inventedCodes(c.profile_md).length ? c.profile_md : null;
+    res.json({ competitor: view(c), profile_md: live,
       versions: versions.map((v) => ({ version: v.version, created_at: v.created_at, profile_md: v.profile_md })) });
   });
 
