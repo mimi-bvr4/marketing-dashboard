@@ -276,7 +276,7 @@ test('dashboard source: no fleet key is "unavailable"; with one it sends the key
 
 test('every agent folder loads, has a SKILL.md with a name and description, and no em dash', () => {
   const slugs = listAgents();
-  assert.deepStrictEqual(slugs, ['bloggy-bob', 'citations', 'gbp', 'listings', 'monthly-report', 'paid-ads', 'scout', 'site-health']);
+  assert.deepStrictEqual(slugs, ['bloggy-bob', 'citations', 'collateral-cadet', 'gbp', 'listings', 'monthly-report', 'paid-ads', 'scout', 'site-health']); // #1688 adds the Cadet
   for (const s of slugs) {
     const a = loadAgent(s);
     assert.match(a.skill, new RegExp(`^---\\nname: ${s}\\ndescription: .+\\n---`), s);

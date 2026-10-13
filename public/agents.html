@@ -144,7 +144,7 @@
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
-      <div class="acts"><button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button><a class="btn ghost" href="#${a.slug}">Open profile</a></div>
+      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
   }
@@ -187,9 +187,10 @@
         <span class="meta">${a.named_by ? `Named by ${esc(a.named_by)}. ` : ''}Rename any time; it saves at once. Clear the box to go back to "${esc(a.default_name)}".</span>
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
           <span class="meta">${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}` : 'Has not run yet'}</span></div>
-        <div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
+        ${a.ask_page ? `<div class="row"><a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a></div>
+        <p class="meta" style="margin:0">Asked on his own page; the Box answers there within 15 minutes.</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
           <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
-        <p class="meta" style="margin:0">The Box picks it up within 15 minutes; the draft lands in <a href="/review">Review</a>.</p>
+        <p class="meta" style="margin:0">The Box picks it up within 15 minutes; the draft lands in <a href="/review">Review</a>.</p>`}
         <p class="msg" hidden></p>
       </div>
     </section>

@@ -7,6 +7,7 @@
 //   POST /api/agents/:slug              { skill_md, enabled, max_cards, note }  -> a NEW version
 //   POST /api/agents/:slug/revert       { version }  -> a new version copying that one
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
+//                                       (409 for an agent with an ask_page, #1688: asked on that page)
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
 //   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
 //   POST /api/agents/:slug/name         { name }  -> #1664, '' puts the default back
@@ -101,7 +102,7 @@ function createAgentsRouter({ store, identity }) {
       const p = profiles.get(slug);
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
-        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, sources: (d.sources || []).map(sourceView),
+        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, sources: (d.sources || []).map(sourceView),
         default_skill: d.skill, default_max_cards: d.max_cards || 3,
         current: s ? { version: s.version, skill_md: s.skill_md, enabled: s.enabled, max_cards: s.max_cards,
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
@@ -178,6 +179,9 @@ function createAgentsRouter({ store, identity }) {
   });
 
   r.post('/api/agents/:slug/run', need, known, async (req, res) => {
+    // #1688: a team member with his own page (the Collateral Cadet) is asked there, not run here.
+    const page = loadAgent(req.params.slug).ask_page;
+    if (page) return res.status(409).json({ error: `Ask on his own page: ${page}` });
     const out = await store.queueRun(req.params.slug, String((req.body || {}).ask || '').trim() || null, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ request: out.request });

@@ -39,12 +39,12 @@ function call(server, urlPath, { headers = {}, method = 'GET', body } = {}) {
 const as = (email) => ({ Cookie: `mkt_session=${jwt.sign({ role: 'sso', email, mkt_access: true }, process.env.JWT_SECRET)}` });
 function app(store) { const a = express(); a.use(express.json({ limit: '2mb' })); a.use(pageGate); a.use(createAgentsRouter({ store })); return a; }
 
-test('routes: signed out refused; leadership sees all eight (#1666 Scout) with default instructions', async (t) => {
+test('routes: signed out refused; leadership sees all nine (#1666 Scout, #1688 Cadet) with default instructions', async (t) => {
   const s = await serve(app(createMemoryStore({ lint })), t);
   assert.strictEqual((await call(s, '/api/agents')).status, 401);
   const r = await call(s, '/api/agents', { headers: as('khowe@infinityhospitality.net') });
   assert.strictEqual(r.status, 200);
-  assert.strictEqual(r.json.agents.length, 8);
+  assert.strictEqual(r.json.agents.length, 9);
   const bob = r.json.agents.find((a) => a.slug === 'bloggy-bob');
   assert.strictEqual(bob.current, null);
   assert.match(bob.default_skill, /Bloggy Bob/);
@@ -120,7 +120,7 @@ test('requests job: runs each queued request once and marks it; mirror writes th
   assert.strictEqual(store.requests[0].note, 'card(s) #7');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tree-'));
   await store.saveSettings('gbp', { skill_md: '# GBP v1 words', max_cards: 2, who: 'khowe@x', note: 'warmer' });
-  assert.strictEqual(await mirror({ store, root, log: () => {} }), 8); // #1666: eight team members
+  assert.strictEqual(await mirror({ store, root, log: () => {} }), 9); // #1666: eight team members; #1688 the Cadet makes nine
   const f = fs.readFileSync(path.join(root, '07_Marketing_and_Brand', 'Agents', 'gbp.SKILL.md'), 'utf8');
   assert.match(f, /Version 1, saved by khowe@x \(warmer\)\. ON, 2 draft/);
   assert.match(f, /# GBP v1 words$/);
