@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Where is it? · Marketing</title>
+<!-- ORDER #1688: the Collateral Cadet. Type a phrase; the Box looks for it in
+     every material on the Collateral Map it can read and on our 11 websites,
+     and lists each place with the line quoted. Anything it could not read says
+     NOT CHECKED, never clean. Nothing here edits or publishes anything. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  .lede { margin: 0; color: var(--ihg-color-text-secondary); max-width: var(--ihg-content-reading-max); line-height: var(--ihg-line-height-body); }
+  .bar { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .bar input { flex: 1 1 16rem; min-height: var(--ihg-target-min); padding: 0 var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); border-radius: var(--ihg-radius); font: inherit; background: var(--ihg-color-surface); }
+  .panel { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-5); display: grid; gap: var(--ihg-space-3); }
+  .panel h2 { margin: 0; font-size: var(--ihg-text-lg); }
+  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .tag { font-size: var(--ihg-text-xs); padding: 1px var(--ihg-space-2); border-radius: var(--ihg-radius-sm); background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-semibold); }
+  .tag.found { background: var(--ihg-status-attention-bg, var(--ihg-color-accent-subtle)); color: var(--ihg-status-attention-fg); }
+  .tag.clean { background: var(--ihg-status-done-bg, var(--ihg-color-surface-muted)); color: var(--ihg-status-done-fg); }
+  .tag.unk { background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); }
+  ul.plain { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--ihg-space-2); }
+  ul.plain li { border-top: var(--ihg-border-width) solid var(--ihg-color-border); padding-top: var(--ihg-space-2); }
+  blockquote { margin: var(--ihg-space-1) 0 0; padding-left: var(--ihg-space-3); border-left: 3px solid var(--ihg-color-border-control); color: var(--ihg-color-text-secondary); font-size: var(--ihg-text-sm); }
+  .asks button { text-align: left; width: 100%; background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: var(--ihg-space-1) 0; }
+  details summary { cursor: pointer; }
+  .empty { color: var(--ihg-color-text-muted); }
+  .err { color: var(--ihg-status-late-fg); }
+  .ok { color: var(--ihg-status-done-fg); }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Where is it?</div>
+  <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/agents">Katherine's Team</a> · <a href="/competitors">Competitors</a> · <a href="/photos">Photos</a></nav>
+</div></header>
+<main class="container wrap">
+  <p class="lede">Ask the Collateral Cadet where a word or phrase appears. He looks in every material on the Collateral Map he can read and on our 11 websites, and lists each place with the line quoted. Anything he could not read says <strong>Not checked</strong>, so a short list never means the rest is clean. He never changes a material.</p>
+  <form class="bar" id="ask" autocomplete="off">
+    <input id="phrase" type="search" maxlength="120" placeholder="sparkling white wine" aria-label="Word or phrase to look for" required>
+    <button class="btn primary" type="submit" id="go">Ask the Cadet</button>
+    <span id="said" role="status"></span>
+  </form>
+  <section id="detail" class="panel" hidden></section>
+  <section class="panel"><h2>Searches</h2><div id="asks" class="asks"><p class="empty">Loading…</p></div></section>
+  <section class="panel" id="mapbox"><h2>The Collateral Map</h2><div id="map" class="empty">Loading…</div></section>
+</main>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const when = (d) => { if (!d) return ''; return new Date(d).toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }).replace(/\//g, '.').replace(',', '') + ' CT'; };
+  const TAG = { 'FOUND': ['found', 'Found'], 'NOT FOUND': ['clean', 'Not found'], 'NOT CHECKED': ['unk', 'Not checked'] };
+  const tag = (s) => { const t = TAG[s] || ['unk', s]; return `<span class="tag ${t[0]}">${esc(t[1])}</span>`; };
+  const quotes = (lines) => (lines || []).map((l) => `<blockquote>${esc(l)}</blockquote>`).join('');
+  let timer = null;
+
+  function tallyText(t) {
+    if (!t) return '';
+    return `${t.materials.found} material${t.materials.found === 1 ? '' : 's'} and ${t.sites.found} site${t.sites.found === 1 ? '' : 's'} found; ${t.materials.not_checked + t.sites.not_checked} not checked`;
+  }
+
+  function drawMap(m) {
+    if (!m) { $('#map').innerHTML = 'The Box has not read the Collateral Map yet. It reads it every 15 minutes.'; return; }
+    const s = m.summary;
+    $('#map').className = '';
+    $('#map').innerHTML = `<p style="margin:0">${s.total} titles, <strong>${s.linked} with a link</strong> (Drive ${s.by.drive}, Canva ${s.by.canva}, other ${s.by.other}). Read ${esc(when(m.read_at))}.</p>
+      <p class="meta" style="margin:0">A title with no link is looked up in Drive by its exact name. To let the Cadet read one for certain, link the title's cell on the Collateral Map to the file.</p>
+      ${s.unlinked.length ? `<details><summary>Titles with no link (${s.unlinked.length})</summary><ul>${s.unlinked.map((u) => `<li>${esc(u.title)} <span class="meta">${esc(u.company)} · ${esc(u.section)}</span></li>`).join('')}</ul></details>` : ''}`;
+  }
+
+  function drawAsks(list) {
+    $('#asks').innerHTML = list.length ? `<ul class="plain">${list.map((a) => `<li><button data-id="${a.id}"><strong>"${esc(a.phrase)}"</strong>
+      <span class="meta">${a.status === 'done' ? esc(tallyText(a.tally)) : a.status === 'failed' ? 'Did not finish: ' + esc(a.error || '') : 'Waiting for the Box (every 15 minutes)'} · asked by ${esc(a.asked_by)} ${esc(when(a.created_at))}</span></button></li>`).join('')}</ul>`
+      : '<p class="empty">No searches yet. Type a phrase above.</p>';
+  }
+
+  async function load() {
+    const r = await fetch('/api/cadet', { credentials: 'same-origin' });
+    if (!r.ok) { $('#asks').innerHTML = '<p class="err">The Cadet could not load right now.</p>'; return; }
+    const j = await r.json();
+    drawAsks(j.asks); drawMap(j.map);
+    clearTimeout(timer);
+    if (j.asks.some((a) => a.status === 'queued' || a.status === 'running')) timer = setTimeout(load, 60000);
+  }
+
+  function material(m) {
+    const files = (m.files || []).map((f) => `<div>${f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.file)}</a>` : esc(f.file)} ${tag(f.status)}${f.why ? ` <span class="meta">${esc(f.why)}</span>` : ''}${quotes(f.lines)}${f.count > (f.lines || []).length ? `<p class="meta">${f.count - f.lines.length} more line(s) in this file</p>` : ''}</div>`).join('');
+    return `<li><strong>${esc(m.title)}</strong> ${tag(m.status)} <span class="meta">${esc(m.company)} · ${esc(m.section)}${m.via === 'name' ? ' · matched by file name, not a link' : ''}</span>
+      ${m.why ? `<div class="meta">${esc(m.why)}</div>` : ''}${files}</li>`;
+  }
+  function site(s) {
+    return `<li><strong>${esc(s.site)}</strong> ${tag(s.status)} <span class="meta">${esc(s.platform)}${s.how ? ' · ' + esc(s.how) : ''}</span>
+      ${s.why ? `<div class="meta">${esc(s.why)}</div>` : ''}
+      ${(s.pages || []).map((p) => `<div><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.page)}</a>${p.title ? ` <span class="meta">${esc(p.title)}</span>` : ''}${quotes(p.lines)}</div>`).join('')}</li>`;
+  }
+
+  async function open(id) {
+    const box = $('#detail'); box.hidden = false; box.innerHTML = '<p class="empty">Loading…</p>';
+    const r = await fetch('/api/cadet/asks/' + id, { credentials: 'same-origin' });
+    if (!r.ok) { box.innerHTML = '<p class="err">That search could not load.</p>'; return; }
+    const a = await r.json();
+    const head = `<div class="bar" style="justify-content:space-between"><h2>"${esc(a.phrase)}"</h2><button class="btn" id="close">Close</button></div>`;
+    if (!a.result) { box.innerHTML = head + `<p class="empty">${a.status === 'failed' ? 'This search did not finish: ' + esc(a.error || '') : 'Waiting for the Box. Searches run every 15 minutes.'}</p>`; $('#close').onclick = () => { box.hidden = true; }; return; }
+    const res = a.result;
+    const found = res.materials.filter((m) => m.status === 'FOUND');
+    const unchecked = res.materials.filter((m) => m.status === 'NOT CHECKED');
+    const clean = res.materials.filter((m) => m.status === 'NOT FOUND');
+    box.innerHTML = head + `<p class="meta" style="margin:0">Searched ${esc(when(res.searched_at))} for ${esc(a.asked_by)}. ${esc(tallyText(res.tally))}.</p>
+      <div class="bar"><a class="btn primary" href="${esc(a.change_log.marketing)}" target="_blank" rel="noopener">Post to the Change Log (Marketing)</a>
+        <a class="btn" href="${esc(a.change_log.menus)}" target="_blank" rel="noopener">Post to the Change Log (Menus)</a>
+        <span class="meta">Opens Dispatch's Change Log with these places filled in. You check it and post it; nothing is posted for you.</span></div>
+      <h3>Materials, found (${found.length})</h3>${found.length ? `<ul class="plain">${found.map(material).join('')}</ul>` : '<p class="empty">None of the materials the Cadet could read has it.</p>'}
+      <h3>Websites</h3><ul class="plain">${res.sites.map(site).join('')}</ul>
+      <details ${found.length ? '' : 'open'}><summary><strong>Materials not checked (${unchecked.length})</strong>: the Cadet could not read these, so they may still have it</summary><ul class="plain">${unchecked.map(material).join('')}</ul></details>
+      ${clean.length ? `<details><summary>Materials read and not found (${clean.length})</summary><ul class="plain">${clean.map(material).join('')}</ul></details>` : ''}`;
+    $('#close').onclick = () => { box.hidden = true; };
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  $('#ask').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const go = $('#go'); go.disabled = true;
+    const r = await fetch('/api/cadet/ask', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phrase: $('#phrase').value }) });
+    const j = await r.json().catch(() => ({}));
+    go.disabled = false;
+    $('#said').className = r.ok ? 'ok' : 'err';
+    $('#said').textContent = r.ok ? 'Asked. The answer shows below within about 15 minutes.' : (j.error || 'Not asked. Please try again.');
+    if (r.ok) { $('#phrase').value = ''; load(); }
+  });
+  $('#asks').addEventListener('click', (e) => { const b = e.target.closest('[data-id]'); if (b) open(b.dataset.id); });
+  load();
+})();
+</script>
+</body>
+</html>
