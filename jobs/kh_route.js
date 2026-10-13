@@ -27,6 +27,8 @@ const RULES = [
   ['site-health', /\b(site health|broken links?|404s?|crawl|page speed|site audit)\b/i],
   // #1704: the SEO agent owns rankings, Search Console, titles and descriptions, and the keyword map.
   ['seo', /\b(seo|search console|rankings?|ranks?|keyword research|keyword map|cannibali[sz]\w*|meta (titles?|descriptions?)|seo titles?)\b/i],
+  // #1710: Pinterest Paul.
+  ['pinterest-paul', /\b(pinterest|pins?|pinned|paul)\b/i],
   // #1706: the Copywriter checks text before it goes out.
   ['copywriter', /\b(copywriter|copy ?edit(or|ing)?|proofread|check (this|my|the) (copy|text|email|caption|post)|copy check)\b/i],
   // #1707: conventions coming to Nashville.

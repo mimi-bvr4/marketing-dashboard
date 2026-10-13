@@ -97,8 +97,22 @@
       $('#runs').innerHTML = runs.length ? runs.map((r) => `<span class="run ${r.status === 'failed' ? 'failed' : ''}">${esc(r.agent)}: ${esc(r.status)} ${fmt(r.started_at)}${(r.unavailable || []).length ? ` · ${(r.unavailable || []).length} source(s) missing` : ''}</span>`).join('') : '<span>No one on the team has run yet.</span>';
     } catch (e) { $('#runs').textContent = 'Runs: ' + e.message; }
   }
+  // #1710: a Pinterest Paul card shows the pin exactly as it will go up.
+  function pinHtml(c) {
+    const p = c.payload && c.payload.pin; if (!p) return '';
+    return `<div class="pin" style="display:flex;gap:1rem;align-items:flex-start;border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
+      <img src="${esc(p.image_url)}" alt="${esc(p.alt_text || '')}" style="width:140px;max-width:40%;border-radius:8px;object-fit:cover">
+      <div><p class="meta">The pin${c.status === 'draft' ? ' (Approve pins it live on Pinterest)' : ''}. Board: <strong>${esc(p.board)}</strong></p>
+      <p style="margin:.25rem 0"><strong>${esc(p.title)}</strong></p><p style="margin:.25rem 0">${esc(p.description || '')}</p>
+      <p class="meta">Links to <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link)}</a></p></div></div>`;
+  }
   function handoffHtml(c) {
-    const h = c.handoff; const post = c.payload && c.payload.post;
+    const h = c.handoff; const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
+    if (pin) {
+      if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to pin this on Pinterest (it checks every 15 minutes).</p>' : '';
+      if (h.ok) return `<p class="meta"><span class="badge good">Pinned to ${esc(h.board)}</span> <a href="${esc(h.pin_url)}" target="_blank" rel="noopener">Open the pin</a></p>`;
+      return `<p class="meta"><span class="badge bad">Not pinned</span> ${esc(h.why)}</p>`;
+    }
     if (!post) return '';
     if (!h) return c.status === 'ready' ? `<p class="meta">Waiting for the Box to save this as an unpublished WordPress draft on ${esc(post.site || 'the site')} (it checks every 15 minutes).</p>` : '';
     if (h.ok) return `<p class="meta"><span class="badge good">WordPress draft saved</span> <a href="${esc(h.edit_link)}" target="_blank" rel="noopener">Open draft #${esc(h.wp_id)} in WordPress</a>. Not published; finish and publish it there.</p>`;
@@ -114,6 +128,7 @@
       <h3 style="margin:0">${esc(c.title)}</h3>
       <div class="body">${md(c.body)}</div>
       ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}
+      ${pinHtml(c)}
       ${handoffHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
@@ -122,7 +137,7 @@
         ${c.status === 'draft' ? `<button data-a="approve">Approve</button><button data-a="edit">Edit</button>
         <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>` : ''}
       </div>
-      <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : c.body)}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
+      <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}${c.payload && c.payload.pin ? '<p class="meta">You are editing the pin description (what goes on Pinterest, up to 500 characters).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : (c.payload && c.payload.pin ? (c.payload.pin.description || '') : c.body))}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
       <p class="err" hidden></p>
     </article>`;
   }
