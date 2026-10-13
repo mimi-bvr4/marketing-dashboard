@@ -193,6 +193,37 @@ tbody tr:hover { background: var(--ihg-color-surface-muted); }
 @media (prefers-reduced-motion: reduce) {
   .tab-btn, .progress-fill, .funnel-bar { transition: none; }
 }
+
+/* ORDER #1678 (Mimi, 10.12.2026: "more of an actual dashboard instead of
+   straight to the numbers game"): a Home band first, the numbers below. */
+.home { display: grid; gap: var(--ihg-space-4); margin-bottom: var(--ihg-space-8); }
+.home-hello { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--ihg-space-2); }
+.home-hello h2 { font-size: var(--ihg-text-xl); font-weight: var(--ihg-weight-semibold); letter-spacing: var(--ihg-tracking-heading); color: var(--ihg-color-text); }
+.home-hello a { color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-semibold); text-decoration: none; min-height: var(--ihg-target-min); display: inline-flex; align-items: center; }
+.home-tiles { display: grid; gap: var(--ihg-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); }
+.home-tile { display: grid; gap: var(--ihg-space-1); align-content: start; background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-4) var(--ihg-space-5); color: var(--ihg-color-text); text-decoration: none; min-height: 6.5rem; }
+a.home-tile:hover { border-color: var(--ihg-color-border-control); }
+.home-tile .k { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-secondary); }
+.home-tile .v { font-size: var(--ihg-text-2xl); font-weight: var(--ihg-weight-bold); font-variant-numeric: tabular-nums; letter-spacing: var(--ihg-tracking-heading); }
+.home-tile .s { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+.home-tile.attention { border-top: 3px solid var(--ihg-status-attention-mark); }
+.home-cols { display: grid; gap: var(--ihg-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); }
+.home-card { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-5); display: grid; gap: var(--ihg-space-3); align-content: start; }
+.home-card h3 { font-size: var(--ihg-text-md); font-weight: var(--ihg-weight-semibold); display: flex; justify-content: space-between; align-items: baseline; gap: var(--ihg-space-2); }
+.home-card h3 a { font-size: var(--ihg-text-sm); color: var(--ihg-color-accent-text); text-decoration: none; font-weight: var(--ihg-weight-semibold); }
+.home-list { list-style: none; display: grid; gap: var(--ihg-space-2); }
+.home-list li { display: flex; gap: var(--ihg-space-3); align-items: center; font-size: var(--ihg-text-sm); min-height: 2.25rem; }
+.home-list .who { width: 2.25rem; height: 2.25rem; border-radius: 50%; flex: 0 0 auto; background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-semibold); overflow: hidden; }
+.home-list .who img { width: 100%; height: 100%; object-fit: cover; }
+.home-list .grow { flex: 1; min-width: 0; }
+.home-list .grow b { display: block; font-weight: var(--ihg-weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-list .grow span { color: var(--ihg-color-text-muted); font-size: var(--ihg-text-xs); }
+.home-pill { font-size: var(--ihg-text-xs); padding: 2px var(--ihg-space-2); border-radius: var(--ihg-radius-sm); white-space: nowrap; background: var(--ihg-status-neutral-bg); color: var(--ihg-status-neutral-fg); }
+.home-pill.done { background: var(--ihg-status-done-bg); color: var(--ihg-status-done-fg); }
+.home-pill.late { background: var(--ihg-status-late-bg); color: var(--ihg-status-late-fg); }
+.home-pill.attention { background: var(--ihg-status-attention-bg); color: var(--ihg-status-attention-fg); }
+.home-empty { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-muted); }
+.numbers-head { font-size: var(--ihg-text-lg); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text); margin: 0 0 var(--ihg-space-3); padding-top: var(--ihg-space-4); border-top: var(--ihg-border-width) solid var(--ihg-color-border); }
 </style>
 </head>
 <body>
@@ -220,6 +251,24 @@ tbody tr:hover { background: var(--ihg-color-surface-muted); }
   <a class="tab-btn tab-link" href="/photos">Photos</a>
 </nav>
 <div id="panel-ihg" class="tab-panel active">
+<!-- ORDER #1678: Home first, the numbers below. Each card loads on its own; one
+     that cannot load says so and never blocks the rest. -->
+<section class="home" id="home" aria-label="Home">
+  <div class="home-hello"><h2 id="home-hello">Good day</h2><a href="#numbers">See the numbers</a></div>
+  <div class="home-tiles">
+    <a class="home-tile" href="/review" id="tile-review"><span class="k">Waiting in Review</span><span class="v" id="home-drafts">&hellip;</span><span class="s">drafts from Katherine's team</span></a>
+    <a class="home-tile" href="#open-dates" id="tile-open"><span class="k">Open Saturdays</span><span class="v" id="home-open-sat">&hellip;</span><span class="s">next 90 days, all 7 venues</span></a>
+    <a class="home-tile" href="/competitors" id="tile-comp"><span class="k">Competitor moves</span><span class="v" id="home-comp">&hellip;</span><span class="s">top competitors that changed their site</span></a>
+    <a class="home-tile" href="#numbers" id="tile-goal"><span class="k">2026 revenue goal</span><span class="v" id="home-goal">&hellip;</span><span class="s" id="home-goal-sub">of $19.6M</span></a>
+  </div>
+  <div class="home-cols">
+    <div class="home-card"><h3>Needs a look <a href="/review">Review</a></h3><ul class="home-list" id="home-review"><li class="home-empty">Loading&hellip;</li></ul></div>
+    <div class="home-card"><h3>Katherine's team <a href="/agents">Open</a></h3><ul class="home-list" id="home-team"><li class="home-empty">Loading&hellip;</li></ul></div>
+    <div class="home-card"><h3>Open Saturdays to push <a href="#open-dates">All dates</a></h3><ul class="home-list" id="home-open"><li class="home-empty">Loading&hellip;</li></ul></div>
+    <div class="home-card"><h3>Competitor watch <a href="/competitors">Competitors</a></h3><ul class="home-list" id="home-competitors"><li class="home-empty">Loading&hellip;</li></ul></div>
+  </div>
+</section>
+<h2 class="numbers-head" id="numbers">The numbers</h2>
 <div id="status" class="status">Loading live data from HubSpot&hellip;</div>
 <div class="goal-section">
   <div class="goal-row">
@@ -1713,6 +1762,66 @@ tbody tr:hover { background: var(--ihg-color-surface-muted); }
   } catch (e) {
     body.innerHTML = `<tr><td colspan="5" class="err-text">Open dates could not load right now (${esc(e.message)}).</td></tr>`;
   }
+})();
+</script>
+<script>
+// ORDER #1678: the Home band. Every card reads a route the page already uses;
+// each fails on its own and says so. Dates MM.DD.YYYY, Nashville time.
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const day = (d) => { if (!d) return ''; return new Date(d).toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '.'); };
+  const get = async (u) => { const r = await fetch(u, { credentials: 'same-origin' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || ('server ' + r.status)); return j; };
+  const fail = (id, what) => { const el = $(id); if (el) el.innerHTML = `<li class="home-empty">${esc(what)} could not load right now.</li>`; };
+  const initials = (n) => String(n || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const h = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hour12: false }));
+  const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'long', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '.');
+  $('home-hello').textContent = `${h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'} · ${today}`;
+
+  get('/api/review/cards?status=draft').then((j) => {
+    const cards = j.cards || [];
+    $('home-drafts').textContent = cards.length;
+    if (cards.length) $('tile-review').classList.add('attention');
+    $('home-review').innerHTML = cards.slice(0, 5).map((c) => `<li><span class="grow"><b>${esc(c.title)}</b><span>${esc(c.agent_name || c.agent)} · ${esc(day(c.created_at))}</span></span></li>`).join('')
+      || '<li class="home-empty">Nothing waiting. Every draft has been looked at.</li>';
+  }).catch(() => { $('home-drafts').textContent = '?'; fail('home-review', 'The Review queue'); });
+
+  get('/api/agents').then((j) => {
+    $('home-team').innerHTML = (j.agents || []).map((a) => {
+      const r = a.last_run;
+      const pill = !r ? '<span class="home-pill">not run yet</span>'
+        : r.status === 'failed' ? '<span class="home-pill late">last run failed</span>'
+        : r.status === 'running' ? '<span class="home-pill attention">running</span>'
+        : `<span class="home-pill done">ran ${esc(day(r.finished_at || r.started_at))}</span>`;
+      const face = a.portrait ? `<img src="${esc(a.portrait)}" alt="">` : esc(initials(a.name));
+      return `<li><span class="who">${face}</span><span class="grow"><b>${esc(a.name)}</b><span>${esc(a.job)}</span></span>${pill}</li>`;
+    }).join('') || '<li class="home-empty">No agents yet.</li>';
+  }).catch(() => fail('home-team', "Katherine's team"));
+
+  get('/api/open-dates?months=3').then((j) => {
+    const total = j.venues.reduce((n, v) => n + v.open_saturdays, 0);
+    $('home-open-sat').textContent = total;
+    $('home-open').innerHTML = j.venues.map((v) => {
+      const sats = v.open.filter((d) => /^Sat /.test(d.label)).slice(0, 3).map((d) => d.label.replace(/^Sat /, ''));
+      return `<li><span class="grow"><b>${esc(v.name)}</b><span>${sats.length ? esc(sats.join(' · ')) : 'no open Saturdays in 90 days'}</span></span><span class="home-pill${v.open_saturdays ? ' attention' : ''}">${v.open_saturdays} open</span></li>`;
+    }).join('');
+  }).catch(() => { $('home-open-sat').textContent = '?'; fail('home-open', 'Open dates'); });
+
+  get('/api/competitors').then((j) => {
+    const all = j.competitors || [];
+    const moved = all.filter((c) => c.top && c.last_changes && !/^No change/.test(c.last_changes));
+    $('home-comp').textContent = moved.length;
+    if (!all.length) { $('home-competitors').innerHTML = '<li class="home-empty">The list fills the first Monday the Scout reads the competitor sheet.</li>'; return; }
+    const show = (moved.length ? moved : all.filter((c) => c.top)).slice(0, 5);
+    $('home-competitors').innerHTML = show.map((c) => `<li><span class="grow"><b>${esc(c.name)}</b><span>${moved.length ? 'changed their site ' + esc(day(c.changes_at)) : (c.has_profile ? 'profile ' + esc(day(c.profile_at)) : 'profile on Monday')}</span></span></li>`).join('')
+      + (moved.length ? '' : '<li class="home-empty">No top competitor changed their site this week.</li>');
+  }).catch(() => { $('home-comp').textContent = '?'; fail('home-competitors', 'The competitor list'); });
+
+  // The goal tile mirrors the goal bar once the numbers below have loaded.
+  const goal = $('goal-ytd'); const pct = $('goal-pct');
+  const sync = () => { if (goal && /\d/.test(goal.textContent)) { $('home-goal').textContent = (pct && pct.textContent) || goal.textContent; $('home-goal-sub').textContent = `${goal.textContent} of $19.6M so far`; return true; } return false; };
+  if (!sync() && goal && window.MutationObserver) { const mo = new MutationObserver(() => { if (sync()) mo.disconnect(); }); mo.observe(goal, { childList: true, characterData: true, subtree: true }); }
 })();
 </script>
 </body>
