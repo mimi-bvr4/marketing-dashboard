@@ -408,18 +408,28 @@ const THUMB_SET_SQL = 'UPDATE photos SET thumb = $2, thumb_w = $3, thumb_h = $4,
 const THUMB_MISSING_SQL = 'UPDATE photos SET thumb_missing_at = now() WHERE drive_id = $1';
 const THUMB_LEFT_SQL = `SELECT count(*)::int AS n FROM photos WHERE thumb IS NULL AND removed_at IS NULL
   AND (thumb_missing_at IS NULL OR thumb_missing_at < now() - interval '30 days')`;
+// ORDER #1788: the measured store, for the projection that replaces "about 3 GB,
+// unverified". octet_length on a bytea reads the stored length, not the bytes.
+const THUMB_STORED_SQL = `SELECT count(*)::int AS stored, coalesce(sum(octet_length(thumb)), 0)::bigint AS bytes
+  FROM photos WHERE thumb IS NOT NULL AND removed_at IS NULL`;
+const mb = (bytes) => Math.round(bytes / 1048576);
 
 async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency = 8, batch = 200, now = Date.now }) {
   await ensurePhotoTables(pool);
   const stopAt = now() + budgetMin * 60000;
   const c = { filled: 0, missing: 0, failed: 0, bytes: 0 };
+  // ORDER #1788: a Drive 403 is the account losing the drive (or Drive's rate
+  // limit), never a fact about one photo. Stamping it missing would park every
+  // remaining photo for 30 days, so the run stops, stamps nothing, and says so.
+  let stopped = null;
   let more = true;
-  while (more && now() < stopAt) {
+  while (more && !stopped && now() < stopAt) {
     const ids = (await pool.query(THUMB_QUEUE_SQL, [batch])).rows.map((r) => r.drive_id);
     if (!ids.length) { more = false; break; }
     let progressed = 0;
     for (let i = 0; i < ids.length; i += concurrency) {
       await Promise.all(ids.slice(i, i + concurrency).map(async (id) => {
+        if (stopped) return;
         try {
           const file = await client.getFile(id, 'id, thumbnailLink');
           const t = file && file.thumbnailLink ? await client.thumbnail(file) : null;
@@ -427,20 +437,27 @@ async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency =
           await pool.query(THUMB_SET_SQL, [id, t.bytes, t.w, t.h]);
           c.filled++; c.bytes += t.bytes.length; progressed++;
         } catch (e) {
-          // A file deleted from Drive since the index, or one this account cannot
-          // read: stamp it so the queue moves on; the nightly --changes handles removals.
-          if (/Drive 40[34]/.test(e.message)) { await pool.query(THUMB_MISSING_SQL, [id]); c.missing++; progressed++; return; }
+          if (/Drive 403/.test(e.message)) { stopped = stopped || e.message; return; }
+          // A file deleted from Drive since the index: stamp it so the queue
+          // moves on; the nightly --changes handles removals.
+          if (/Drive 404/.test(e.message)) { await pool.query(THUMB_MISSING_SQL, [id]); c.missing++; progressed++; return; }
           c.failed++;
         }
       }));
-      if (now() >= stopAt) break;
+      if (stopped || now() >= stopAt) break;
     }
-    if (!progressed) { log('THUMBS: a whole batch failed; stopping this run so it does not spin'); break; }
+    if (!stopped && !progressed) { log('THUMBS: a whole batch failed; stopping this run so it does not spin'); break; }
   }
   const left = (await pool.query(THUMB_LEFT_SQL)).rows[0].n;
   const avg = c.filled ? Math.round(c.bytes / c.filled / 1024) : 0;
-  log(`THUMBS: filled ${c.filled}, no thumbnail from Drive ${c.missing}, failed ${c.failed}, average ${avg} KB, still to do ${left}`);
-  return { ...c, left, avgKb: avg };
+  const st = (await pool.query(THUMB_STORED_SQL)).rows[0] || {};
+  const stored = Number(st.stored) || 0;
+  const storedBytes = Number(st.bytes) || 0;
+  const projected = stored ? Math.round((storedBytes / stored) * (stored + left)) : 0;
+  if (stopped) log(`THUMBS STOPPED: Drive refused (${stopped}). Nothing was stamped; the next run starts where this one stopped.`);
+  log(`THUMBS: filled ${c.filled}, no thumbnail from Drive ${c.missing}, failed ${c.failed}, average ${avg} KB, still to do ${left}`
+    + `; stored ${stored} (${mb(storedBytes)} MB), projected total ${mb(projected)} MB`);
+  return { ...c, left, avgKb: avg, stored, storedBytes, projectedBytes: projected, stopped };
 }
 
 // `client` and `pool` are handed in so a test can run every mode with mocks.
@@ -465,8 +482,9 @@ if (require.main === module) {
   };
   let pool = null;
   main({ client: createDriveClient(), makePool: () => (pool = makePool()) })
-    .then(() => (pool ? pool.end() : null))
+    .then((r) => { if (r && r.stopped) process.exitCode = 2; return pool ? pool.end() : null; })   // #1788: a 403 stop is red on the board
     .catch((e) => { console.error(`photo_crawl FAILED: ${e.message}`); process.exitCode = 1; if (pool) pool.end(); });
 }
 
-module.exports = { main, summarize, rowFor, parseArgs, UPSERT_SQL, kindOf, BATCH, upsertSql, backfillThumbs, THUMB_QUEUE_SQL };
+module.exports = { main, summarize, rowFor, parseArgs, UPSERT_SQL, kindOf, BATCH, upsertSql, backfillThumbs, THUMB_QUEUE_SQL,
+  THUMB_STORED_SQL };
