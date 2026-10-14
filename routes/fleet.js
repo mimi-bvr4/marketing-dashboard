@@ -29,7 +29,8 @@ router.get('/api/contract', (req,res)=>{
       {method:'GET',path:'/health',desc:'Liveness.'},
       {method:'GET',path:'/api/ga4/summary',desc:'GA4 revenue/sessions summary.'},
       {method:'GET',path:'/api/ga4/sessions',desc:'GA4 sessions detail.'},
-      {method:'GET',path:'/api/funnel/monthly',desc:'Leads, tours and bookings counts for one month (?month=YYYY-MM), dashboard funnel definitions.'} ] });
+      {method:'GET',path:'/api/funnel/monthly',desc:'Leads, tours and bookings counts for one month (?month=YYYY-MM), dashboard funnel definitions.'},
+      {method:'GET',path:'/api/funnel/email-stats',desc:'HubSpot marketing-email totals for one month (?month=YYYY-MM), counts only (ORDER #1733).'} ] });
 });
 // simple admin login -> short-lived JWT (bearer) used by the mint page
 // ═══════════════════════════════════════════════════════════════════════════

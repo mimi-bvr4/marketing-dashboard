@@ -49,14 +49,17 @@ test('a drafting request never reads or reports the scorecard sources', async ()
   assert.doesNotMatch(llm.calls[0].user, /HubSpot marketing email analytics/);
 });
 
-test('the 3rd with no read-only path to HubSpot email statistics: one card that says so, no model call, no number', async () => {
+// #1733: the read now exists and fails closed; a missing scope is still a "could not run" card.
+test('the 3rd with HubSpot email statistics unreadable (scope missing): one card that says so, no model call, no number', async () => {
   const store = createMemoryStore({ lint });
   const llm = fakeModel(['{"cards":[{"title":"Email scorecard","body":"Opens 41%"}]}']);
-  const r = await runAgent({ slug: 'email', store, llm, env: ENV, log: () => {}, scheduled: true });
+  const fetchImpl = async () => ({ status: 200, json: async () => ({ ok: false, why: 'scope missing: scope-from-hubspot' }) });
+  const r = await runAgent({ slug: 'email', store, llm, env: { ...ENV, MARKETING_FLEET_KEY: 'mkt_test', MARKETING_BASE_URL: 'https://example.test' },
+    fetchImpl, log: () => {}, scheduled: true });
   assert.strictEqual(llm.calls.length, 0);
   assert.strictEqual(r.cards.length, 1);
   assert.match(r.cards[0].title, /could not run: a required source is missing/);
-  assert.match(r.cards[0].body, /HubSpot marketing email analytics \(last month\): no read-only path/);
+  assert.match(r.cards[0].body, /HubSpot marketing email analytics \(last month\): scope missing: scope-from-hubspot/);
   assert.doesNotMatch(r.cards[0].body, /\d+%/);
 });
 
