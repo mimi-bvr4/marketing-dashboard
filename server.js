@@ -87,9 +87,13 @@ app.use(pageGate);
     const cadet = require('./lib/cadet-store');
     cadet.ensureCadetTables(reviewPool).catch(e => console.error('[cadet] ensureCadetTables:', e.message));
     app.use(require('./routes/cadet').createCadetRouter({ store: cadet.createPgStore(reviewPool) }));
+    // ORDER #1717: Katherine's own dashboards (her files, read nightly on the Box; same gate).
+    const her = require('./lib/katherine-store');
+    her.ensureKatherineTables(reviewPool).catch(e => console.error('[her-numbers] ensureKatherineTables:', e.message));
+    app.use(require('./routes/katherine').createKatherineRouter({ store: her.createKatherineStore(reviewPool) }));
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
-      '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*'],
+      '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }

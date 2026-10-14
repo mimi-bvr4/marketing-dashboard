@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ORDER #1717. The nightly read of Katherine's two files: jobs/katherine_nightly.sh.
+
+  SHIPPED NOT LOADED. Loading this plist starts the nightly read. It reads her
+  Master Marketing Dashboard (.xlsx) and IG Monthly Follower Counts with the
+  Box service account (drive.readonly) and writes one table in the marketing
+  Postgres (katherine_reads). Nothing is written to her files. Mimi loads it
+  with her own paste, after this branch is merged to main (launchd runs
+  ~/repos/marketing-dashboard, never a branch).
+
+  TIME: 05:30 CT, daily. RunAtLoad is false: loading must not fire a run.
+  WHERE IT LOGS: the two paths below, red runs too.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.infinitybrain.katherine-files</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/infinitybrain/repos/marketing-dashboard/jobs/katherine_nightly.sh</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TZ</key>
+		<string>America/Chicago</string>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>/Users/infinitybrain/repos/marketing-dashboard</string>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>5</integer>
+		<key>Minute</key>
+		<integer>30</integer>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_katherine_files.out</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_katherine_files.err</string>
+</dict>
+</plist>
