@@ -64,7 +64,8 @@ async function sample({ args, drive, model, log, vocabSrc }) {
   const sheet = [`# #1240 sample, model ${model.model || T.MODEL}`, '',
     '| # | thumb | folder path | AI tags | event guess | dropped | right | wrong | missing |',
     '|---|---|---|---|---|---|---|---|---|', ...rows, '',
-    `Skipped: ${run.skipped.map((s) => `${s.drive_id}: ${s.why}`).join('; ') || 'none'}`].join('\n');
+    `Skipped: ${run.skipped.map((s) => `${s.drive_id}: ${s.why}`).join('; ') || 'none'}`,
+    `Cut off (answer hit the limit, ORDER #1795): ${run.cutOff.length}`].join('\n');
   fs.writeFileSync(path.join(args.out, 'grading.md'), sheet);
   log(`WROTE ${path.join(args.out, 'grading.md')} and ${thumbs.size} thumbnails. No database was opened.`);
   return run;
@@ -107,7 +108,7 @@ async function apply({ args, pool, model, log }) {
       }
     },
   });
-  log(`DONE: ${run.results.length} of ${todo.length} tagged, ${run.skipped.length} skipped${run.capped ? `, cap ${args.cap} reached` : ''}`);
+  log(`DONE: ${run.results.length} of ${todo.length} tagged, ${run.skipped.length} skipped, ${run.cutOff.length} cut off${run.capped ? `, cap ${args.cap} reached` : ''}`);
   return run;
 }
 
