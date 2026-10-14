@@ -6,8 +6,10 @@
 //        listing is `photo_crawl.js --dry-run --listing-out <files.json>`. Writes
 //        each thumbnail and a grading sheet to <dir> for grading by eye.
 //   node jobs/photo_tag.js --apply [--cap 500] [--batch 10]
-//        tags up to --cap indexed photos that have a thumbnail and no AI tags
-//        yet, and writes their AI rows to photo_tags. Needs MARKETING_DATABASE_URL.
+//        ORDER #1796: tags up to --cap PICKED photos (photo_picks, after a sweep
+//        of the agent cards for archive photos they name) with the Opus-class
+//        model, and writes their AI rows to photo_tags. Nothing unpicked is
+//        ever sent. Needs MARKETING_DATABASE_URL.
 //
 // The key is found by name (env, Keychain, brain config) and never printed.
 // Exit 4 = no key: nothing was sent.
@@ -18,6 +20,7 @@ const path = require('path');
 const A = require('../lib/photo-archive');
 const T = require('../lib/photo-tagger');
 const { ensurePhotoTables } = require('../lib/photo-schema');
+const { sweepCardPicks, writePickTags } = require('../lib/photo-picks');
 
 function parseArgs(argv) {
   const modes = ['--sample', '--apply'].filter((m) => argv.includes(m));
@@ -73,10 +76,12 @@ async function sample({ args, drive, model, log, vocabSrc }) {
 
 // ------------------------------------------------------------- --apply
 
-const TODO_SQL = `SELECT p.drive_id FROM photos p
-  WHERE p.removed_at IS NULL AND p.thumb IS NOT NULL AND p.kind = 'image'
-  AND NOT EXISTS (SELECT 1 FROM photo_tags t WHERE t.drive_id = p.drive_id AND t.source = 'ai')
-  ORDER BY p.indexed_at, p.drive_id`;
+// ORDER #1796 (plan C): ONLY picked photos (lib/photo-picks.js) not yet tagged
+// since their pick. A photo nobody picked is never sent; no mass backfill.
+const TODO_SQL = `SELECT p.drive_id FROM photos p JOIN photo_picks k ON k.drive_id = p.drive_id
+  WHERE p.removed_at IS NULL AND p.thumb IS NOT NULL AND p.kind = 'image' AND k.tagged_at IS NULL
+  AND p.folder_path NOT ILIKE 'staff photos%'
+  ORDER BY k.picked_at, p.drive_id`;
 // The apply paste's read-only "how many are waiting" count: the same WHERE.
 const COUNT_SQL = TODO_SQL.replace('SELECT p.drive_id', 'SELECT count(*)::int AS n').replace(/\s*ORDER BY[\s\S]*$/, '');
 
@@ -85,6 +90,7 @@ async function apply({ args, pool, model, log }) {
   const vocabSrc = await loadVocab(pool);
   const vocab = A.buildVocabulary(vocabSrc);
   const prompt = T.buildPrompt(vocabSrc);
+  await sweepCardPicks(pool, { log });
   const todo = (await pool.query(TODO_SQL)).rows;
   const human = new Map();
   for (const r of (await pool.query(`SELECT drive_id, tag, source FROM photo_tags
@@ -93,22 +99,16 @@ async function apply({ args, pool, model, log }) {
     (r.source === 'human_add' ? h.added : h.removed).push(r.tag);
     human.set(r.drive_id, h);
   }
-  log(`TAGGING up to ${args.cap} of ${todo.length} untagged photos, ${args.batch} at a time, model ${model.model || T.MODEL}`);
+  log(`TAGGING up to ${args.cap} of ${todo.length} picked photos, ${args.batch} at a time, model ${model.model || T.MODEL}`);
   const run = await T.tagBatch({
     photos: todo, model, vocab, prompt, cap: args.cap, batchSize: args.batch, log,
     removedFor: (p) => (human.get(p.drive_id) || {}).removed || [],
     addedFor: (p) => (human.get(p.drive_id) || {}).added || [],
     getThumb: async (p) => (await pool.query('SELECT thumb FROM photos WHERE drive_id = $1', [p.drive_id])).rows[0].thumb,
-    onTagged: async (p, r) => {
-      await pool.query("DELETE FROM photo_tags WHERE drive_id = $1 AND source = 'ai'", [p.drive_id]);
-      for (const t of r.ai) {
-        await pool.query(`INSERT INTO photo_tags (drive_id, tag, source, confidence, who) VALUES ($1, $2, 'ai', $3, $4)
-          ON CONFLICT (drive_id, tag, source) DO UPDATE SET confidence = EXCLUDED.confidence, at = now()`,
-        [p.drive_id, t.tag, t.confidence, model.model || T.MODEL]);
-      }
-    },
+    onTagged: (p, r) => writePickTags(pool, p.drive_id, r.ai, r.model_id || model.model || T.MODEL),
   });
-  log(`DONE: ${run.results.length} of ${todo.length} tagged, ${run.skipped.length} skipped, ${run.cutOff.length} cut off${run.capped ? `, cap ${args.cap} reached` : ''}`);
+  const ids = [...new Set(run.results.map((r) => r.model_id).filter(Boolean))];
+  log(`DONE: ${run.results.length} of ${todo.length} tagged, ${run.skipped.length} skipped, ${run.cutOff.length} cut off${run.capped ? `, cap ${args.cap} reached` : ''}${ids.length ? `; answered by ${ids.join(', ')}` : ''}`);
   return run;
 }
 
@@ -128,11 +128,14 @@ async function main({ argv = process.argv.slice(2), drive, pool, makePool, model
 }
 
 if (require.main === module) {
+  // --apply tags picks with the Opus-class model (ORDER #1796); --sample keeps
+  // the model it has always graded.
   const makeModel = () => {
     const k = T.findApiKey();
     if (!k) return null;
-    console.log(`model ${T.MODEL}; key from ${k.source}`);
-    return T.createClaudeClient({ apiKey: k.key });
+    const model = process.argv.includes('--apply') ? T.PICK_MODEL : T.MODEL;
+    console.log(`model ${model}; key from ${k.source}`);
+    return T.createClaudeClient({ apiKey: k.key, model });
   };
   const makePool = () => {
     if (!process.env.MARKETING_DATABASE_URL) return null;

@@ -47,6 +47,7 @@
       <label for="q">Search photos</label>
       <input id="q" class="input" type="search" placeholder="string lights, stage + corporate" autocomplete="off">
     </form>
+    <p id="mode" class="small muted" hidden></p>
     <p id="progress" class="small muted" hidden></p>
     <button id="clear" class="button quiet" type="button" hidden>Clear filters</button>
     <div id="facets" class="stack-tight"></div>
@@ -105,9 +106,17 @@
     if (!r.ok) { $('count').textContent = (await r.json().catch(() => ({}))).error || 'Could not load photos.'; return; }
     const d = await r.json();
     $('count').textContent = d.total === 1 ? '1 photo' : d.total.toLocaleString() + ' photos';
+    // ORDER #1796: every photo with a vector is searchable by meaning; only
+    // picked photos get big-model tags, so "M of N tagged" is no longer a goal.
     const pr = d.progress;
-    $('progress').hidden = !(pr && pr.total && pr.tagged < pr.total);
-    if (pr) $('progress').textContent = pr.tagged.toLocaleString() + ' of ' + pr.total.toLocaleString() + ' tagged so far';
+    $('progress').hidden = !(pr && pr.total);
+    if (pr) $('progress').textContent = pr.searchable == null
+      ? pr.tagged.toLocaleString() + ' of ' + pr.total.toLocaleString() + ' tagged so far'
+      : pr.searchable.toLocaleString() + ' searchable, ' + pr.tagged.toLocaleString() + ' tagged';
+    $('mode').hidden = !state.q;
+    $('mode').textContent = d.mode === 'meaning'
+      ? 'Searching by meaning: closest matches first, tags included.'
+      : 'Searching by tags and names.';
     if (!append) $('grid').replaceChildren();
     d.results.forEach((p) => $('grid').append(tile(p)));
     $('more').hidden = d.offset + d.results.length >= d.total;
@@ -181,6 +190,7 @@
       }
       return chip;
     }));
+    if (p.pick && p.pick.model) $('v-tags').append(el('span', { className: 'small muted', textContent: 'Tagged by ' + p.pick.model }));
     $('v-edit').hidden = !p.can_edit;
     const actions = [el('a', { className: 'button secondary', href: p.drive_url, target: '_blank', rel: 'noopener', textContent: 'Open in Drive' })];
     if (p.download_url) actions.push(el('a', { className: 'button', href: p.download_url, textContent: 'Download' }));
@@ -188,6 +198,19 @@
       const c = el('button', { className: 'button secondary', type: 'button', textContent: 'Copy link' });
       c.addEventListener('click', async () => { await navigator.clipboard.writeText(p.share_url); c.textContent = 'Copied'; });
       actions.push(c);
+    }
+    if (p.can_edit && p.kind === 'image') {
+      const t = el('button', { className: 'button secondary', type: 'button',
+        textContent: p.pick && p.pick.tagged ? 'Tag again' : 'Tag this photo' });
+      t.addEventListener('click', async () => {
+        t.disabled = true; t.textContent = 'Tagging...';
+        const r = await fetch('/api/photos/' + encodeURIComponent(current.id) + '/tag', { method: 'POST' });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { $('v-error').hidden = false; $('v-error').textContent = d.error || 'Could not tag.'; t.disabled = false; t.textContent = 'Tag this photo'; return; }
+        await open(current.id);
+        if (d.queued) $('v-reason').textContent = d.message;
+      });
+      actions.push(t);
     }
     $('v-actions').replaceChildren(...actions);
     $('v-internal-wrap').hidden = !p.can_edit;

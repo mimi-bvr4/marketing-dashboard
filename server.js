@@ -60,7 +60,16 @@ app.use(pageGate);
   const { createPgStore } = require('./lib/photo-store');
   const { createIdentityClient } = require('./lib/staff-identity');
   if (photoPool) {
-    app.use(createPhotosRouter({ store: createPgStore(photoPool), identity: createIdentityClient() }));
+    // ORDER #1796: search by meaning (the local model's text side, loaded on the
+    // first typed search; PHOTO_MEANING=off or no package = tag search), and
+    // "Tag this photo" with the pick model when the key is here.
+    const { loadTransformers, createLocalEmbedder } = require('./lib/photo-embed');
+    const T = require('./lib/photo-tagger');
+    const embedder = createLocalEmbedder({ tf: loadTransformers(), side: 'text' });
+    const meaning = embedder ? { model: embedder.model, embedText: embedder.embedText } : null;
+    const tagModel = process.env.ANTHROPIC_API_KEY
+      ? T.createClaudeClient({ apiKey: process.env.ANTHROPIC_API_KEY, model: T.PICK_MODEL }) : null;
+    app.use(createPhotosRouter({ store: createPgStore(photoPool), identity: createIdentityClient(), meaning, tagModel }));
   } else {
     app.get(['/photos', '/photos.html', '/api/photos', '/api/photos/*', '/photos/thumb/*'],
       (req, res) => res.status(503).json({ error: 'The photo archive needs the marketing database' }));
