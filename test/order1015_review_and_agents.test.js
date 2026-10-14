@@ -141,7 +141,8 @@ test('routes: leadership lists drafts, rejects with a reason, approves, and the 
   assert.strictEqual(l.json.clean, false);
   const page = await call(s, '/review', { headers: k });
   assert.strictEqual(page.status, 200);
-  assert.match(page.body, /It never publishes, posts, sends or spends/);
+  // #1748: the header names the one ruled exception (Paul pins live on Approve) instead of saying "never posts".
+  assert.match(page.body, /It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest\.<\/strong>/);
 });
 
 test('routes: nothing in routes/review.js can publish, post or send', () => {

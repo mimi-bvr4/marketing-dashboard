@@ -3,6 +3,7 @@
   "job": "review replies and profile posts",
   "cadence": "daily 06:00 CT (hourly once the Business Profile API is approved)",
   "max_cards": 4,
+  "copy_prepass": true,
   "sources": [
     {
       "type": "file",

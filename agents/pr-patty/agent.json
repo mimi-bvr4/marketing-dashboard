@@ -4,6 +4,7 @@
   "cadence": "daily 06:00 CT (press-request emails); Mondays also a Nashville opportunity sweep",
   "max_cards": 2,
   "max_tokens": 9000,
+  "copy_prepass": true,
   "sources": [
     {
       "type": "mail_alerts",
