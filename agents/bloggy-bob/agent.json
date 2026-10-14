@@ -5,6 +5,10 @@
   "max_cards": 1,
   "max_tokens": 12000,
   "copy_prepass": true,
+  "seen_before": {
+    "key": ["target_keyword_or_url"],
+    "source": []
+  },
   "sources": [
     {
       "type": "request",

@@ -5,6 +5,10 @@
   "max_cards": 2,
   "max_tokens": 10000,
   "copy_prepass": true,
+  "seen_before": {
+    "key": ["company", "event"],
+    "source": ["event_dates"]
+  },
   "sources": [
     {
       "type": "web_trends",
