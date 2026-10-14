@@ -6,6 +6,14 @@
 //   GET  /api/photos/:id         one photo
 //   POST /api/photos/:id/tags    editors: { action: 'add' | 'remove', tag }
 //   POST /api/photos/:id/rights  editors: { internal: true | false }
+//   POST /api/photos/:id/tag     editors: "Tag this photo" (ORDER #1796): picks it,
+//                                and tags it now with the big model when one is wired
+//                                and the #1797 photo window is open
+//
+// ORDER #1796 (plan C): when the server is handed `meaning` ({ model, embedText }),
+// a typed search ranks by the local model's vectors (lib/photo-meaning.js),
+// with every filter still applied and every tag match still found. Without it,
+// or if the model fails, the search is the tag search it always was.
 //
 // 🔴 ACCESS, mounted BELOW the #654 page gate (so a signed-out hit on any of
 // these already got the sign-in wall) and ABOVE express.static (so
@@ -26,7 +34,9 @@
 const express = require('express');
 const path = require('path');
 const A = require('../lib/photo-archive');
-const { vocabFromRows, personTag } = require('../lib/photo-tagger');
+const M = require('../lib/photo-meaning');
+const T = require('../lib/photo-tagger');
+const { vocabFromRows, personTag } = T;
 const { rowsByDealId } = require('../lib/photo-sheet-rule');
 const { VENUES_DEFAULT } = require('../lib/photo-config');
 const { sessionUser } = require('../middleware/page-gate');
@@ -67,8 +77,10 @@ const driveDownload = (id) => `https://drive.google.com/uc?export=download&id=${
 
 // ---------------------------------------------------------------- the index
 
-function assemble({ photos, tags, vocabRows, synonymRows }, sheetRows, venuesDefault) {
-  const vocab = A.buildVocabulary(vocabFromRows(vocabRows, synonymRows));
+function assemble({ photos, tags, vocabRows, synonymRows, picks = [] }, sheetRows, venuesDefault) {
+  const vocabSrc = vocabFromRows(vocabRows, synonymRows);
+  const vocab = A.buildVocabulary(vocabSrc);
+  const pickOf = new Map(picks.map((k) => [k.drive_id, k]));
   const byPhoto = new Map();
   for (const t of tags) {
     const e = byPhoto.get(t.drive_id) || { ai: [], added: [], removed: [] };
@@ -85,12 +97,13 @@ function assemble({ photos, tags, vocabRows, synonymRows }, sheetRows, venuesDef
     if (A.parsePath(String(p.folder_path || '').split(' / ')).excluded) continue;   // Staff Photos, twice over
     const t = byPhoto.get(p.drive_id) || { ai: [], added: [], removed: [] };
     const rights = effectiveRights(p, sheetRows, venuesDefault);
-    const row = { ...p, id: p.drive_id, tagEdits: t, tags: A.finalTags(t), rights_state: rights.state, rights };
+    const row = { ...p, id: p.drive_id, tagEdits: t, tags: A.finalTags(t), rights_state: rights.state, rights,
+      pick: pickOf.get(p.drive_id) || null };
     if (p.kind === 'image') { images += 1; if (t.ai.length) tagged += 1; }
     list.push(row);
     byId.set(p.drive_id, row);
   }
-  return { vocab, list, byId, progress: { tagged, total: images } };
+  return { vocab, vocabSrc, list, byId, progress: { tagged, total: images } };
 }
 
 function filtersFrom(query) {
@@ -111,10 +124,37 @@ function lite(p) {
 
 // ---------------------------------------------------------------- the router
 
+// meaning:  { model, embedText(q) -> float vector } or null (tag search only)
+// tagModel: a photo-tagger client (PICK_MODEL) or null (picks wait for the night run)
+// tagWindow: () => why tagging must wait, or null. ORDER #1797: picks-tagging is
+//            end-of-week bonus work, so outside the window a pick waits for it.
 function createPhotosRouter({ store, identity, sheet = async () => null, venuesDefault = VENUES_DEFAULT,
-  cacheMs = 60 * 1000, now = () => Date.now(), log = console.error } = {}) {
+  cacheMs = 60 * 1000, now = () => Date.now(), log = console.error,
+  meaning = null, tagModel = null, tagWindow = () => null, vectorsMs = 10 * 60 * 1000, vectorSlice = 20000 } = {}) {
   const router = express.Router();
   let memo = null;
+
+  // ORDER #1796: the vectors, held in memory and topped up with only the rows
+  // newer than the last one held, at most every `vectorsMs`.
+  const vec = { map: new Map(), cursor: null, at: 0, loading: null };
+  async function vectors() {
+    if (!meaning || !store.loadVectors) return null;
+    if (vec.at && now() - vec.at < vectorsMs) return vec.map;
+    if (!vec.loading) {
+      vec.loading = (async () => {
+        for (;;) {
+          const rows = await store.loadVectors(meaning.model, vec.cursor, vectorSlice);
+          for (const r of rows) vec.map.set(r.drive_id, M.decodeVector(r.vec));
+          if (rows.length) vec.cursor = { at: rows[rows.length - 1].at, drive_id: rows[rows.length - 1].drive_id };
+          if (rows.length < vectorSlice) break;
+        }
+        vec.at = now();
+      })().finally(() => { vec.loading = null; });
+    }
+    await vec.loading;
+    return vec.map;
+  }
+  const searchable = (ix, map) => (map ? ix.list.filter((p) => map.has(p.id)).length : null);
 
   async function index() {
     if (memo && now() - memo.at < cacheMs) return memo.value;
@@ -156,11 +196,26 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
       const pool = prefix
         ? ix.list.filter((p) => p.folder_path === prefix || String(p.folder_path).startsWith(`${prefix} / `))
         : ix.list;
-      const { results, facets } = A.search(ix.vocab, pool, { q: req.query.q, filters: filtersFrom(req.query) });
+      const q = String(req.query.q || '').trim();
+      const filters = filtersFrom(req.query);
+      let map = null;
+      try { map = await vectors(); } catch (e) { log('[photos] vectors not loaded:', e.message); }
+      let out = null;
+      let mode = 'tags';
+      if (q && map && map.size) {
+        try {
+          const qvec = M.normalize(await meaning.embedText(q));
+          out = M.meaningSearch(ix.vocab, pool, { q, filters, qvec, vectors: map });
+          mode = 'meaning';
+        } catch (e) { log('[photos] search by meaning fell back to tags:', e.message); }
+      }
+      if (!out) out = A.search(ix.vocab, pool, { q, filters });
+      const { results, facets } = out;
       const limit = Math.min(MAX_LIMIT, Math.max(1, Number(req.query.limit) || 60));
       const offset = Math.max(0, Number(req.query.offset) || 0);
+      const progress = { ...ix.progress, searchable: searchable(ix, map) };
       res.json({ total: results.length, offset, limit, results: results.slice(offset, offset + limit).map(lite),
-        facets, progress: ix.progress, access: req.photoAccess.level });
+        facets, progress, mode, access: req.photoAccess.level });
     } catch (e) { fail(res, e, 'search photos'); }
   });
 
@@ -195,6 +250,7 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
         share_url: cleared ? driveView(p.id) : null,
         can_edit: editor,
         ...(editor ? { removed_tags: p.tagEdits.removed } : {}),
+        pick: p.pick ? { why: p.pick.why, tagged: !!p.pick.tagged_at, model: p.pick.tagged_model || null } : null,
       });
     } catch (e) { fail(res, e, 'read the photo'); }
   });
@@ -224,6 +280,36 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
       const after = A.finalTags(A.applyTagEdit(p.tagEdits, action, tag));
       res.json({ ok: true, tag, tags: after });
     } catch (e) { fail(res, e, 'save the tag'); }
+  });
+
+  // ORDER #1796: "Tag this photo". The pick is written first, so a photo is
+  // only ever sent to the model because someone picked it. With no model wired
+  // (or if the call fails) the pick waits for the night run's photo_tag.js.
+  router.post('/api/photos/:id/tag', gate('edit'), async (req, res) => {
+    try {
+      const ix = await index();
+      const p = ix.byId.get(req.params.id);
+      if (!p) return res.status(404).json({ error: 'No such photo' });
+      if (p.kind !== 'image') return res.status(400).json({ error: 'Only photos are tagged, not videos' });
+      await store.pick(p.id, 'tag_this', req.photoAccess.who);
+      invalidate();
+      const later = (why) => res.json({ ok: true, queued: true, message: `Picked. ${why}` });
+      if (!tagModel) return later('It is tagged in the next photo run.');
+      if (tagWindow()) return later('It is tagged in the next photo window, Friday 6 PM to Monday 11:59 PM CT.');
+      const thumb = await store.getThumb(p.id);
+      if (!thumb) return later('It has no thumbnail yet; it is tagged once it has one.');
+      let r;
+      try {
+        r = await T.tagPhoto({ model: tagModel, vocab: ix.vocab, prompt: T.buildPrompt(ix.vocabSrc), thumb,
+          removed: p.tagEdits.removed, added: p.tagEdits.added });
+      } catch (e) {
+        log('[photos] tag this photo:', e.message);
+        return later('Tagging did not finish just now; the next photo run tries again.');
+      }
+      await store.savePickTags(p.id, r.ai, r.model_id);
+      invalidate();
+      res.json({ ok: true, tags: r.final, model: r.model_id });
+    } catch (e) { fail(res, e, 'tag the photo'); }
   });
 
   router.post('/api/photos/:id/rights', gate('edit'), async (req, res) => {

@@ -145,7 +145,9 @@ test('--apply writes AI rows and never writes a human-removed tag back', async (
 test('the paste count reads the same photos the tagger would pick, with no ORDER BY', () => {
   assert.ok(J.COUNT_SQL.startsWith('SELECT count(*)::int AS n FROM photos p'));
   assert.ok(!/ORDER BY/.test(J.COUNT_SQL));
-  assert.ok(J.COUNT_SQL.includes("t.source = 'ai'") && J.COUNT_SQL.includes('p.thumb IS NOT NULL'));
+  // ORDER #1796 (plan C): the tagger reads picks not yet tagged, never every
+  // photo without AI tags, so the count is of picks.
+  assert.ok(J.COUNT_SQL.includes('JOIN photo_picks') && J.COUNT_SQL.includes('k.tagged_at IS NULL') && J.COUNT_SQL.includes('p.thumb IS NOT NULL'));
 });
 
 test('no key: the job refuses with exit code 4 and calls nothing', async () => {

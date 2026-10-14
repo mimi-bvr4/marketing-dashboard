@@ -2,7 +2,8 @@
 # ORDER #1240 step 4: the photo archive's nightly run, on the Box.
 #   1. photo_crawl.js --changes   new, moved and removed files from Drive's changes feed
 #   1b. photo_crawl.js --thumbs  ORDER #1672: thumbnail backfill, newest first, timed
-#   2. photo_tag.js --apply       AI tags for up to PHOTO_TAG_CAP photos with no AI tags yet
+#   1c. photo_embed.js            ORDER #1796: search-by-meaning vectors, timed
+#   2. photo_tag.js --apply       AI tags for up to PHOTO_TAG_CAP PICKED photos (#1796)
 #                                 (PHOTO_TAG_CAP=0: skipped, ORDER #1788)
 # Step 2 runs even if step 1 fails, so photos already indexed still get tagged.
 #
@@ -23,6 +24,14 @@ THUMB_MIN="${PHOTO_THUMBS_MIN:-60}"
 railway run --service Postgres -- sh -c \
   "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_crawl.js --thumbs --budget-min $THUMB_MIN"
 thumbs=$?
+# ORDER #1796: search by meaning. The local model's vector for every photo with
+# a thumbnail and none yet, newest first, for PHOTO_EMBED_MIN minutes (default
+# 90). On the Box only; no photo leaves it. Runs after thumbnails so tonight's
+# new ones are searchable tomorrow.
+EMBED_MIN="${PHOTO_EMBED_MIN:-90}"
+railway run --service Postgres -- sh -c \
+  "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_embed.js --budget-min $EMBED_MIN"
+embed=$?
 # ORDER #1788: PHOTO_TAG_CAP=0 turns tagging off, so the thumbnails can run
 # nightly while the tag model is still being chosen (#1789).
 if [ "$CAP" = "0" ]; then
@@ -33,5 +42,5 @@ else
     "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_tag.js --apply --cap $CAP"
   tag=$?
 fi
-echo "=== photo_nightly done: crawl exit $crawl, thumbs exit $thumbs, tag exit $tag ==="
-[ "$crawl" -eq 0 ] && [ "$thumbs" -eq 0 ] && [ "$tag" -eq 0 ]
+echo "=== photo_nightly done: crawl exit $crawl, thumbs exit $thumbs, embed exit $embed, tag exit $tag ==="
+[ "$crawl" -eq 0 ] && [ "$thumbs" -eq 0 ] && [ "$embed" -eq 0 ] && [ "$tag" -eq 0 ]

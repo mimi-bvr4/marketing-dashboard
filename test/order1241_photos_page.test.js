@@ -303,7 +303,9 @@ test('the "N of M tagged" line, path breadcrumbs as filters, and editor-only fie
   store.data.photos.push(P('p10', 'Venues / TBT / Patio', { venue: 'TBT' }));
   const s = await serve(app(store), t);
   const r = await call(s, '/api/photos', { headers: as('sales@x') });
-  assert.deepStrictEqual(r.json.progress, { tagged: 7, total: 9 }, 'staff1 is not counted; p7 and p10 have no AI tags yet');
+  // ORDER #1796: progress also says how many are searchable by meaning; null
+  // here because this app is not handed the local model.
+  assert.deepStrictEqual(r.json.progress, { tagged: 7, total: 9, searchable: null }, 'staff1 is not counted; p7 and p10 have no AI tags yet');
   const d = (await call(s, '/api/photos/p1', { headers: as('sales@x') })).json;
   assert.deepStrictEqual(d.breadcrumbs.map((b) => b.path), ['Venues', 'Venues / TBT', 'Venues / TBT / Patio', 'Venues / TBT / Patio / Wedding Reception']);
   assert.strictEqual(d.can_edit, false);
