@@ -414,7 +414,8 @@ const THUMB_STORED_SQL = `SELECT count(*)::int AS stored, coalesce(sum(octet_len
   FROM photos WHERE thumb IS NOT NULL AND removed_at IS NULL`;
 const mb = (bytes) => Math.round(bytes / 1048576);
 
-async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency = 8, batch = 200, now = Date.now }) {
+async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency = 8, batch = 200, now = Date.now,
+  gate = () => null }) {
   await ensurePhotoTables(pool);
   const stopAt = now() + budgetMin * 60000;
   const c = { filled: 0, missing: 0, failed: 0, bytes: 0 };
@@ -422,8 +423,13 @@ async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency =
   // limit), never a fact about one photo. Stamping it missing would park every
   // remaining photo for 30 days, so the run stops, stamps nothing, and says so.
   let stopped = null;
+  // ORDER #1797: the bonus window and the usage state are asked before every
+  // batch. A closed gate is a clean pause, never a red run.
+  let paused = null;
   let more = true;
   while (more && !stopped && now() < stopAt) {
+    paused = gate();
+    if (paused) break;
     const ids = (await pool.query(THUMB_QUEUE_SQL, [batch])).rows.map((r) => r.drive_id);
     if (!ids.length) { more = false; break; }
     let progressed = 0;
@@ -455,20 +461,22 @@ async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency =
   const storedBytes = Number(st.bytes) || 0;
   const projected = stored ? Math.round((storedBytes / stored) * (stored + left)) : 0;
   if (stopped) log(`THUMBS STOPPED: Drive refused (${stopped}). Nothing was stamped; the next run starts where this one stopped.`);
+  if (paused) log(`THUMBS PAUSED: ${paused}. The next window starts where this one stopped.`);
   log(`THUMBS: filled ${c.filled}, no thumbnail from Drive ${c.missing}, failed ${c.failed}, average ${avg} KB, still to do ${left}`
     + `; stored ${stored} (${mb(storedBytes)} MB), projected total ${mb(projected)} MB`);
-  return { ...c, left, avgKb: avg, stored, storedBytes, projectedBytes: projected, stopped };
+  return { ...c, left, avgKb: avg, stored, storedBytes, projectedBytes: projected, stopped, paused };
 }
 
 // `client` and `pool` are handed in so a test can run every mode with mocks.
 // The dry run is never given a pool and never asks for one.
-async function main({ argv = process.argv.slice(2), client, pool, makePool, log = console.log, now = Date.now } = {}) {
+async function main({ argv = process.argv.slice(2), client, pool, makePool, log = console.log, now = Date.now,
+  gate } = {}) {
   const { mode, thumbs, listingOut, resume, budgetMin, concurrency } = parseArgs(argv);
   log(`photo_crawl ${mode}${resume ? ' --resume' : ''} as ${client.serviceAccount || '(mock)'}; scopes: ${A.DRIVE_SCOPES.join(' ')}`);
   if (mode === 'dry-run') return dryRun({ client, log, listingOut, concurrency });
   const db = pool || (makePool && makePool());
   if (!db) throw new Error(`--${mode} needs MARKETING_DATABASE_URL`);
-  if (mode === 'thumbs') return backfillThumbs({ client, pool: db, log, budgetMin, concurrency, now });
+  if (mode === 'thumbs') return backfillThumbs({ client, pool: db, log, budgetMin, concurrency, now, gate });
   if (mode === 'apply' && resume) return applyResume({ client, pool: db, log, thumbs, budgetMin, concurrency, now });
   return mode === 'apply' ? applyFull({ client, pool: db, log, thumbs }) : applyChanges({ client, pool: db, log, thumbs });
 }
@@ -481,7 +489,7 @@ if (require.main === module) {
     return new Pool({ connectionString: process.env.MARKETING_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   };
   let pool = null;
-  main({ client: createDriveClient(), makePool: () => (pool = makePool()) })
+  main({ client: createDriveClient(), makePool: () => (pool = makePool()), gate: require('../lib/photo-window').photoGate() })
     .then((r) => { if (r && r.stopped) process.exitCode = 2; return pool ? pool.end() : null; })   // #1788: a 403 stop is red on the board
     .catch((e) => { console.error(`photo_crawl FAILED: ${e.message}`); process.exitCode = 1; if (pool) pool.end(); });
 }

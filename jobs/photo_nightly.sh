@@ -10,10 +10,20 @@
 # --changes needs #1239 ruling item 2 (the robot account on the Marketing shared
 # drive). Until then step 1 stops with the 403 it measured and step 2 still runs.
 # Tagging only reaches photos that HAVE a stored thumbnail (#1239 ruling item 1).
+#
+# ORDER #1797: photo work is an END-OF-WEEK BONUS. Outside Fri 18:00 to Mon 23:59
+# CT, or while the Box is out of usage, nothing runs and the exit is 0 (a closed
+# window is not a failure). Inside it, the thumbnails and the tagger re-ask
+# before each batch, so a run that crosses into Tuesday stops cleanly.
 set -u
 CAP="${PHOTO_TAG_CAP:-1000}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HOME/repos/marketing-dashboard" || { echo "photo_nightly: no ~/repos/marketing-dashboard"; exit 1; }
 echo "=== photo_nightly $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT') cap $CAP ==="
+node "$HERE/photo_window.js"
+win=$?
+if [ "$win" -eq 3 ]; then echo "=== photo_nightly done: window closed, nothing ran ==="; exit 0; fi
+if [ "$win" -ne 0 ]; then echo "=== photo_nightly STOPPED: the window check itself failed (exit $win), nothing ran ==="; exit 1; fi
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/photo_crawl.js --changes'
 crawl=$?
