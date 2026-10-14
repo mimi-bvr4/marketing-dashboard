@@ -100,7 +100,7 @@ test('#1702 still refuses the "(ECD)" shape before the gate runs', async () => {
 });
 
 test('the writer is told to list its claims, and the gate is imported, never copied', () => {
-  assert.match(C.SYSTEM, /"claims"/);
+  assert.match(C.SYSTEM, /```claims and holds a JSON list/);
   const src = fs.readFileSync(path.join(__dirname, '../lib/competitor-profiles.js'), 'utf8');
   assert.match(src, /require\('\.\/quote-gate'\)/);
   assert.doesNotMatch(src, /function (checkClaims|applyGate|snapshotter|quoteFound|norm)\b/);
