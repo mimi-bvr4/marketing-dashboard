@@ -5,6 +5,7 @@
   "max_cards": 7,
   "max_tokens": 12000,
   "copy_check": true,
+  "copy_prepass": "on_request",
   "sources": [
     {
       "type": "request",

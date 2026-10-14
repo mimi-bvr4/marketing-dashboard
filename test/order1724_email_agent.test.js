@@ -25,7 +25,9 @@ test('a draft with an internal code goes back once through the Copywriter check,
   const llm = fakeModel([card('Subject: Your date at TBB\n\nTour TBB this month.'), card('Subject: Your date at the river\n\nTour The Bridge Building this month.')]);
   const r = await runAgent({ slug: 'email', store, llm, ask: 'Wedding nurture email 1 for The Bridge Building', env: ENV, log: () => {} });
   assert.ok(r.ok, r.error);
-  assert.strictEqual(llm.calls.length, 2);
+  // #1748: the third call is the Copywriter pre-pass on the finished draft.
+  assert.strictEqual(llm.calls.length, 3);
+  assert.match(llm.calls[2].system, /^---\nname: copywriter/);
   assert.match(llm.calls[1].user, /Rewrite this card to remove these copy check hits: internal code in public copy "TBB \(write "The Bridge Building"\)"/);
   assert.match(r.cards[0].body, /Tour The Bridge Building this month\./);
   assert.strictEqual(r.cards[0].checks.ai_tells_summary, 'AI-tells: clean');
@@ -36,7 +38,7 @@ test('a code the rewrite did not remove is named on the card', async () => {
   const store = createMemoryStore({ lint });
   const llm = fakeModel([card('Tour SWF and TBB.')]);
   const r = await runAgent({ slug: 'email', store, llm, ask: 'Tour nurture email 2 for Saddle Woods Farm', env: ENV, log: () => {} });
-  assert.strictEqual(llm.calls.length, 2);
+  assert.strictEqual(llm.calls.length, 3); // draft, one rewrite, the #1748 Copywriter pre-pass
   assert.match(r.cards[0].checks.ai_tells_summary, /internal codes left: SWF, TBB$/);
 });
 
