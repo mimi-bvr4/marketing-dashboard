@@ -91,7 +91,7 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     const r = await runAgent({ slug, store, llm: model, ask: args.ask, env, fetchImpl: fetchImpl || globalThis.fetch, log, dryRun: args.dry,
       scheduled: args.due });
     if (r.skipped) { log(`${slug}: skipped (${r.skipped})`); continue; }
-    log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
+    log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.seen_skipped ? `, ${r.seen_skipped} skipped as already seen` : ''}${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
     if (args.dry) for (const c of r.cards) log(`\n----- ${c.title} -----\n${c.body}\n`);
     if (!r.ok) failed++;
   }

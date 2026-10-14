@@ -4,6 +4,10 @@
   "cadence": "daily 06:00 CT (hourly once the Business Profile API is approved)",
   "max_cards": 4,
   "copy_prepass": true,
+  "seen_before": {
+    "key": ["venue", "reviewer", "platform", "review_id?"],
+    "source": ["review_text"]
+  },
   "sources": [
     {
       "type": "file",
