@@ -8,6 +8,7 @@
 //   POST /api/photos/:id/rights  editors: { internal: true | false }
 //   POST /api/photos/:id/tag     editors: "Tag this photo" (ORDER #1796): picks it,
 //                                and tags it now with the big model when one is wired
+//                                and the #1797 photo window is open
 //
 // ORDER #1796 (plan C): when the server is handed `meaning` ({ model, embedText }),
 // a typed search ranks by the local model's vectors (lib/photo-meaning.js),
@@ -125,9 +126,11 @@ function lite(p) {
 
 // meaning:  { model, embedText(q) -> float vector } or null (tag search only)
 // tagModel: a photo-tagger client (PICK_MODEL) or null (picks wait for the night run)
+// tagWindow: () => why tagging must wait, or null. ORDER #1797: picks-tagging is
+//            end-of-week bonus work, so outside the window a pick waits for it.
 function createPhotosRouter({ store, identity, sheet = async () => null, venuesDefault = VENUES_DEFAULT,
   cacheMs = 60 * 1000, now = () => Date.now(), log = console.error,
-  meaning = null, tagModel = null, vectorsMs = 10 * 60 * 1000, vectorSlice = 20000 } = {}) {
+  meaning = null, tagModel = null, tagWindow = () => null, vectorsMs = 10 * 60 * 1000, vectorSlice = 20000 } = {}) {
   const router = express.Router();
   let memo = null;
 
@@ -291,7 +294,8 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
       await store.pick(p.id, 'tag_this', req.photoAccess.who);
       invalidate();
       const later = (why) => res.json({ ok: true, queued: true, message: `Picked. ${why}` });
-      if (!tagModel) return later('It is tagged in tonight\'s run.');
+      if (!tagModel) return later('It is tagged in the next photo run.');
+      if (tagWindow()) return later('It is tagged in the next photo window, Friday 6 PM to Monday 11:59 PM CT.');
       const thumb = await store.getThumb(p.id);
       if (!thumb) return later('It has no thumbnail yet; it is tagged once it has one.');
       let r;
@@ -300,7 +304,7 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
           removed: p.tagEdits.removed, added: p.tagEdits.added });
       } catch (e) {
         log('[photos] tag this photo:', e.message);
-        return later('Tagging did not finish just now; tonight\'s run tries again.');
+        return later('Tagging did not finish just now; the next photo run tries again.');
       }
       await store.savePickTags(p.id, r.ai, r.model_id);
       invalidate();

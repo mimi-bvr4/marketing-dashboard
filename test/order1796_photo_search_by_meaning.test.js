@@ -265,6 +265,31 @@ test('DONE MEANS: nothing tags without a pick: searching and viewing never call 
   assert.deepStrictEqual(store.writes, []);
 });
 
+test('ORDER #1797: outside the photo window a click picks the photo but nothing is sent to the model', async (t) => {
+  const calls = [];
+  const store = memoryStore();
+  const s = await serve(app(store, { tagModel: opus(calls), tagWindow: () => 'outside the photo window' }), t);
+  const r = await call(s, '/api/photos/cake0000001/tag', { headers: as('katherine@x'), method: 'POST' });
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.json.queued, true);
+  assert.match(r.json.message, /Friday 6 PM to Monday 11:59 PM CT/);
+  assert.deepStrictEqual(calls, []);
+  assert.deepStrictEqual(store.data.picks.map((k) => [k.drive_id, k.tagged_at]), [['cake0000001', null]]);
+});
+
+test('ORDER #1797: the embed step pauses cleanly when the window gate closes, and embeds nothing more', async () => {
+  const pool = embedPool(['a', 'b', 'c']);
+  let open = 1;
+  const gate = () => (open-- > 0 ? null : 'outside the photo bonus window');
+  const lines = [];
+  const r = await M.embedPending({ pool, embedder: { async embedImage() { return Array.from(axis(0)); } },
+    batch: 2, gate, log: (l) => lines.push(l) });
+  assert.strictEqual(r.embedded, 2, 'the first batch, then the gate closed');
+  assert.match(r.paused, /outside the photo bonus window/);
+  assert.ok(lines.some((l) => l.startsWith('EMBED PAUSED: outside the photo bonus window')));
+  assert.strictEqual(typeof E.windowGate, 'function');
+});
+
 test('with no model wired, or a failed call, the pick waits for the night run', async (t) => {
   const store = memoryStore();
   const s = await serve(app(store, { meaning: MEANING }), t);
@@ -393,8 +418,11 @@ test('photo_nightly.sh runs the embed step after the thumbnails, even with taggi
   const bin = path.join(home, 'bin'); fs.mkdirSync(bin);
   const calls = path.join(home, 'calls.txt');
   fs.writeFileSync(path.join(bin, 'railway'), `#!/bin/bash\necho "$*" >> "${calls}"\n`, { mode: 0o755 });
+  // A Friday 19:00 CT inside ORDER #1797's photo window, and node on the PATH,
+  // so this still holds once that order's window check runs first.
   const r = spawnSync('/bin/bash', [path.join(__dirname, '..', 'jobs', 'photo_nightly.sh')],
-    { env: { HOME: home, PATH: `${bin}:/usr/bin:/bin`, PHOTO_TAG_CAP: '0', PHOTO_EMBED_MIN: '45' }, encoding: 'utf8' });
+    { env: { HOME: home, PATH: `${bin}:${path.dirname(process.execPath)}:/usr/bin:/bin`, PHOTO_TAG_CAP: '0', PHOTO_EMBED_MIN: '45',
+      PHOTO_WINDOW_NOW: '2026-10-17T00:00:00Z', PHOTO_USAGE_FILE: path.join(home, 'no-usage-file') }, encoding: 'utf8' });
   const lines = fs.readFileSync(calls, 'utf8').trim().split('\n');
   fs.rmSync(home, { recursive: true, force: true });
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);

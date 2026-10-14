@@ -69,7 +69,15 @@ app.use(pageGate);
     const meaning = embedder ? { model: embedder.model, embedText: embedder.embedText } : null;
     const tagModel = process.env.ANTHROPIC_API_KEY
       ? T.createClaudeClient({ apiKey: process.env.ANTHROPIC_API_KEY, model: T.PICK_MODEL }) : null;
-    app.use(createPhotosRouter({ store: createPgStore(photoPool), identity: createIdentityClient(), meaning, tagModel }));
+    // ORDER #1797: tagging at the click only inside the photo bonus window
+    // (lib/photo-window.js). Before that order is on main there is no window
+    // to ask, so a pick waits for the photo run.
+    const tagWindow = () => {
+      try { return require('./lib/photo-window').inBonusWindow(new Date()) ? null : 'outside the photo window'; }
+      catch (_) { return 'no photo window yet'; }
+    };
+    app.use(createPhotosRouter({ store: createPgStore(photoPool), identity: createIdentityClient(),
+      meaning, tagModel, tagWindow }));
   } else {
     app.get(['/photos', '/photos.html', '/api/photos', '/api/photos/*', '/photos/thumb/*'],
       (req, res) => res.status(503).json({ error: 'The photo archive needs the marketing database' }));

@@ -24,7 +24,8 @@ function parseArgs(argv) {
   return { budgetMin, batch };
 }
 
-async function main({ argv = process.argv.slice(2), pool, makePool, embedder, makeEmbedder, log = console.log, now } = {}) {
+async function main({ argv = process.argv.slice(2), pool, makePool, embedder, makeEmbedder, log = console.log, now,
+  gate } = {}) {
   const args = parseArgs(argv);
   const e = embedder || (makeEmbedder && makeEmbedder());
   if (!e) {
@@ -36,7 +37,13 @@ async function main({ argv = process.argv.slice(2), pool, makePool, embedder, ma
   if (!db) throw new Error('needs MARKETING_DATABASE_URL');
   await ensurePhotoTables(db);
   return M.embedPending({ pool: db, embedder: e, model: e.model || M.MODEL_ID,
-    budgetMs: args.budgetMin * 60 * 1000, batch: args.batch, log, ...(now ? { now } : {}) });
+    budgetMs: args.budgetMin * 60 * 1000, batch: args.batch, log, ...(now ? { now } : {}), ...(gate ? { gate } : {}) });
+}
+
+// ORDER #1797's bonus window and usage guard (lib/photo-window.js), asked before
+// each batch, once that order is on main. Until then there is no gate to ask.
+function windowGate() {
+  try { return require('../lib/photo-window').photoGate(); } catch (_) { return undefined; }
 }
 
 if (require.main === module) {
@@ -47,9 +54,9 @@ if (require.main === module) {
     return new Pool({ connectionString: process.env.MARKETING_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   };
   let pool = null;
-  main({ makeEmbedder, makePool: () => (pool = makePool()) })
+  main({ makeEmbedder, makePool: () => (pool = makePool()), gate: windowGate() })
     .then(() => (pool ? pool.end() : null))
     .catch((e) => { console.error(`photo_embed FAILED: ${e.message}`); process.exitCode = e.exitCode || 1; if (pool) pool.end(); });
 }
 
-module.exports = { main, parseArgs };
+module.exports = { main, parseArgs, windowGate };

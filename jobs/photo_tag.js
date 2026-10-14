@@ -99,7 +99,7 @@ async function apply({ args, pool, model, log }) {
     (r.source === 'human_add' ? h.added : h.removed).push(r.tag);
     human.set(r.drive_id, h);
   }
-  log(`TAGGING up to ${args.cap} of ${todo.length} picked photos, ${args.batch} at a time, model ${model.model || T.MODEL}`);
+  log(`TAGGING up to ${args.cap} of ${todo.length} untagged photos, ${args.batch} at a time, model ${model.model || T.MODEL}`);
   const run = await T.tagBatch({
     photos: todo, model, vocab, prompt, cap: args.cap, batchSize: args.batch, log,
     removedFor: (p) => (human.get(p.drive_id) || {}).removed || [],
