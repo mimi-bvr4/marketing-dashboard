@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Review · Marketing</title>
 <!-- ORDER #1015 Part 2: the Review tab. Every marketing agent's output lands
-     here as a DRAFT. Approve moves it to Ready; it never publishes, posts,
-     sends or spends. Token and component layer served by dispatch (#1210). -->
+     here as a DRAFT. Approve moves it to Ready; it never publishes, sends or
+     spends. One ruled exception (10.13.2026): Approve on a Pinterest Paul card
+     pins it live. #1748: Approve is refused on a card that fails the code
+     checks, and outbound cards carry the Copywriter's verdict. Token and component layer served by dispatch (#1210). -->
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
 <link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -42,7 +44,7 @@
   <nav><a href="/">Dashboard</a> · <a href="/agents">Katherine's Team</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
-  <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, posts, sends or spends.</p>
+  <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong> Approve is refused on any card with an em dash, a hard venue capacity (no range or "depending on"), or an internal venue code like TBB; it says which line.</p>
   <div class="runs" id="runs"></div>
   <div class="tabs" role="group" aria-label="Show">
     <button data-s="draft" aria-pressed="true">Drafts</button>
@@ -122,9 +124,11 @@
     const tells = (c.checks && c.checks.ai_tells_summary) || '';
     const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
     const missing = (c.sources || []).filter((s) => !s.ok).length;
+    // #1748: the Copywriter's verdict on an outbound card (the full check is in the card's "Copy check" section).
+    const cc = c.checks && c.checks.copy_check;
     return `<article class="card" data-id="${c.id}">
       <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
-        ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
+        ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
       <h3 style="margin:0">${esc(c.title)}</h3>
       <div class="body">${md(c.body)}</div>
       ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}

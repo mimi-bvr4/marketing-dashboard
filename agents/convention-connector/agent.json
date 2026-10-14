@@ -4,6 +4,7 @@
   "cadence": "Mondays 06:00 CT",
   "max_cards": 2,
   "max_tokens": 10000,
+  "copy_prepass": true,
   "sources": [
     {
       "type": "web_trends",

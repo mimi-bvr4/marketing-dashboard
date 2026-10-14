@@ -4,6 +4,7 @@
   "cadence": "on request (Run now, or a Drive order naming Bob)",
   "max_cards": 1,
   "max_tokens": 12000,
+  "copy_prepass": true,
   "sources": [
     {
       "type": "request",
