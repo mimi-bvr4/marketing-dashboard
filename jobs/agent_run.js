@@ -103,7 +103,7 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   }
   if (weekly) {
     if (competitorsOnly) await runAgent({ slug: 'scout', store, llm: model, env, fetchImpl: fetchImpl || globalThis.fetch, log, scheduled: true });
-    const w = await C.writeProfiles({ store, llm: model, log });
+    const w = await C.writeProfiles({ store, llm: model, log, fetchImpl: fetchImpl || globalThis.fetch });
     if (!w.ok) log(`competitors: profiles not written: ${w.why || 'every one failed'}`);
   }
   if (pool === undefined && store.end) await store.end();
