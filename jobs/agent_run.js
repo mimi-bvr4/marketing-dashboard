@@ -95,6 +95,12 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     if (args.dry) for (const c of r.cards) log(`\n----- ${c.title} -----\n${c.body}\n`);
     if (!r.ok) failed++;
   }
+  // #1759: once a day, a post newly published on one of our sites becomes a
+  // queued Pinterest Paul run. The pin still waits for Approve on the Review tab.
+  if (args.due && !args.dry) {
+    try { await require('../lib/agent-chains').newPostsToPaul({ store, fetchImpl: fetchImpl || globalThis.fetch, log }); }
+    catch (e) { log(`new posts: chain did not run: ${e.message}`); }
+  }
   if (weekly) {
     if (competitorsOnly) await runAgent({ slug: 'scout', store, llm: model, env, fetchImpl: fetchImpl || globalThis.fetch, log, scheduled: true });
     const w = await C.writeProfiles({ store, llm: model, log });
