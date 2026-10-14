@@ -213,13 +213,12 @@ function hsCacheSet(key, status, data) {
   }
 }
 
+const { hubspotHeaders } = require('./lib/hubspot-token'); // #1733: shared with the email statistics reader
+
 async function hubspotFetch(objectType, body, retries = 2) {
   const r = await fetch(`https://api.hubapi.com/crm/v3/objects/${objectType}/search`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
+    headers: hubspotHeaders(process.env, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(body)
   });
   if (r.status === 429 && retries > 0) {
@@ -266,6 +265,13 @@ app.use(require('./routes/funnel').createFunnelRouter({
     if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
     return r.json();
   },
+}));
+
+// ---- ORDER #1733: monthly marketing-email totals for the Email agent's scorecard ----
+// GET only, one allow-listed HubSpot path, counts only (lib/hubspot-email-stats.js).
+app.use(require('./routes/email-stats').createEmailStatsRouter({
+  stats: ({ range }) => require('./lib/hubspot-email-stats').emailStats({ range,
+    fetchImpl: (url, opts) => enqueueHubSpot(() => fetch(url, opts)) }),
 }));
 
 // ---- Open Date Filler: open Fri/Sat/Sun dates at the 7 venues (marketing + sales boards) ----

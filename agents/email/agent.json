@@ -37,11 +37,10 @@
       "label": "how our published writing sounds"
     },
     {
-      "type": "pending",
+      "type": "hubspot_email_stats",
       "only_scheduled": true,
       "required": true,
-      "label": "HubSpot marketing email analytics (last month)",
-      "why": "no read-only path on the Box reads HubSpot email statistics yet (the dashboard's HubSpot token is used for CRM search only); the scorecard is not written from older numbers"
+      "label": "HubSpot marketing email analytics (last month)"
     },
     {
       "type": "file",
@@ -68,12 +67,12 @@
         "instead": "Names the audience in HubSpot terms; Katherine builds it"
       },
       {
-        "cant": "Read HubSpot email statistics yet",
-        "instead": "Says so on the 3rd instead of guessing; the scorecard starts once a read-only path exists"
+        "cant": "Report email numbers HubSpot did not give it",
+        "instead": "If the read-only statistics read fails (for example a scope missing on the token), says why on the 3rd and writes no number"
       }
     ],
     "needs": [
-      "A read-only path to HubSpot marketing email statistics (for the scorecard)"
+      "The HubSpot token's marketing-email statistics scope (checked by the 3rd's run; a missing one is named on the card)"
     ]
   }
 }
