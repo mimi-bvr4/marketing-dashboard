@@ -9,6 +9,8 @@
 #   4. agent_handoff.js approved Bloggy Bob cards become UNPUBLISHED WordPress drafts.
 #   5. cadet_run.js     #1688 the Collateral Cadet: re-reads the Collateral Map and runs
 #                       Katherine's "where does this appear?" searches (read-only).
+#   6. web_run.js       #1873 the Web Agent: Katherine's uploaded HTML becomes a NEW
+#                       WordPress DRAFT page with QA and a Review card. Publish is OFF.
 # Drafts only; a person publishes. Each step runs even if an earlier one fails.
 set -u
 cd "$HOME/repos/marketing-dashboard" || { echo "agents_handoff: no ~/repos/marketing-dashboard"; exit 1; }
@@ -28,5 +30,8 @@ r2=$?
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/cadet_run.js'
 r5=$?
-echo "=== done: route exit $r1, requests exit $r3, asks exit $r4, handoff exit $r2, cadet exit $r5 ==="
-[ "$r1" -eq 0 ] && [ "$r2" -eq 0 ] && [ "$r3" -eq 0 ] && [ "$r4" -eq 0 ] && [ "$r5" -eq 0 ]
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/web_run.js'
+r6=$?
+echo "=== done: route exit $r1, requests exit $r3, asks exit $r4, handoff exit $r2, cadet exit $r5, web exit $r6 ==="
+[ "$r1" -eq 0 ] && [ "$r2" -eq 0 ] && [ "$r3" -eq 0 ] && [ "$r4" -eq 0 ] && [ "$r5" -eq 0 ] && [ "$r6" -eq 0 ]
