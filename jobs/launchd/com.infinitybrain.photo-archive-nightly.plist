@@ -9,7 +9,13 @@
   Mimi loads it with her own paste, after #1240 is merged to main (launchd runs
   ~/repos/marketing-dashboard, never a branch) and after #1239 ruling item 2.
 
-  TIME: 02:15 CT, daily. PACE: up to 1000 photos tagged a night (PHOTO_TAG_CAP).
+  TIME (ORDER #1797, Mimi 10.14.2026, "an end of the week luxury spend"): 22:15 CT
+  on Friday, Saturday, Sunday and Monday nights only (Weekday 5, 6, 0, 1), all
+  inside the photo bonus window Fri 18:00 to Mon 23:59 CT. Not 02:15: Friday
+  02:15 is Thursday night, outside the window, and Monday night's 02:15 would
+  fall on Tuesday. photo_nightly.sh re-checks the window and the Box's usage
+  state itself, and each night resumes where the last one stopped.
+  PACE: up to 1000 photos tagged a night (PHOTO_TAG_CAP).
 
   WHERE IT LOGS: the two paths below, red runs too.
 
@@ -38,12 +44,40 @@
 	<key>RunAtLoad</key>
 	<false/>
 	<key>StartCalendarInterval</key>
-	<dict>
-		<key>Hour</key>
-		<integer>2</integer>
-		<key>Minute</key>
-		<integer>15</integer>
-	</dict>
+	<array>
+		<dict>
+			<key>Weekday</key>
+			<integer>5</integer>
+			<key>Hour</key>
+			<integer>22</integer>
+			<key>Minute</key>
+			<integer>15</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>6</integer>
+			<key>Hour</key>
+			<integer>22</integer>
+			<key>Minute</key>
+			<integer>15</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>0</integer>
+			<key>Hour</key>
+			<integer>22</integer>
+			<key>Minute</key>
+			<integer>15</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>1</integer>
+			<key>Hour</key>
+			<integer>22</integer>
+			<key>Minute</key>
+			<integer>15</integer>
+		</dict>
+	</array>
 	<key>StandardOutPath</key>
 	<string>/Users/infinitybrain/Library/Logs/ihg_photo_archive_nightly.out</string>
 	<key>StandardErrorPath</key>

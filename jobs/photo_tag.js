@@ -85,7 +85,7 @@ const TODO_SQL = `SELECT p.drive_id FROM photos p JOIN photo_picks k ON k.drive_
 // The apply paste's read-only "how many are waiting" count: the same WHERE.
 const COUNT_SQL = TODO_SQL.replace('SELECT p.drive_id', 'SELECT count(*)::int AS n').replace(/\s*ORDER BY[\s\S]*$/, '');
 
-async function apply({ args, pool, model, log }) {
+async function apply({ args, pool, model, log, gate }) {
   await ensurePhotoTables(pool);
   const vocabSrc = await loadVocab(pool);
   const vocab = A.buildVocabulary(vocabSrc);
@@ -101,7 +101,7 @@ async function apply({ args, pool, model, log }) {
   }
   log(`TAGGING up to ${args.cap} of ${todo.length} untagged photos, ${args.batch} at a time, model ${model.model || T.MODEL}`);
   const run = await T.tagBatch({
-    photos: todo, model, vocab, prompt, cap: args.cap, batchSize: args.batch, log,
+    photos: todo, model, vocab, prompt, cap: args.cap, batchSize: args.batch, log, gate,
     removedFor: (p) => (human.get(p.drive_id) || {}).removed || [],
     addedFor: (p) => (human.get(p.drive_id) || {}).added || [],
     getThumb: async (p) => (await pool.query('SELECT thumb FROM photos WHERE drive_id = $1', [p.drive_id])).rows[0].thumb,
@@ -114,7 +114,7 @@ async function apply({ args, pool, model, log }) {
 
 // `drive`, `pool` and `model` are handed in so a test can run both modes with mocks.
 async function main({ argv = process.argv.slice(2), drive, pool, makePool, model, makeModel, log = console.log,
-  vocabSrc } = {}) {
+  vocabSrc, gate } = {}) {
   const args = parseArgs(argv);
   const m = model || (makeModel && makeModel());
   if (!m) { const e = new Error('KEY MISSING: no Anthropic API key by name (env, Keychain, brain config). Nothing sent.'); e.exitCode = 4; throw e; }
@@ -124,7 +124,7 @@ async function main({ argv = process.argv.slice(2), drive, pool, makePool, model
   }
   const db = pool || (makePool && makePool());
   if (!db) throw new Error('--apply needs MARKETING_DATABASE_URL');
-  return apply({ args, pool: db, model: m, log });
+  return apply({ args, pool: db, model: m, log, gate });
 }
 
 if (require.main === module) {
@@ -145,7 +145,9 @@ if (require.main === module) {
   let pool = null;
   const argv = process.argv.slice(2);
   const drive = argv.includes('--apply') ? null : require('../lib/drive-client').createDriveClient();
-  main({ argv, drive, makeModel, makePool: () => (pool = makePool()) })
+  // ORDER #1797: the nightly's --apply re-asks the bonus window and usage state before each batch.
+  const gate = argv.includes('--apply') ? require('../lib/photo-window').photoGate() : undefined;
+  main({ argv, drive, makeModel, makePool: () => (pool = makePool()), gate })
     .then(() => (pool ? pool.end() : null))
     .catch((e) => { console.error(`photo_tag FAILED: ${e.message}`); process.exitCode = e.exitCode || 1; if (pool) pool.end(); });
 }

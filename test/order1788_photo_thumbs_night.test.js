@@ -94,7 +94,9 @@ test('photo_nightly.sh: PHOTO_TAG_CAP=0 runs changes and thumbs, never the tagge
   const script = path.join(__dirname, '..', 'jobs', 'photo_nightly.sh');
   const run = (cap) => {
     fs.writeFileSync(calls, '');
-    const r = spawnSync('/bin/bash', [script], { env: { HOME: home, PATH: `${bin}:/usr/bin:/bin`, PHOTO_TAG_CAP: cap }, encoding: 'utf8' });
+    // ORDER #1797: the nightly now asks the bonus window first, so this runs it on a Saturday night.
+    const r = spawnSync('/bin/bash', [script], { env: { HOME: home, PATH: `${bin}:${path.dirname(process.execPath)}:/usr/bin:/bin`, PHOTO_TAG_CAP: cap,
+      PHOTO_WINDOW_NOW: '2026-10-17T22:15:00-05:00', PHOTO_USAGE_FILE: path.join(home, 'no-usage-file') }, encoding: 'utf8' });
     return { r, calls: fs.readFileSync(calls, 'utf8') };
   };
   const off = run('0');
