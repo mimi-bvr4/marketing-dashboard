@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Web · Marketing</title>
+<!-- ORDER #1873: the Web Agent. Katherine uploads a page she designed, picks the
+     site and the page, and the Box builds it as a WordPress DRAFT with QA and a
+     card on her Review tab. It never publishes: the switch is OFF until Mimi
+     rules it on. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6); padding-block: var(--ihg-space-6) var(--ihg-space-12); }
+  .lede { margin: 0; color: var(--ihg-color-text-secondary); max-width: var(--ihg-content-reading-max); line-height: var(--ihg-line-height-body); }
+  .panel { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-5); display: grid; gap: var(--ihg-space-3); }
+  .panel h2 { margin: 0; font-size: var(--ihg-text-lg); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); align-items: center; }
+  label.f { display: grid; gap: var(--ihg-space-1); font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-semibold); }
+  select, input[type=text], input[type=search] { min-height: var(--ihg-target-min); padding: 0 var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); border-radius: var(--ihg-radius); font: inherit; background: var(--ihg-color-surface); }
+  .meta { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); align-items: center; }
+  .tag { font-size: var(--ihg-text-xs); padding: 1px var(--ihg-space-2); border-radius: var(--ihg-radius-sm); background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-semibold); }
+  .tag.RED { color: var(--ihg-status-late-fg); } .tag.GREEN { color: var(--ihg-status-done-fg); } .tag.AMBER { color: var(--ihg-status-attention-fg); }
+  table { border-collapse: collapse; font-size: var(--ihg-text-xs); } td, th { border: var(--ihg-border-width) solid var(--ihg-color-border); padding: 2px 6px; text-align: left; vertical-align: top; }
+  ul.plain { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--ihg-space-2); }
+  ul.plain li { border-top: var(--ihg-border-width) solid var(--ihg-color-border); padding-top: var(--ihg-space-2); }
+  .shots { display: flex; flex-wrap: wrap; gap: var(--ihg-space-3); align-items: flex-start; }
+  .shots figure { margin: 0; } .shots img { border: var(--ihg-border-width) solid var(--ihg-color-border); max-height: 520px; }
+  .shots img.m { width: 160px; } .shots img.d { width: 420px; }
+  .empty { color: var(--ihg-color-text-muted); } .err { color: var(--ihg-status-late-fg); } .ok { color: var(--ihg-status-done-fg); }
+  .off { color: var(--ihg-color-text-muted); }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container topbar-inner">
+  <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Web</div>
+  <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/agents">Katherine's Team</a> · <a href="/cadet">Where is it?</a> · <a href="/photos">Photos</a></nav>
+</div></header>
+<main class="container wrap">
+  <p class="lede">Upload a page you designed. The Box turns it into a WordPress <strong>draft</strong> on the site you pick, checks it, and puts a card on your Review tab with the preview link, screenshots and what changed. It never touches the live page, the menus or the theme. <span id="pubstate"></span></p>
+  <form class="panel" id="up" autocomplete="off">
+    <h2>New upload</h2>
+    <div class="row">
+      <label class="f">Site <select id="site" required><option value="">Pick a site</option></select></label>
+      <label class="f">Page <select id="mode"><option value="new">New page</option><option value="existing">Replace an existing page</option></select></label>
+    </div>
+    <div class="row" id="newbox"><label class="f">New page title <input type="text" id="title" maxlength="150" placeholder="Rehearsal Dinners"></label></div>
+    <div class="row" id="pagebox" hidden>
+      <label class="f">Find the page <input type="search" id="q" placeholder="weddings"></label>
+      <label class="f">Page <select id="page"><option value="">Pick the site first</option></select></label>
+    </div>
+    <div class="row"><label class="f">HTML file <input type="file" id="html" accept=".html,.htm,text/html" required></label></div>
+    <div class="row"><label class="f">Photos the page uses (optional) <input type="file" id="photos" accept="image/jpeg,image/png,image/webp,image/gif" multiple></label></div>
+    <ul class="plain" id="photolist"></ul>
+    <p class="meta">Tick <strong>Cleared for the web</strong> only for photos you have the rights to. A photo that is not ticked is not uploaded; the draft shows a "PHOTO HELD" box in its place.</p>
+    <div class="row"><button class="btn primary" type="submit" id="go">Build the draft</button><span id="said" role="status"></span></div>
+  </form>
+  <section id="detail" class="panel" hidden></section>
+  <section class="panel"><h2>Uploads</h2><div id="list"><p class="empty">Loading…</p></div></section>
+</main>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const when = (d) => { if (!d) return ''; return new Date(d).toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }).replace(/\//g, '.').replace(',', '') + ' CT'; };
+  async function api(url, opt) {
+    const r = await fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, opt || {}));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || j.why || ('error ' + r.status));
+    return j;
+  }
+  let photos = [];
+  const readText = (f) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsText(f); });
+  const readB64 = (f) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = no; r.readAsDataURL(f); });
+
+  async function load() {
+    const j = await api('/api/web');
+    if (!$('#site').dataset.filled) {
+      $('#site').insertAdjacentHTML('beforeend', j.sites.map((s) => `<option value="${esc(s.code)}">${esc(s.name)} (${esc(s.domain)})</option>`).join('')
+        + j.squarespace.map((s) => `<option value="${esc(s.code)}" disabled>${esc(s.domain)} (Squarespace: paste by hand)</option>`).join(''));
+      $('#site').dataset.filled = '1';
+    }
+    $('#pubstate').innerHTML = j.publish === 'on' ? '<strong>Publish is ON.</strong>' : '<span class="off">Publishing from here is OFF until Mimi turns it on; publish the draft from WordPress yourself.</span>';
+    $('#list').innerHTML = j.requests.length ? '<ul class="plain">' + j.requests.map((r) => `<li><a href="#r${r.id}" data-id="${r.id}">${esc(r.site)}: ${esc(r.new_title || ('page ' + r.page_id))}</a>
+      <span class="meta"><span class="tag">${esc(r.status)}</span>${esc(r.asked_by)} · ${when(r.created_at)}${r.result && r.result.draft_id ? ` · draft #${esc(r.result.draft_id)}` : ''}${r.error ? ` · <span class="err">${esc(r.error)}</span>` : ''}</span></li>`).join('') + '</ul>'
+      : '<p class="empty">No uploads yet.</p>';
+  }
+
+  async function pages() {
+    const site = $('#site').value; if (!site || $('#mode').value !== 'existing') return;
+    $('#page').innerHTML = '<option value="">Loading…</option>';
+    try {
+      const j = await api('/api/web/pages?site=' + encodeURIComponent(site) + '&q=' + encodeURIComponent($('#q').value));
+      $('#page').innerHTML = j.pages.length ? j.pages.map((p) => `<option value="${p.id}">${esc(p.title)} (${esc(p.link.replace(/^https?:\/\/[^/]+/, ''))})</option>`).join('') : '<option value="">No page matches</option>';
+    } catch (e) { $('#page').innerHTML = `<option value="">${esc(e.message)}</option>`; }
+  }
+  $('#site').addEventListener('change', pages);
+  $('#q').addEventListener('change', pages);
+  $('#mode').addEventListener('change', () => { const ex = $('#mode').value === 'existing'; $('#pagebox').hidden = !ex; $('#newbox').hidden = ex; pages(); });
+  $('#photos').addEventListener('change', () => {
+    photos = [...$('#photos').files];
+    $('#photolist').innerHTML = photos.map((f, i) => `<li><label><input type="checkbox" data-i="${i}"> Cleared for the web</label> · ${esc(f.name)} <span class="meta">${Math.round(f.size / 1024)} KB</span></li>`).join('');
+  });
+
+  $('#up').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const said = $('#said'); said.className = ''; said.textContent = 'Sending…'; $('#go').disabled = true;
+    try {
+      const file = $('#html').files[0]; if (!file) throw new Error('Pick the HTML file.');
+      const cleared = new Set([...document.querySelectorAll('#photolist input:checked')].map((x) => Number(x.dataset.i)));
+      const assets = [];
+      for (let i = 0; i < photos.length; i++) assets.push({ name: photos[i].name, type: photos[i].type, data: await readB64(photos[i]), cleared: cleared.has(i) });
+      const body = { site: $('#site').value, html: await readText(file), assets };
+      if ($('#mode').value === 'existing') body.page_id = Number($('#page').value) || null; else body.new_title = $('#title').value;
+      const j = await api('/api/web/requests', { method: 'POST', body: JSON.stringify(body) });
+      said.className = 'ok'; said.textContent = `Upload ${j.request.id} is waiting for the Box (it builds drafts every 15 minutes). The card will be on your Review tab.`;
+      $('#up').reset(); photos = []; $('#photolist').innerHTML = '';
+      await load();
+    } catch (e) { said.className = 'err'; said.textContent = e.message; }
+    $('#go').disabled = false;
+  });
+
+  async function show(id) {
+    const d = $('#detail'); d.hidden = false; d.innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const { request: r, log, publish } = await api('/api/web/requests/' + id);
+      const x = r.result || {};
+      const shot = (w, s) => `/api/web/requests/${r.id}/shot/${w}/${s}`;
+      d.innerHTML = `<h2>${esc(r.site)}: ${esc(r.new_title || ('page ' + r.page_id))}</h2>
+        <p class="meta"><span class="tag">${esc(r.status)}</span>${esc(r.asked_by)} · ${when(r.created_at)}</p>
+        ${r.error ? `<p class="err">${esc(r.error)}</p>` : ''}
+        ${x.draft_id ? `<p><a href="${esc(x.preview_link)}" target="_blank" rel="noopener">Preview draft #${esc(x.draft_id)}</a> (sign in to WordPress first) · <a href="${esc(x.edit_link)}" target="_blank" rel="noopener">Open in WordPress</a></p>` : ''}
+        ${(x.qa || []).length ? '<table><tr><th>Check</th><th>Result</th><th>Detail</th></tr>' + x.qa.map((q) => `<tr><td>${esc(q.check)}</td><td><span class="tag ${esc(q.verdict)}">${esc(q.verdict)}</span></td><td>${esc(q.detail)}</td></tr>`).join('') + '</table>' : ''}
+        ${x.shots && x.shots.after ? `<div class="shots">${x.shots.before ? `<figure><img class="m" src="${shot('before', 'mobile')}" alt="Live page on a phone"><figcaption class="meta">Live, phone</figcaption></figure><figure><img class="d" src="${shot('before', 'desktop')}" alt="Live page on a computer"><figcaption class="meta">Live, computer</figcaption></figure>` : ''}
+          <figure><img class="m" src="${shot('after', 'mobile')}" alt="Draft on a phone"><figcaption class="meta">Draft, phone (no theme)</figcaption></figure><figure><img class="d" src="${shot('after', 'desktop')}" alt="Draft on a computer"><figcaption class="meta">Draft, computer (no theme)</figcaption></figure></div>`
+          : (x.shots && x.shots.why ? `<p class="meta">Screenshots not taken: ${esc(x.shots.why)}</p>` : '')}
+        ${x.draft_id ? `<div class="row"><button class="btn" id="pub" ${publish === 'on' ? '' : 'aria-disabled="true"'}>Publish</button><span class="meta">${publish === 'on' ? 'Publishes on the Box\'s next run, backing up the live page first.' : 'OFF until Mimi turns it on. Pressing it is refused and logged.'}</span><span id="pubsaid" role="status"></span></div>` : ''}
+        <details><summary>Write log (${log.length})</summary><ul class="plain">${log.map((l) => `<li>${esc(l.action)}${l.post_id ? ` · post ${esc(l.post_id)}` : ''} · ${esc(l.who)} · ${when(l.at)}${l.detail ? `<div class="meta">${esc(String(l.detail).slice(0, 300))}</div>` : ''}</li>`).join('')}</ul></details>`;
+      const pb = $('#pub');
+      if (pb) pb.addEventListener('click', async () => {
+        try { await api('/api/web/requests/' + r.id + '/publish', { method: 'POST', body: '{}' }); $('#pubsaid').textContent = 'Queued.'; }
+        catch (e) { $('#pubsaid').className = 'err'; $('#pubsaid').textContent = e.message; }
+      });
+    } catch (e) { d.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  }
+  $('#list').addEventListener('click', (ev) => { const a = ev.target.closest('a[data-id]'); if (a) show(Number(a.dataset.id)); });
+  window.addEventListener('hashchange', () => { const m = location.hash.match(/^#r(\d+)$/); if (m) show(Number(m[1])); });
+  load().then(() => { const m = location.hash.match(/^#r(\d+)$/); if (m) show(Number(m[1])); }).catch((e) => { $('#list').innerHTML = `<p class="err">${esc(e.message)}</p>`; });
+})();
+</script>
+</body>
+</html>

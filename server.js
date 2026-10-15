@@ -3,7 +3,10 @@ const path = require('path');
 const { BetaAnalyticsDataClient } = require('@google-analytics/data');
 
 const app = express();
-app.use(express.json({ limit: '2mb' }));
+// ORDER #1873: the Web Agent upload (HTML plus photos) parses its own larger
+// body in routes/web.js; every other route keeps the 2 MB limit.
+const jsonBody = express.json({ limit: '2mb' });
+app.use((req, res, next) => (req.method === 'POST' && req.path === '/api/web/requests' ? next() : jsonBody(req, res, next)));
 
 // ---- Fleet Contract v0 (ORDER #192): discovery, health, read-only tokens ----
 const { fleetGate } = require('./middleware/auth');
@@ -108,9 +111,13 @@ app.use(pageGate);
     const her = require('./lib/katherine-store');
     her.ensureKatherineTables(reviewPool).catch(e => console.error('[her-numbers] ensureKatherineTables:', e.message));
     app.use(require('./routes/katherine').createKatherineRouter({ store: her.createKatherineStore(reviewPool) }));
+    // ORDER #1873: the Web Agent (her HTML in, a WordPress DRAFT out, built on the Box; same gate).
+    const web = require('./lib/web-store');
+    web.ensureWebTables(reviewPool).catch(e => console.error('[web] ensureWebTables:', e.message));
+    app.use(require('./routes/web').createWebRouter({ store: web.createPgStore(reviewPool) }));
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
-      '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers'],
+      '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }
