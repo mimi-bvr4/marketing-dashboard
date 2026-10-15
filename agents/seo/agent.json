@@ -31,6 +31,11 @@
     },
     {
       "type": "file",
+      "newest": "07_Marketing_and_Brand/SEO_Data/Ubersuggest_Weekly_",
+      "label": "Ubersuggest weekly: search volume, difficulty and top pages (the Box, read-only)"
+    },
+    {
+      "type": "file",
       "path": "07_Marketing_and_Brand/BLOG_AGENT_SPEC_10.09.2026.md",
       "label": "the SEO method (Wedding SEO Bootcamp, in our words)"
     },
@@ -59,8 +64,8 @@
         "instead": "Writes the exact new title and description; a person pastes them in WordPress or Squarespace"
       },
       {
-        "cant": "Give search volumes or keyword difficulty",
-        "instead": "Works from Search Console, which shows what people actually searched to find us; volumes come once an SEO tool is connected"
+        "cant": "Look up a keyword's volume or difficulty on the spot",
+        "instead": "Reads the Box's weekly Ubersuggest file (written Thursdays) for volume, difficulty and top pages, alongside Search Console"
       },
       {
         "cant": "Write the blog posts",
