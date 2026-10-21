@@ -12,26 +12,41 @@
 #   6. web_run.js       #1873 the Web Agent: Katherine's uploaded HTML becomes a NEW
 #                       WordPress DRAFT page with QA and a Review card. Publish is OFF.
 # Drafts only; a person publishes. Each step runs even if an earlier one fails.
+# ORDER #2120: each step's start and exit go to stderr with a CT stamp, so a
+# failure in .err names its step and time without matching it to .out by count.
 set -u
+stamp() { echo "[agents_handoff $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT')] $*" >&2; }
 cd "$HOME/repos/marketing-dashboard" || { echo "agents_handoff: no ~/repos/marketing-dashboard"; exit 1; }
 echo "=== agents 15-minute job $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT') ==="
+stamp kh_route start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/kh_route.js'
 r1=$?
+stamp kh_route exit $r1
+stamp agent_requests start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_requests.js'
 r3=$?
+stamp agent_requests exit $r3
+stamp agent_asks start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_asks.js'
 r4=$?
+stamp agent_asks exit $r4
+stamp agent_handoff start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_handoff.js'
 r2=$?
+stamp agent_handoff exit $r2
+stamp cadet_run start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/cadet_run.js'
 r5=$?
+stamp cadet_run exit $r5
+stamp web_run start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/web_run.js'
 r6=$?
+stamp web_run exit $r6
 echo "=== done: route exit $r1, requests exit $r3, asks exit $r4, handoff exit $r2, cadet exit $r5, web exit $r6 ==="
 [ "$r1" -eq 0 ] && [ "$r2" -eq 0 ] && [ "$r3" -eq 0 ] && [ "$r4" -eq 0 ] && [ "$r5" -eq 0 ] && [ "$r6" -eq 0 ]
