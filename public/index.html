@@ -262,7 +262,7 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
     <a class="home-tile" href="/review" id="tile-review"><span class="k">Waiting in Review</span><span class="v" id="home-drafts">&hellip;</span><span class="s">drafts from Katherine's team</span></a>
     <a class="home-tile" href="#open-dates" id="tile-open"><span class="k">Open Saturdays</span><span class="v" id="home-open-sat">&hellip;</span><span class="s">next 90 days, all 7 venues</span></a>
     <a class="home-tile" href="/competitors" id="tile-comp"><span class="k">Competitor moves</span><span class="v" id="home-comp">&hellip;</span><span class="s">top competitors that changed their site</span></a>
-    <a class="home-tile" href="#numbers" id="tile-goal"><span class="k">2026 revenue goal</span><span class="v" id="home-goal">&hellip;</span><span class="s" id="home-goal-sub">of $19.6M</span></a>
+    <a class="home-tile" href="#numbers" id="tile-goal"><span class="k">2026 revenue goal</span><span class="v" id="home-goal">Counting&hellip;</span><span class="s" id="home-goal-sub">of $19.6M</span></a>
   </div>
   <div class="home-cols">
     <div class="home-card"><h3>Needs a look <a href="/review">Review</a></h3><ul class="home-list" id="home-review"><li class="home-empty">Loading&hellip;</li></ul></div>
@@ -276,7 +276,7 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
 <div class="goal-section">
   <div class="goal-row">
     <span class="goal-label">2026 IHG Revenue Goal</span>
-    <span class="goal-value">YTD: <strong id="goal-ytd">&mdash;</strong> / $19.6M &nbsp;&middot;&nbsp; <span id="goal-pct">&mdash;</span> of goal &nbsp;&middot;&nbsp; pace: <span id="goal-pace">&mdash;</span></span>
+    <span class="goal-value">YTD: <strong id="goal-ytd">&mdash;</strong> / $19.6M &nbsp;&middot;&nbsp; <span id="goal-pct">&mdash;</span> of goal &nbsp;&middot;&nbsp; pace: <span id="goal-pace">&mdash;</span> &nbsp;&middot;&nbsp; <span id="goal-asof">counting&hellip;</span> <a href="#numbers" id="goal-refresh">Refresh</a></span>
   </div>
   <div class="progress-bar">
     <div class="progress-fill" id="goal-fill" style="width:0%"></div>
@@ -1102,8 +1102,6 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
       FUNNEL.ga4 = g;
       renderFunnel();
     });
-    // Goal progress (always YTD-based — the annual goal doesn't change by filter)
-    updateGoalBar();
   }
 
   // ---- CONVERSION FUNNEL RENDER ----
@@ -1280,26 +1278,16 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
     document.getElementById('ceo-missing-count').textContent = `${unclassified.length}`;
   }
 
-  async function updateGoalBar() {
+  // ORDER #2332: the YTD figure is summed and cached on the server
+  // (lib/revenue-goal.js, 15 minutes); the page reads one answer and its stamp.
+  async function updateGoalBar(refresh = false) {
     try {
-      const yStart = new Date(Date.UTC(2026, 0, 1)).toISOString();
-      const yEnd = new Date(Date.UTC(2027, 0, 1)).toISOString();
-      const deals = await fetchAll('deals',
-        [{ filters: [
-          { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
-          { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
-          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(yStart) },
-          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(yEnd) }
-        ]}],
-        ['final_event_total_accounting', 'venue', 'actual_event_date']);
+      const r = await fetch('/api/revenue-goal' + (refresh ? '?refresh=1' : ''));
+      if (!r.ok) throw new Error(`revenue goal ${r.status}`);
+      const g = await r.json();
+      const ytd = g.ytd;
       const today = new Date();
-      const now = today.toISOString();
-      let ytd = 0;
-      for (const d of deals) {
-        if ((d.properties?.actual_event_date || '') <= now) {
-          ytd += (parseFloat(d.properties?.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
-        }
-      }
+      document.getElementById('goal-asof').textContent = 'as of ' + g.as_of_ct;
       const pctOfGoal = ytd / IHG_GOAL_2026;
       const dayOfYear = Math.floor((today - new Date(today.getUTCFullYear(), 0, 1)) / (1000 * 60 * 60 * 24));
       const pace = dayOfYear / 365;
@@ -1310,8 +1298,16 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
       document.getElementById('goal-pace-marker').style.left = Math.min(pace * 100, 100) + '%';
     } catch (e) {
       console.error('Goal bar error:', e);
+      document.getElementById('goal-asof').textContent = 'could not count, try Refresh';
+      const tile = document.getElementById('home-goal');
+      if (tile && !/\d/.test(tile.textContent)) tile.textContent = '?';
     }
   }
+  document.getElementById('goal-refresh').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('goal-asof').textContent = 'counting…';
+    updateGoalBar(true);
+  });
 
   async function loadProjectedRevenue() {
     const today = new Date();
@@ -1624,6 +1620,9 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
   });
 
   periodSel.addEventListener('change', () => loadPeriod(resolvePeriod(periodSel.value)));
+  // Goal progress (always YTD-based, the annual goal doesn't change by filter).
+  // ORDER #2332: asked first and once, not behind the period's HubSpot load.
+  updateGoalBar();
   try {
     SPEND_2026 = await fetchSpendData();
   } catch (e) {
@@ -1821,10 +1820,11 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
       + (moved.length ? '' : '<li class="home-empty">No top competitor changed their site this week.</li>');
   }).catch(() => { $('home-comp').textContent = '?'; fail('home-competitors', 'The competitor list'); });
 
-  // The goal tile mirrors the goal bar once the numbers below have loaded.
-  const goal = $('goal-ytd'); const pct = $('goal-pct');
-  const sync = () => { if (goal && /\d/.test(goal.textContent)) { $('home-goal').textContent = (pct && pct.textContent) || goal.textContent; $('home-goal-sub').textContent = `${goal.textContent} of $19.6M so far`; return true; } return false; };
-  if (!sync() && goal && window.MutationObserver) { const mo = new MutationObserver(() => { if (sync()) mo.disconnect(); }); mo.observe(goal, { childList: true, characterData: true, subtree: true }); }
+  // The goal tile mirrors the goal bar once the numbers below have loaded,
+  // with the server's "as of HH:MM CT" stamp (ORDER #2332).
+  const goal = $('goal-ytd'); const pct = $('goal-pct'); const asof = $('goal-asof');
+  const sync = () => { if (goal && /\d/.test(goal.textContent)) { $('home-goal').textContent = (pct && pct.textContent) || goal.textContent; $('home-goal-sub').textContent = `${goal.textContent} of $19.6M so far` + (asof && /^as of /.test(asof.textContent) ? ` · ${asof.textContent}` : ''); return true; } return false; };
+  if (!sync() && goal && window.MutationObserver) { const mo = new MutationObserver(() => { sync(); }); /* stays on: Refresh updates the tile too */ mo.observe(goal, { childList: true, characterData: true, subtree: true }); }
 })();
 </script>
 </body>

@@ -311,6 +311,23 @@ app.use(require('./routes/open-dates').createOpenDatesRouter({
   },
 }));
 
+// ---- ORDER #2332: the 2026 revenue-goal figure, summed here, not in the browser ----
+// Warmed at boot and every 15 minutes so the home tile reads a cached answer.
+// Read-only searches only, same path as the proxy above.
+{
+  const { createRevenueGoalCache, CACHE_MS } = require('./lib/revenue-goal');
+  const cache = createRevenueGoalCache({
+    search: async (objectType, body) => {
+      const r = await enqueueHubSpot(() => hubspotFetch(objectType, excludeTestDeals(objectType, body)));
+      if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
+      return r.json();
+    },
+  });
+  app.use(require('./routes/revenue-goal').createRevenueGoalRouter({ cache }));
+  setTimeout(cache.warm, 5000).unref();
+  setInterval(cache.warm, CACHE_MS).unref();
+}
+
 // ---- AI Narrative Proxy (Anthropic) ----
 app.post('/api/ai/narrative', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
