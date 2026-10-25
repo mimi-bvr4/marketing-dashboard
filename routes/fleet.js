@@ -18,7 +18,14 @@ router.get('/.well-known/agent-contract', (req, res) => {
     contract_url:`${base}/api/contract`, health_url:`${base}/health`,
     auth:{scheme:'bearer-v1',scope:'read'}, token_mint_url:`${base}/settings/api-tokens` });
 });
-router.get('/health', (req,res)=> res.json({ status:'ok', service:'marketing-dashboard' }));
+// ORDER #2366: `version` is the deployed commit, short form, the way dispatch's
+// /healthz reports it, so one signed-out navigate tells what is running. Read
+// per request; 'unknown' when Railway has not set it (a local run).
+function deployedVersion(){
+  const sha = process.env.RAILWAY_GIT_COMMIT_SHA;
+  return sha ? String(sha).slice(0, 7) : 'unknown';
+}
+router.get('/health', (req,res)=> res.json({ status:'ok', service:'marketing-dashboard', version: deployedVersion() }));
 router.get('/api/contract', (req,res)=>{
   const base = baseUrl(req);
   res.json({ service:'marketing-dashboard', contract_version:'v0',
