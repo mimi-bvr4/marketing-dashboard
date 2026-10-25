@@ -517,6 +517,7 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
 </div>
 <div class="section">
   <h2>2026 Monthly Trend &middot; Leads, Bookings, Cancelled, Revenue</h2>
+  <div class="status" id="trend-status">Loading&hellip;</div>
   <div class="chart-wrap"><canvas id="trend-chart"></canvas></div>
 </div>
 </div><!-- /#panel-ihg -->
@@ -1450,35 +1451,23 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
     document.getElementById('proj-missing-count').textContent = `${missing.length} of ${total}`;
   }
 
+  // ORDER #2335: the monthly series are summed and cached on the server
+  // (lib/trend.js, 15 minutes); the chart reads one answer and its stamp.
   async function loadTrend() {
-    const now = new Date();
-    const endMonth = now.getUTCFullYear() >= 2026 ? (now.getUTCFullYear() > 2026 ? 12 : now.getUTCMonth() + 1) : 0;
-    const months = [];
-    for (let i = 0; i < endMonth; i++) months.push(`2026-${String(i + 1).padStart(2, '0')}`);
-    const labels = months.map(m => monthRange(m).label);
-    const leadCounts = [], bookingCounts = [], cancelledCounts = [], revenues = [];
-    for (const ym of months) {
-      const { start, end } = monthRange(ym);
-      const monthPeriod = { start, end };
-      const [l, bookingsResult, revDeals] = await Promise.all([
-        countContacts([
-          { propertyName: 'venue_s_', operator: 'IN', values: IHG_VENUES },
-          { propertyName: 'createdate', operator: 'GTE', value: start },
-          { propertyName: 'createdate', operator: 'LT', value: end }
-        ]),
-        fetchUniqueBookings(monthPeriod),
-        fetchAll('deals', [{ filters: [
-          { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
-          { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
-          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(start) },
-          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(end) }
-        ]}], ['final_event_total_accounting'], 3)
-      ]);
-      leadCounts.push(l);
-      bookingCounts.push(bookingsResult.all.length);
-      cancelledCounts.push(bookingsResult.cancelled.length);
-      revenues.push(revDeals.reduce((a, d) => a + (parseFloat(d.properties?.final_event_total_accounting || '0') || 0), 0) * REVENUE_NET_MULTIPLIER);
+    const trendStatus = document.getElementById('trend-status');
+    let t;
+    try {
+      const r = await fetch('/api/trend');
+      if (!r.ok) throw new Error(`trend ${r.status}`);
+      t = await r.json();
+    } catch (e) {
+      trendStatus.textContent = '?';
+      trendStatus.className = 'status error';
+      throw e;
     }
+    trendStatus.textContent = 'as of ' + t.as_of_ct;
+    const labels = t.labels;
+    const leadCounts = t.leads, bookingCounts = t.bookings, cancelledCounts = t.cancelled, revenues = t.revenue;
     // ORDER #1675: the chart reads the same tokens as the page (a canvas cannot
     // use CSS variables, so they are read once here; the hex is the fallback).
     const tok = (name, fallback) => (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
@@ -1623,6 +1612,8 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
   // Goal progress (always YTD-based, the annual goal doesn't change by filter).
   // ORDER #2332: asked first and once, not behind the period's HubSpot load.
   updateGoalBar();
+  // ORDER #2335: one cached server answer, so it no longer waits behind the period load.
+  loadTrend().catch(e => console.error(e));
   try {
     SPEND_2026 = await fetchSpendData();
   } catch (e) {
@@ -1630,7 +1621,6 @@ a.home-tile:hover { border-color: var(--ihg-color-border-control); }
     SPEND_2026 = {}; // degrade to "no spend data" rather than block the rest of the dashboard
   }
   await loadPeriod(resolvePeriod('ytd'));
-  loadTrend().catch(e => console.error(e));
   loadProjectedRevenue().catch(e => console.error(e));
 })();
 </script>

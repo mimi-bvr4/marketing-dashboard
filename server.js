@@ -328,6 +328,23 @@ app.use(require('./routes/open-dates').createOpenDatesRouter({
   setInterval(cache.warm, CACHE_MS).unref();
 }
 
+// ---- ORDER #2335: the home trend chart's monthly series, summed here, not in the browser ----
+// Warmed ("2026 YTD") at boot and every 15 minutes so the chart reads a cached
+// answer. Read-only searches only, same path as the proxy above.
+{
+  const { createTrendCache, CACHE_MS } = require('./lib/trend');
+  const cache = createTrendCache({
+    search: async (objectType, body) => {
+      const r = await enqueueHubSpot(() => hubspotFetch(objectType, excludeTestDeals(objectType, body)));
+      if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
+      return r.json();
+    },
+  });
+  app.use(require('./routes/trend').createTrendRouter({ cache }));
+  setTimeout(cache.warm, 5000).unref();
+  setInterval(cache.warm, CACHE_MS).unref();
+}
+
 // ---- AI Narrative Proxy (Anthropic) ----
 app.post('/api/ai/narrative', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
