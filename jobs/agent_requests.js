@@ -19,7 +19,9 @@ async function takeAndRun({ store, runOne, log = console.log, env = process.env 
   const reqs = await store.takeRunRequests(5, { byPriority });
   for (const q of reqs) {
     let r;
-    try { r = await runOne(q.agent, q.ask); } catch (e) { r = { ok: false, error: e.message, cards: [] }; }
+    // #2914: a redo is a person's request (no chain) that names its card.
+    const redoOf = !q.chain && q.from_card ? q.from_card : null;
+    try { r = await runOne(q.agent, q.ask, { redoOf }); } catch (e) { r = { ok: false, error: e.message, cards: [] }; }
     const ids = (r.cards || []).map((c) => `#${c.id}`).join(', ');
     await store.finishRunRequest(q.id, r.ok, r.ok ? `card(s) ${ids || 'none'}` : r.error);
     log(`request ${q.id} (${q.agent}, by ${q.requested_by}): ${r.ok ? 'done' : 'FAILED ' + r.error}`);
@@ -62,7 +64,7 @@ async function main({ env = process.env, log = console.log } = {}) {
     await ensureAgentTables(pool);
     const store = createPgStore(pool, { lint });
     const llm = textClientFromEnv().client;
-    await takeAndRun({ store, log, env, runOne:(slug, ask) => runAgent({ slug, store, llm, ask, env, log }) });
+    await takeAndRun({ store, log, env, runOne:(slug, ask, o = {}) => runAgent({ slug, store, llm, ask, env, log, redoOf: o.redoOf || null }) });
     const root = treeRoot(env);
     if (root) await mirror({ store, root, log }); else log('mirror skipped: project tree not found');
     return 0;
