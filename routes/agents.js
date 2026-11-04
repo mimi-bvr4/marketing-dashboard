@@ -22,6 +22,8 @@
 //   GET  /api/producer                  #2900 the Producer's card: the week, the brakes, the board
 //   POST /api/producer/calendar/:slug   { days: ['tue'] }  move a weekly team member (logged)
 //   POST /api/producer/name             { name }  Katherine names the Producer ('' = default)
+//   POST /api/team/question             { question }  #2915 a plain answer from her team's own
+//                                       cards and runs, with links to the cards. Read only.
 //
 // #1664 NAMES AND PORTRAITS ARE COSMETIC (Mimi, 10.12.2026): they save at once,
 // no exec approval, because they change nothing about what an agent may do.
@@ -83,7 +85,7 @@ function watchNeed(c, list) {
   return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites Katherine listed:/.test(x))] };
 }
 
-function createAgentsRouter({ store, identity }) {
+function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   const r = express.Router();
   const need = (req, res, next) => (personOf(req) ? next() : res.status(403).json({ error: 'Signed-in leadership only.' }));
   const known = (req, res, next) => (listAgents().includes(req.params.slug) ? next() : res.status(404).json({ error: 'no such agent' }));
@@ -244,6 +246,16 @@ function createAgentsRouter({ store, identity }) {
     const out = await store.setName('producer', (req.body || {}).name, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ name: out.profile && out.profile.display_name ? out.profile.display_name : 'The Producer' });
+  });
+
+  // #2915: a question about her own team's data. Read only: it reads the cards
+  // and runs through the store and writes nothing (lib/ask-data.js).
+  r.post('/api/team/question', need, async (req, res) => {
+    const { answer } = require('../lib/ask-data');
+    const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
+    const members = listAgents().map((slug) => { const d = loadAgent(slug); return { slug, name: displayName(d, profiles.get(slug)), default_name: d.name }; });
+    const out = await answer({ question: (req.body || {}).question, store, members, who: personOf(req), now: clock() });
+    res.json(out);
   });
 
   r.post('/api/agents/asks/:id/decide', need, async (req, res) => {

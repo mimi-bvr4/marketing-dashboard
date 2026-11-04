@@ -64,6 +64,11 @@
 (function () {
   let status = 'draft';
   const $ = (s) => document.querySelector(s);
+  // #2915: /review?status=ready opens that tab.
+  { const s = new URLSearchParams(location.search).get('status');
+    if (['draft', 'ready', 'rejected', 'archived'].includes(s)) {
+      status = s; document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.s === s)));
+    } }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (d) => { if (!d) return ''; const x = new Date(d); return x.toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '.'); };
   function inline(s) {
@@ -128,7 +133,7 @@
     const missing = (c.sources || []).filter((s) => !s.ok).length;
     // #1748: the Copywriter's verdict on an outbound card (the full check is in the card's "Copy check" section).
     const cc = c.checks && c.checks.copy_check;
-    return `<article class="card" data-id="${c.id}">
+    return `<article class="card" data-id="${c.id}" id="card-${c.id}">
       <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
         ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
       <h3 style="margin:0">${esc(c.title)}</h3>
@@ -159,6 +164,9 @@
       const { cards } = await api('/api/review/cards?status=' + status);
       cache = cards;
       $('#list').innerHTML = cards.length ? cards.map(cardHtml).join('') : '<p class="empty">Nothing here.</p>';
+      // #2915: a link from "Ask about your team" lands on its card.
+      const hit = /^#card-\d+$/.test(location.hash) && document.getElementById(location.hash.slice(1));
+      if (hit) { hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
     } catch (e) { $('#list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
   document.querySelector('.tabs').addEventListener('click', (e) => {
