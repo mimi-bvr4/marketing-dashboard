@@ -33,6 +33,15 @@
       ]
     },
     {
+      "type": "hubspot_email_stats",
+      "label": "HubSpot marketing email analytics (last month)"
+    },
+    {
+      "type": "file",
+      "newest": "07_Marketing_and_Brand/Email_Buildout/W1_AUDIT_",
+      "label": "the W1 email audit (the 12-month baseline)"
+    },
+    {
       "type": "pending",
       "label": "Google + Meta ads export Sheet",
       "why": "the export Sheet has not been created and shared yet"
@@ -43,16 +52,22 @@
     "does": [
       "Drafts the leadership marketing report by the 3rd",
       "Footnotes every number with its source and dates",
+      "Carries the email scorecard: last month's sends, delivery, opens, clicks, unsubscribes and bounces, read-only from HubSpot, against the W1 baseline",
       "Ends with three recommended moves"
     ],
     "traits": [
       {
         "cant": "Show spend, finance or pay figures",
-        "instead": "Reports traffic, reviews, rankings and leads only"
+        "instead": "Reports traffic, reviews, rankings, leads and email only"
+      },
+      {
+        "cant": "Report email numbers HubSpot did not give it",
+        "instead": "If the read-only email statistics read fails, says why in the email section and writes no email number"
       }
     ],
     "needs": [
       "A read-only dashboard key in the Box Keychain (marketing-fleet-key)",
+      "The HubSpot token's marketing-email statistics scope (a missing one is named in the email section)",
       "The ads export Sheet"
     ]
   }

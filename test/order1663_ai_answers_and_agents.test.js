@@ -130,7 +130,8 @@ test('agent.json sources validate: every type is registered, no pending source l
   const mr = loadAgent('monthly-report');
   assert.ok(mr.sources.some((s) => s.type === 'dashboard' && s.paths.includes('/api/funnel/monthly')));
   assert.ok(!mr.sources.some((s) => s.type === 'pending' && /HubSpot/.test(s.label)));
-  assert.deepStrictEqual(mr.character.needs, ['A read-only dashboard key in the Box Keychain (marketing-fleet-key)', 'The ads export Sheet']);
+  assert.deepStrictEqual(mr.character.needs, ['A read-only dashboard key in the Box Keychain (marketing-fleet-key)',
+    "The HubSpot token's marketing-email statistics scope (a missing one is named in the email section)", 'The ads export Sheet']); // #2903 the email scorecard
   assert.ok(!/Katherine's call|stages count/i.test(mr.skill));
 
   const c = loadAgent('citations');

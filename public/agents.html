@@ -149,6 +149,8 @@
   function status(a) {
     const on = a.current ? a.current.enabled : true;
     if (!on) return { cls: 's-off', label: 'Paused' };
+    if (a.paused) return { cls: 's-off', label: 'Paused' }; // #2903: Paid Ads, until its source exists
+    if (a.card_only && !a.ask_page) return { cls: 's-part', label: 'Not running yet' }; // #2903: Site Guardian
     if (a.sources.some((s) => s.required && s.pending)) return { cls: 's-wait', label: 'Waiting on input' };
     if (a.last_run && a.last_run.status === 'failed') return { cls: 's-wait', label: 'Last run failed' };
     if (a.sources.some((s) => s.pending) || (a.last_run && (a.last_run.unavailable || []).length)) return { cls: 's-part', label: 'Partly working' };
@@ -164,7 +166,8 @@
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
-      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
+      ${a.paused ? `<div class="need"><strong>Paused:</strong> ${esc(a.paused)}</div>` : ''}
+      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(a.card_only)}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
   }
@@ -250,7 +253,7 @@
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
           <span class="meta">${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}` : 'Has not run yet'}</span></div>
         ${a.ask_page ? `<div class="row"><a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a></div>
-        <p class="meta" style="margin:0">Asked on his own page; the Box answers there within 15 minutes.</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
+        <p class="meta" style="margin:0">Asked on his own page; the Box answers there within 15 minutes.</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
           <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
         <p class="meta" style="margin:0">The Box picks it up within 15 minutes; the draft lands in <a href="/review">Review</a>.</p>`}
         <p class="msg" hidden></p>

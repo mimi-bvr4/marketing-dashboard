@@ -30,8 +30,8 @@ const RULES = [
   ['seo', /\b(seo|search console|rankings?|ranks?|keyword research|keyword map|cannibali[sz]\w*|meta (titles?|descriptions?)|seo titles?)\b/i],
   // #1710: Pinterest Paul.
   ['pinterest-paul', /\b(pinterest|pins?|pinned|paul)\b/i],
-  // #1724: the Email agent drafts nurture emails and the email scorecard.
-  ['email', /\b(nurture|drip|email (series|sequence|campaign|drafts?|scorecard)|email marketing|newsletters?)\b/i],
+  // #1724: the Email agent drafts nurture emails. #2903: the email scorecard moved to the Monthly Report.
+  ['email', /\b(nurture|drip|email (series|sequence|campaign|drafts?)|email marketing|newsletters?)\b/i],
   // #1706: the Copywriter checks text before it goes out.
   ['copywriter', /\b(copywriter|copy ?edit(or|ing)?|proofread|check (this|my|the) (copy|text|email|caption|post)|copy check)\b/i],
   // #1707: conventions coming to Nashville.
@@ -41,7 +41,7 @@ const RULES = [
   ['gbp', /\b(google business|gbp|review repl(y|ies)|google post)\b|\brepl(y|ies)\b[^.]{0,40}\breviews?\b|\brespond\b[^.]{0,40}\breviews?\b/i],
   // #1699: one agent for listings and citations.
   ['citations', /\b(citations?|nap|ai visibility|ai answers?|chatgpt says|consisten(t|cy)|the knot|knot|weddingwire|wedding wire|zola|here comes the guide|directory|listing refresh|listings?)\b/i],
-  ['monthly-report', /\b(monthly report|marketing report|report for (the )?month)\b/i],
+  ['monthly-report', /\b(monthly report|marketing report|report for (the )?month|email scorecard)\b/i],
   ['paid-ads', /\b(ads? audit|google ads|meta ads|facebook ads|ppc|paid ads|ad spend)\b/i],
 ];
 

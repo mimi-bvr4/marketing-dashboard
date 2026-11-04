@@ -39,27 +39,30 @@ test('REPLAY 10.13 to 10.19, drafts decided as they come: the same agents run, s
   const store = createMemoryStore({ lint });
   const ran = [];
   for (const ymd of WEEK) {
-    const rows = await P.runDay({ ymd, store, maxCardsOf, runOne: replayRunner(ymd, ran), draftsWaiting: async () => 0 });
+    // #2903: defOf lets the Producer see Paid Ads is paused (until its export Sheet exists).
+    const rows = await P.runDay({ ymd, store, maxCardsOf, runOne: replayRunner(ymd, ran), draftsWaiting: async () => 0, defOf: loadAgent });
     assert.ok(rows.every((r) => r.decision !== 'held'), `${ymd}: nothing held (${JSON.stringify(rows)})`);
   }
   const old = new Set(WEEK.flatMap((d) => dueAgents(d)));
   const now = new Set(ran.map((r) => r.agent));
   assert.deepStrictEqual([...now].sort(), [...old].sort(), 'the same agents run that week');
-  // Spread: the old Monday carried 5 weekly agents; the Producer's carries 3.
+  // Spread: the old Monday carried 5 weekly agents (4 since #2903 paused Paid Ads); the Producer's carries 3.
   const oldMon = dueAgents('2026-10-19').filter((a) => !['gbp', 'pr-patty'].includes(a));
   const newMon = ran.filter((r) => r.ymd === '2026-10-19' && !['gbp', 'pr-patty'].includes(r.agent)).map((r) => r.agent);
-  assert.strictEqual(oldMon.length, 5);
+  assert.strictEqual(oldMon.length, 4);
   assert.deepStrictEqual(newMon.sort(), ['scout', 'seo', 'site-health']);
   assert.ok(ran.some((r) => r.ymd === '2026-10-13' && r.agent === 'convention-connector'), 'Convention Connector on Tuesday');
-  assert.ok(ran.some((r) => r.ymd === '2026-10-15' && r.agent === 'paid-ads'), 'Paid Ads on Thursday');
+  // #2903: Paid Ads keeps its Thursday slot but is paused: a log row, never a run, never a card.
+  assert.ok(!ran.some((r) => r.agent === 'paid-ads'), 'Paid Ads is not run while paused');
+  assert.ok(store.producerRows.some((r) => r.ymd === '2026-10-15' && r.agent === 'paid-ads' && r.decision === 'paused'), 'Paid Ads paused on Thursday');
   // No cap week over 25 (10.13 to 10.18 fall in the week of 10.12; 10.19 starts the next).
   const a = await store.producerWeekCards('2026-10-12');
   const b = await store.producerWeekCards('2026-10-19');
   assert.ok(a <= P.WEEKLY_CAP && b <= P.WEEKLY_CAP, `weeks: ${a} and ${b}`);
   assert.strictEqual(a, 22); // 15 GBP + 5 Citations + 2 Convention Connector; Paid Ads is a board line now
   assert.strictEqual(b, 6);
-  // The Paid Ads run is recorded as waiting, never as a card.
-  assert.ok(store.producerRows.some((r) => r.agent === 'paid-ads' && r.decision === 'waiting' && /export Sheet/.test(r.why)));
+  // The Paid Ads day is recorded as paused (#2903; it was 'waiting' under #2900), never as a card.
+  assert.ok(store.producerRows.some((r) => r.agent === 'paid-ads' && r.decision === 'paused' && /export Sheet/.test(r.why)));
 });
 
 test('REPLAY 10.13 to 10.19, nothing decided (as it really went): the 15-waiting hold stops Monday 10.19, Patty and Google Business still run', async () => {
@@ -105,7 +108,7 @@ test('the weekly cap: a run that could pass 25 scheduled cards is held; exempt a
   assert.strictEqual(P.decide({ agent: 'gbp', waiting: 90, used: 40, maxCards: 4 }).run, true);
 });
 
-test('the board shows Paid Ads waiting on the ads export Sheet since 10.13', () => {
+test('the board shows Paid Ads paused until the ads export Sheet exists, waiting since 10.13 (#2903; was "waiting on" under #2900)', () => {
   const pa = loadAgent('paid-ads');
   const history = new Map([['paid-ads', [
     { started_at: new Date('2026-11-02T12:05:00Z'), status: 'blocked', cards: 0, unavailable: [{ label: 'Google + Meta ads export Sheet' }] },
@@ -113,8 +116,8 @@ test('the board shows Paid Ads waiting on the ads export Sheet since 10.13', () 
   ]]]);
   const b = P.board({ ymd: '2026-11-03', defs: [pa], history });
   assert.strictEqual(b.length, 1);
-  assert.strictEqual(b[0].state, 'waiting');
-  assert.strictEqual(b[0].line, 'waiting on Google + Meta ads export Sheet since 10.13');
+  assert.strictEqual(b[0].state, 'paused');
+  assert.strictEqual(b[0].line, 'paused until the Google + Meta ads export Sheet exists; waiting since 10.13');
   assert.doesNotMatch(b[0].line, /#\d/, 'no order numbers in what Katherine sees');
 });
 
@@ -166,7 +169,8 @@ test('the calendar: Katherine moves a weekly day (logged); daily and monthly do 
 
 test('the default week: exempt agents first; monthly on the 3rd and the 15th', () => {
   assert.deepStrictEqual(P.dueOn('2026-11-02'), ['pr-patty', 'gbp', 'seo', 'site-health', 'scout']);
-  assert.deepStrictEqual(P.dueOn('2026-11-03'), ['pr-patty', 'gbp', 'convention-connector', 'monthly-report', 'email']);
+  // #2903: the email scorecard is in the Monthly Report, so Email has no run on the 3rd.
+  assert.deepStrictEqual(P.dueOn('2026-11-03'), ['pr-patty', 'gbp', 'convention-connector', 'monthly-report']);
   assert.ok(P.dueOn('2026-11-15').includes('citations'));
   assert.strictEqual(P.weekStart('2026-11-03'), '2026-11-02');
   assert.strictEqual(P.weekStart('2026-11-08'), '2026-11-02');
@@ -178,7 +182,8 @@ test('FEATURE FLAG: PRODUCER_CALENDAR default OFF; dueAgents() is unchanged whil
   assert.strictEqual(P.producerOn({ PRODUCER_CALENDAR: '' }), false);
   assert.strictEqual(P.producerOn({ PRODUCER_CALENDAR: 'off' }), false);
   assert.strictEqual(P.producerOn({ PRODUCER_CALENDAR: 'on' }), true);
-  assert.deepStrictEqual(dueAgents('2026-11-02'), ['gbp', 'pr-patty', 'site-health', 'paid-ads', 'scout', 'seo', 'convention-connector']);
+  // #2903: Paid Ads is paused until its export Sheet exists, under either schedule.
+  assert.deepStrictEqual(dueAgents('2026-11-02'), ['gbp', 'pr-patty', 'site-health', 'scout', 'seo', 'convention-connector']);
 });
 
 const blockedDef = { slug: 'paid-ads', name: 'Paid Ads Auditor', job: 'weekly ads audit', skill: '# x', max_cards: 1,
