@@ -115,8 +115,24 @@
       <p style="margin:.25rem 0"><strong>${esc(p.title)}</strong></p><p style="margin:.25rem 0">${esc(p.description || '')}</p>
       <p class="meta">Links to <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link)}</a></p></div></div>`;
   }
+  // #2940: the email Cameron gets, exactly. Edit on this card changes this email.
+  function salesHtml(c) {
+    const s = c.payload && c.payload.sales; if (!s) return '';
+    return `<div class="sales" style="border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
+      <p class="meta">The email for Sales${c.status === 'draft' ? ' (Approve sends it to Cameron in HubSpot; Edit changes this email)' : ''}. Company: <strong>${esc(s.company)}</strong>${s.website ? ` <a href="${esc(s.website)}" target="_blank" rel="noopener">${esc(s.website)}</a>` : ''}</p>
+      <p style="margin:.25rem 0"><strong>Subject:</strong> ${esc(s.subject || '(none)')}</p>
+      <p style="margin:.25rem 0;white-space:pre-wrap">${esc(s.email)}</p></div>`;
+  }
   function handoffHtml(c) {
     const h = c.handoff; const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
+    const sales = c.payload && c.payload.sales;
+    // #2940: an approved convention email goes to Cameron Creasy as a HubSpot task.
+    if (sales) {
+      if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to send this to Cameron in HubSpot (it checks every 15 minutes).</p>' : '';
+      if (h.pending) return '<p class="meta">Being sent to Cameron in HubSpot now.</p>';
+      if (h.ok) return `<p class="meta"><span class="badge good">Sent to Cameron in HubSpot</span> as a task${h.stand_in ? ` (sandbox: ${esc(h.owner_name)})` : ''}${h.where === 'sandbox' ? ', in the test HubSpot' : ''}. <a href="${esc(h.company_link)}" target="_blank" rel="noopener">Open the company</a>${h.company_created ? ' (added to HubSpot from this card)' : ''}.</p>`;
+      return `<p class="meta"><span class="badge bad">${h.alarm ? 'ALARM' : 'Not sent to Sales'}</span> ${esc(h.why)}</p>`;
+    }
     if (pin) {
       if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to pin this on Pinterest (it checks every 15 minutes).</p>' : '';
       if (h.ok) return `<p class="meta"><span class="badge good">Pinned to ${esc(h.board)}</span> <a href="${esc(h.pin_url)}" target="_blank" rel="noopener">Open the pin</a></p>`;
@@ -140,7 +156,9 @@
     if (c.status !== 'draft') return '';
     const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
     let what;
-    if (pin) what = `pinned live on Pinterest${pin.board ? `, board ${esc(pin.board)}` : ''}.`;
+    const sales = c.payload && c.payload.sales;
+    if (sales) what = `sent to Cameron Creasy (Sales) as a HubSpot task with this email word for word${sales.company ? `, linked to ${esc(sales.company)}` : ''}. Cameron sends it.`;
+    else if (pin) what = `pinned live on Pinterest${pin.board ? `, board ${esc(pin.board)}` : ''}.`;
     else if (post) what = `saved as an unpublished WordPress draft on ${esc(post.site || 'the site')}. Nothing is published.`;
     else what = 'marked ready for you to use. Nothing is posted or sent.';
     return `<p class="meta next">After Approve: ${what}</p>`;
@@ -159,6 +177,7 @@
       <div class="body">${md(c.body)}</div>
       ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}
       ${pinHtml(c)}
+      ${salesHtml(c)}
       ${handoffHtml(c)}
       ${nextHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}

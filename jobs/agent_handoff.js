@@ -12,11 +12,24 @@ const { createPgStore, createMemoryStore, ensureAgentTables } = require('../lib/
 const { createDraft } = require('../lib/wp-draft');
 const { createPin } = require('../lib/pinterest');
 const { lint } = require('../lib/ai-tells');
+const { sendToSales, target: salesTarget } = require('../lib/hubspot-sales-task');
 
-async function handoff({ store, fetchImpl, login, secrets, log = console.log, now = () => new Date() }) {
+async function handoff({ store, fetchImpl, login, secrets, env = process.env, log = console.log, now = () => new Date() }) {
   const cards = await store.readyForHandoff(20);
   let done = 0;
   for (const c of cards) {
+    // #2940: an approved Convention Connector card becomes one HubSpot task for
+    // Cameron Creasy. The card is claimed first, so it can never make two.
+    if (c.payload.sales) {
+      if (!salesTarget(env)) { log(`card ${c.id}: Sales hand-off is off (CONVENTION_TO_HUBSPOT), left as is`); continue; }
+      if (!(await store.claimHandoff(c.id, { at: now().toISOString(), pending: true, to: 'hubspot-sales' }))) { log(`card ${c.id}: already taken`); continue; }
+      const r = await sendToSales({ card: c, env, fetchImpl, now });
+      const at = now().toISOString();
+      if (r.ok) { await store.finishHandoff(c.id, { at, ...r }); log(`card ${c.id}: HubSpot task ${r.task_id} for ${r.owner_name} in ${r.where} ${r.portal}${r.company_created ? `, company ${r.company_id} created` : ''}`); done++; }
+      else if (r.skip || r.alarm) { await store.finishHandoff(c.id, { at, ok: false, alarm: !!r.alarm, why: r.why, to: 'hubspot-sales', company_id: r.company_id || null }); log(`card ${c.id}: ${r.alarm ? 'ALARM ' : 'not sent to Sales: '}${r.why}`); }
+      else { await store.finishHandoff(c.id, null); log(`card ${c.id}: will retry, ${r.why}`); }
+      continue;
+    }
     // #1710: an approved Pinterest Paul card is pinned live (Mimi 10.13.2026, "Post live on approve").
     if (c.payload.pin) {
       const r = await createPin({ pin: c.payload.pin, evidence: c.payload.evidence, fetchImpl, ...(secrets ? { secrets } : {}) });
@@ -40,7 +53,7 @@ async function handoff({ store, fetchImpl, login, secrets, log = console.log, no
       log(`card ${c.id}: will retry, ${r.why}`);
     }
   }
-  log(`handoff: ${cards.length} ready card(s) with a post or pin, ${done} handed off`);
+  log(`handoff: ${cards.length} ready card(s) with a post, pin or Sales email, ${done} handed off`);
   return { seen: cards.length, done };
 }
 
@@ -50,7 +63,7 @@ async function main({ env = process.env, log = console.log } = {}) {
   const pool = new Pool({ connectionString: env.MARKETING_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   try {
     await ensureAgentTables(pool);
-    await handoff({ store: createPgStore(pool, { lint }), fetchImpl: globalThis.fetch, log });
+    await handoff({ store: createPgStore(pool, { lint }), fetchImpl: globalThis.fetch, env, log });
     return 0;
   } finally { await pool.end(); }
 }
