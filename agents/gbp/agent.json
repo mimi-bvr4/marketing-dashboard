@@ -1,7 +1,7 @@
 {
   "name": "Google Business",
   "job": "review replies and profile posts",
-  "cadence": "daily 06:00 CT (hourly once the Business Profile API is approved)",
+  "cadence": "daily 06:00 CT (hourly once Google grants the reviews API)",
   "max_cards": 4,
   "copy_prepass": true,
   "seen_before": {
@@ -34,8 +34,8 @@
     },
     {
       "type": "pending",
-      "label": "Google Business Profile API",
-      "why": "API access requested 10.09.2026 (case 2-2788000041229); re-probe on or after 10.20.2026 (ORDER #1589). Until then replies are drafted from the public reviews in the review pulse."
+      "label": "Google reviews and posts (Google My Business API)",
+      "why": "Re-probed 11.04.2026 13:01 CT (ORDER #2944): the Business Profile API is approved and brain@ sees all 11 profiles, but reviews and posts sit behind the older Google My Business API (mybusiness.googleapis.com), which answers 403 SERVICE_DISABLED. Google has to grant it to project 308053229449; Mimi asked on case 2-2788000041229 (10.20); Google routed it to its API support form (10.23). Until then replies are drafted from the public reviews in the review pulse."
     }
   ],
   "character": {
@@ -51,7 +51,7 @@
       },
       {
         "cant": "Read Google reviews directly yet",
-        "instead": "Works from the monthly review pulse until Google approves API access"
+        "instead": "Works from the monthly review pulse until Google grants the reviews API"
       },
       {
         "cant": "Promise a refund, discount or change",
@@ -59,7 +59,7 @@
       }
     ],
     "needs": [
-      "Google Business Profile API approval (re-check on or after 10.20.2026)"
+      "Google to grant the Google My Business API (reviews and posts) to project 308053229449"
     ]
   }
 }
