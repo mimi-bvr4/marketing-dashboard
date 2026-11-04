@@ -26,9 +26,9 @@
   body { background: var(--cream); }
   .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; }
   .wrap { display: grid; gap: 24px; padding-block: 28px 56px; color: var(--ink); }
-  .intro { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; }
-  .intro h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
-  .intro p { margin: 6px 0 0; max-width: 680px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+  /* #2941 one title: the band is the page title; one short line and the status pills share a row. */
+  .intro { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+  .intro p { margin: 0; max-width: 680px; color: var(--muted); font-size: 15px; line-height: 1.45; flex: 1 1 18rem; min-width: 0; }
   .pills { display: flex; gap: 8px; flex-wrap: wrap; }
   .pill { border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 13px; white-space: nowrap; }
   .s-ok { background: #E3EFE8; color: #1F5A3F; } .s-part { background: #F7EBD3; color: #7A4E0E; } .s-wait { background: #F5E1DE; color: #8A2B22; } .s-off { background: #E7E3DD; color: #4D453D; }
@@ -85,7 +85,13 @@
   table.hist td, table.hist th { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: top; }
   .meta { font-size: 13px; color: var(--muted); }
   /* #2900 the Producer */
-  .producer { background: #fff; border: 2px solid var(--terra); border-radius: 20px; padding: 22px; display: grid; gap: 16px; }
+  .producer { background: #fff; border: 2px solid var(--terra); border-radius: 16px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+  /* #2941 the Producer at normal size: one summary row, the week behind a toggle. */
+  .psum { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+  .psum .who { flex: 1 1 280px; min-width: 0; }
+  .psum .pills { flex: 1 1 320px; }
+  .pweek { display: grid; gap: 16px; min-width: 0; }
+  .pweek[hidden] { display: none; }
   .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
   @media (max-width: 720px) { .week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .day { background: #FBF7F1; border: 1px dashed #E4D8C6; border-radius: 12px; padding: 8px; min-height: 84px; display: flex; flex-direction: column; gap: 6px; }
@@ -106,6 +112,7 @@
   <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap" id="main"><p class="meta">Loading…</p></main>
+<script src="/agents-view.js"></script>
 <script>
 (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -156,13 +163,19 @@
     if (a.sources.some((s) => s.pending) || (a.last_run && (a.last_run.unavailable || []).length)) return { cls: 's-part', label: 'Partly working' };
     return { cls: 's-ok', label: 'Working' };
   }
+  // #2941 the eyebrow rule (public/agents-view.js): the role shows only when the name differs from it.
+  const V = window.AgentsView;
+  const eyebrow = (key, role, name) => `<span class="role" data-role-for="${esc(key)}" data-role="${esc(role)}" ${V.showEyebrow(role, name) ? '' : 'hidden'}>${esc(role)}</span>`;
+  function syncEyebrow(key, name) {
+    const r = main.querySelector(`[data-role-for="${key}"]`); if (r) r.hidden = !V.showEyebrow(r.dataset.role, name);
+  }
   const nameInput = (a, cls) => `<input class="name ${cls || ''}" data-name="${a.slug}" value="${esc(a.name)}" maxlength="40" aria-label="Name for ${esc(a.character.role)}" title="Click to rename">`;
 
   function cardHtml(a) {
     const st = status(a);
     const need = a.character.needs[0];
     return `<article class="card" data-slug="${a.slug}">
-      <div class="who">${face(a, 84)}<div class="txt"><span class="role">${esc(a.character.role)}</span>${nameInput(a)}<span class="job">${esc(a.job)}</span></div></div>
+      <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name)}${nameInput(a)}<span class="job">${esc(a.job)}</span></div></div>
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
@@ -174,6 +187,13 @@
   // #2900 the Producer: the week, the brakes and the board. It never writes,
   // approves or sends anything; moving a day is a schedule change she may make.
   let producer = null;
+  let producerOpen = false; // survives the re-render after a day is moved
+  main.addEventListener('click', (e) => {
+    const t = e.target.closest('button[data-pweek]'); if (!t) return;
+    producerOpen = !producerOpen;
+    const w = main.querySelector('#pweek'); if (w) w.hidden = !producerOpen;
+    t.setAttribute('aria-expanded', String(producerOpen)); t.textContent = producerOpen ? 'Hide the week' : 'Show the week';
+  });
   const WEEK = [['mon', 'Mon'], ['tue', 'Tue'], ['wed', 'Wed'], ['thu', 'Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
   function producerHtml() {
     const p = producer; if (!p) return '';
@@ -182,13 +202,20 @@
     const monthly = p.calendar.filter((e) => e.month_days).map((e) => `${e.name} (the ${e.month_days.join(', ')})`);
     const chip = (e, d) => `<div class="chip" draggable="true" data-move="${e.agent}" data-from="${d}"><strong>${esc(e.name)}</strong>
       <select data-movesel="${e.agent}" data-from="${d}" aria-label="Move ${esc(e.name)} to another day">${WEEK.map(([k, l]) => `<option value="${k}" ${k === d ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
+    const stuck = V.stuckCount(p.board);
+    // #2941: collapsed to one summary row by default; "Show the week" opens the calendar and the stuck list.
     return `<section class="producer" data-slug="producer">
-      <div class="who">${face({ slug: 'producer', name: p.name }, 84)}<div class="txt"><span class="role">The producer</span>
-        <input class="name" data-pname value="${esc(p.name)}" maxlength="40" aria-label="Name for the producer" title="Click to rename">
-        <span class="job">Runs the team's week. It never writes, approves or sends anything.</span></div></div>
-      <div class="pills"><span class="pill ${p.waiting >= p.hold_at ? 's-wait' : 's-ok'}">${p.waiting} drafts waiting (holds at ${p.hold_at})</span>
-        <span class="pill ${p.week_cards >= p.cap ? 's-wait' : 's-ok'}">${p.week_cards} of ${p.cap} cards this week</span>
-        <span class="pill ${p.on ? 's-ok' : 's-off'}">${p.on ? 'Running the week' : 'Not switched on yet'}</span></div>
+      <div class="psum">
+        <div class="who">${face({ slug: 'producer', name: p.name }, 84)}<div class="txt">${eyebrow('producer', 'The producer', p.name)}
+          <input class="name" data-pname value="${esc(p.name)}" maxlength="40" aria-label="Name for the producer" title="Click to rename">
+          <span class="job">Runs the team's week. It never writes, approves or sends anything.</span></div></div>
+        <div class="pills"><span class="pill ${p.waiting >= p.hold_at ? 's-wait' : 's-ok'}">${p.waiting} drafts waiting (holds at ${p.hold_at})</span>
+          <span class="pill ${p.week_cards >= p.cap ? 's-wait' : 's-ok'}">${p.week_cards} of ${p.cap} cards this week</span>
+          <span class="pill ${p.on ? 's-ok' : 's-off'}">${p.on ? 'Running the week' : 'Not switched on yet'}</span>
+          <span class="pill ${stuck ? 's-wait' : 's-ok'}" data-stuck>${stuck ? `${stuck} stuck` : 'No one stuck'}</span></div>
+        <button type="button" class="btn ghost" data-pweek aria-expanded="${producerOpen}" aria-controls="pweek">${producerOpen ? 'Hide the week' : 'Show the week'}</button>
+      </div>
+      <div class="pweek" id="pweek" ${producerOpen ? '' : 'hidden'}>
       ${p.on ? '' : '<p class="note">Not switched on yet: the old schedule still runs. The week below is the proposed one, and your moves are kept for the day it starts.</p>'}
       <div><p class="meta" style="margin:0 0 6px">Every day: ${esc(daily.join(', '))}. Monthly: ${esc(monthly.join(', '))}. Drag a name to another day, or pick the day under it.</p>
         <div class="week">${WEEK.map(([k, l]) => `<div class="day" data-day="${k}"><h3>${l}</h3>${weekly.filter((e) => e.days.includes(k)).map((e) => chip(e, k)).join('')}</div>`).join('')}</div></div>
@@ -198,6 +225,7 @@
         <p class="meta" style="margin:0 0 6px">${esc(p.health.line)}</p>
         ${p.health.alerts.length ? `<ul class="boardl">${p.health.alerts.map((a) => `<li class="b-held">${esc(a.line)}</li>`).join('')}</ul>` : ''}</div>` : ''}
       <p class="note">${esc(p.exempt.length ? 'Never held by the brakes: the press requests and the review replies.' : '')} When ${p.hold_at} or more drafts wait, the other scheduled runs wait too, and the board says so.</p>
+      </div>
       <p class="msg" hidden></p>
     </section>`;
   }
@@ -218,13 +246,13 @@
   function rosterHtml() {
     const c = { ok: 0, part: 0, wait: 0 };
     agents.forEach((a) => { const s = status(a).cls; if (s === 's-ok') c.ok++; else if (s === 's-part') c.part++; else c.wait++; });
-    return `<div class="intro"><div><h1 class="serif">Katherine's marketing team</h1>
-        <p>Katherine's ${agents.length} AI employees, each with one job. They work for her: every piece of work lands in Review as a draft for her to approve, and they never publish, post, send or spend on their own. Click a name to rename someone; open a profile to change what they do.</p></div>
+    // #2941: the band above is the page title; no second heading here.
+    return `<div class="intro"><p>${agents.length} AI team members. Every piece of work lands in <a href="/review">Review</a> as a draft; nothing goes out on its own.</p>
       <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
       ${questionHtml()}
       ${producerHtml()}
       <div class="grid">${agents.map(cardHtml).join('')}</div>
-      <p class="note">A name or portrait shows everywhere that team member appears (Review cards, the Monday digest) and saves at once. It changes nothing about what they are allowed to do.</p>`;
+      <p class="note">Click a name to rename someone; open a profile to change what they do. A name or portrait shows everywhere that team member appears (Review cards, the Monday digest) and saves at once. It changes nothing about what they are allowed to do.</p>`;
   }
 
   // #2915: ask a question about the team's own cards and runs. Read only; the
@@ -283,7 +311,7 @@
         ${a.portrait ? '<button class="btn ghost" data-a="noportrait" style="min-height:36px;font-size:13px">Use the drawn portrait</button>' : ''}
         <span class="meta" style="text-align:center">PNG, JPG or WebP. Square works best; it is resized here before saving.</span></div>
       <div class="info">
-        <span class="role">${esc(c.role)} · ${esc(a.job)}</span>
+        <span class="role">${V.showEyebrow(c.role, a.name) ? `${esc(c.role)} · ` : ''}${esc(a.job)}</span>
         ${nameInput(a)}
         <span class="meta">${a.named_by ? `Named by ${esc(a.named_by)}. ` : ''}Rename any time; it saves at once. Clear the box to go back to "${esc(a.default_name)}".</span>
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
@@ -359,7 +387,7 @@
     const pn = e.target.closest('input[data-pname]');
     if (pn) {
       try { const r = await api('/api/producer/name', { method: 'POST', body: JSON.stringify({ name: pn.value }) });
-        producer.name = r.name; pn.value = r.name; say(pn, `Saved. Now "${r.name}".`, true); }
+        producer.name = r.name; pn.value = r.name; syncEyebrow('producer', r.name); say(pn, `Saved. Now "${r.name}".`, true); }
       catch (x) { pn.value = producer.name; say(pn, x.message); }
       return;
     }
@@ -367,7 +395,7 @@
     if (i) {
       const a = agents.find((x) => x.slug === i.dataset.name);
       try { const r = await api(`/api/agents/${a.slug}/name`, { method: 'POST', body: JSON.stringify({ name: i.value }) });
-        a.name = r.name; a.named_by = r.profile && r.profile.display_name ? r.profile.updated_by : null; i.value = r.name; say(i, `Saved. Now "${r.name}" everywhere.`, true); }
+        a.name = r.name; a.named_by = r.profile && r.profile.display_name ? r.profile.updated_by : null; i.value = r.name; syncEyebrow(a.slug, r.name); say(i, `Saved. Now "${r.name}" everywhere.`, true); }
       catch (x) { i.value = a.name; say(i, x.message); }
       return;
     }
