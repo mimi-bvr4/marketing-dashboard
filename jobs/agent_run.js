@@ -139,6 +139,15 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
       await require('../lib/team-health').dailyStep({ ymd, store, defs, due: slugs, log, env,
         inbox: root ? require('path').join(root, '05_AI_and_Brain', 'BRAIN_INBOX') : null });
     } catch (e) { log(`team health: not checked: ${e.message}`); }
+    // #2920: the Producer's board lines into the tree, so the Box can read why
+    // an agent is stuck (the page needs a sign-in; agent_runs stays fenced).
+    try {
+      const { displayName } = require('../lib/agent-profile');
+      const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
+      const defs = listAgents().map((s) => { const d = loadAgent(s); return { ...d, slug: d.slug || s, name: displayName(d, profiles.get(s)) }; });
+      const B = require('../lib/board-file');
+      await B.writeBoardFile({ ymd, store, defs, root: require('../lib/agent-sources').treeRoot(env), stamp: B.chicagoStamp(), log });
+    } catch (e) { log(`board file: not written: ${String(e.message).slice(0, 200)}`); }
   }
   if (weekly) {
     if (competitorsOnly) await runAgent({ slug: 'scout', store, llm: model, env, fetchImpl: fetchImpl || globalThis.fetch, log, scheduled: true });
