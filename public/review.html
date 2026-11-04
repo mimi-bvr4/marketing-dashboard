@@ -51,6 +51,7 @@
     <button data-s="draft" aria-pressed="true">Drafts</button>
     <button data-s="ready" aria-pressed="false">Ready</button>
     <button data-s="rejected" aria-pressed="false">Rejected</button>
+    <button data-s="archived" aria-pressed="false">Archived</button>
   </div>
   <details class="check"><summary>Check text for AI tells</summary>
     <p class="empty">Paste anything (an email, a caption, a page). Nothing is saved.</p>
@@ -137,10 +138,12 @@
       ${handoffHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
+      ${c.status === 'archived' ? `<p class="meta">Archived ${fmt(c.decided_at)} without a decision. Nothing was approved, rejected or deleted. Restore puts it back on Drafts.</p>` : ''}
       <div class="actions">
         <button data-a="copy">Copy text</button>
         ${c.status === 'draft' ? `<button data-a="approve">Approve</button><button data-a="edit">Edit</button>
         <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>` : ''}
+        ${c.status === 'archived' ? '<button data-a="restore">Restore to Drafts</button>' : ''}
       </div>
       <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}${c.payload && c.payload.pin ? '<p class="meta">You are editing the pin description (what goes on Pinterest, up to 500 characters).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : (c.payload && c.payload.pin ? (c.payload.pin.description || '') : c.body))}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
       <p class="err" hidden></p>
@@ -168,6 +171,7 @@
     const act = async (body) => { try { await api('/api/review/cards/' + id, { method: 'POST', body: JSON.stringify(body) }); await load(); await loadRuns(); } catch (x) { err.textContent = x.message; err.hidden = false; } };
     if (b.dataset.a === 'copy') { await navigator.clipboard.writeText(c.payload && c.payload.post ? c.payload.post.content_md : c.body); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy text'), 1500); }
     if (b.dataset.a === 'approve') act({ action: 'approve' });
+    if (b.dataset.a === 'restore') act({ action: 'restore' });
     if (b.dataset.a === 'reject') act({ action: 'reject', reason: el.querySelector('[data-f=reason]').value });
     if (b.dataset.a === 'edit') el.querySelector('.edit').hidden = false;
     if (b.dataset.a === 'cancel') el.querySelector('.edit').hidden = true;
