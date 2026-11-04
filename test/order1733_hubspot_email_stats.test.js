@@ -119,18 +119,20 @@ function fakeModel(answers) {
   return { calls, model: 'test', complete: async (a) => { calls.push(a); return answers[Math.min(calls.length - 1, answers.length - 1)]; } };
 }
 
+// #2903: the scorecard is now a section of the Monthly Report, so this runs the Monthly Report.
 test('the 3rd with the read working: the scorecard gets measured counts, and the numbers on the card are the measured ones', async () => {
   const store = createMemoryStore({ lint });
-  const llm = fakeModel(['{"cards":[{"title":"Email scorecard, October 2026","body":"Three next moves."}]}']);
+  const llm = fakeModel(['{"cards":[{"title":"Marketing report, October 2026 (draft)","body":"Three next moves."}]}']);
   const seen = [];
   const fetchImpl = async (url, opts) => {
     seen.push([url, opts.headers.Authorization]);
+    if (!/email-stats/.test(url)) return { status: 200, json: async () => ({ sessions: 5 }) };
     return { status: 200, json: async () => ({ ok: true, range: RANGE, counts: { sent: 1000, delivered: 980, opens: 410 }, fetched_at: '2026-11-03T11:00:00.000Z' }) };
   };
-  const r = await runAgent({ slug: 'email', store, llm, env: { IHG_TREE: os.tmpdir(), MARKETING_FLEET_KEY: 'mkt_test', MARKETING_BASE_URL: 'https://example.test' },
+  const r = await runAgent({ slug: 'monthly-report', store, llm, env: { IHG_TREE: os.tmpdir(), MARKETING_FLEET_KEY: 'mkt_test', MARKETING_BASE_URL: 'https://example.test' },
     fetchImpl, log: () => {}, scheduled: true });
   assert.ok(r.ok, r.error);
-  assert.deepStrictEqual(seen, [['https://example.test/api/funnel/email-stats', 'Bearer mkt_test']]);
+  assert.deepStrictEqual(seen.filter(([u]) => /email-stats/.test(u)), [['https://example.test/api/funnel/email-stats', 'Bearer mkt_test']]);
   assert.strictEqual(llm.calls.length, 1);
   assert.match(llm.calls[0].user, /=== HubSpot marketing email analytics \(last month\) ===/);
   assert.match(r.cards[0].body, /### Measured: HubSpot marketing email analytics \(last month\)/);
