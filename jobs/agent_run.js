@@ -128,6 +128,18 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     try { await P.dailyRoutes({ store, fetchImpl: fetchImpl || globalThis.fetch, env, log }); }
     catch (e) { log(`new posts: chain did not run: ${e.message}`); }
   }
+  // #2918: after the day's runs, the team health check's one line (read only);
+  // on Sunday, with MARKETING_WEEKLY_LIST on, the week's list for Mimi.
+  if (args.due && !args.dry) {
+    try {
+      const { displayName } = require('../lib/agent-profile');
+      const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
+      const defs = listAgents().map((s) => { const d = loadAgent(s); return { ...d, name: displayName(d, profiles.get(s)) }; });
+      const root = require('../lib/agent-sources').treeRoot(env);
+      await require('../lib/team-health').dailyStep({ ymd, store, defs, due: slugs, log, env,
+        inbox: root ? require('path').join(root, '05_AI_and_Brain', 'BRAIN_INBOX') : null });
+    } catch (e) { log(`team health: not checked: ${e.message}`); }
+  }
   if (weekly) {
     if (competitorsOnly) await runAgent({ slug: 'scout', store, llm: model, env, fetchImpl: fetchImpl || globalThis.fetch, log, scheduled: true });
     const w = await C.writeProfiles({ store, llm: model, log, fetchImpl: fetchImpl || globalThis.fetch });

@@ -20,6 +20,7 @@
 //   POST /api/agents/:slug/watch        { site, label }  add one (15 max)
 //   DELETE /api/agents/:slug/watch/:id  remove one (and what was seen on it)
 //   GET  /api/producer                  #2900 the Producer's card: the week, the brakes, the board
+//                                       (#2918 .health: this morning's team health check)
 //   POST /api/producer/calendar/:slug   { days: ['tue'] }  move a weekly team member (logged)
 //   POST /api/producer/name             { name }  Katherine names the Producer ('' = default)
 //   POST /api/team/question             { question }  #2915 a plain answer from her team's own
@@ -221,7 +222,8 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   // day move (a schedule change Katherine may make herself, ruling 2) and its name.
   r.get('/api/producer', need, async (req, res) => {
     const P = require('../lib/producer');
-    const ymd = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    const now = clock();
+    const ymd = now.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     const cal = P.calendar(store.calendarRows ? await store.calendarRows() : []);
     const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
     const defs = listAgents().map((slug) => { const d = loadAgent(slug); return { ...d, name: displayName(d, profiles.get(slug)) }; });
@@ -230,7 +232,13 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     for (const h of (store.runHistory ? await store.runHistory(20) : [])) { const a = history.get(h.agent) || []; a.push(h); history.set(h.agent, a); }
     const today = store.producerDay ? await store.producerDay(ymd) : [];
     const me = profiles.get('producer');
+    // #2918: this morning's team health check (read only; agent, status and time columns only).
+    let health = null;
+    if (store.draftAges && store.listAsks && store.runHistory) {
+      try { health = await require('../lib/team-health').teamHealth({ ymd, store, defs, now }); } catch (e) { health = null; }
+    }
     res.json({
+      health,
       on: P.producerOn(), name: me && me.display_name ? me.display_name : 'The Producer', named_by: me && me.display_name ? me.updated_by : null,
       waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.WAITING_HOLD,
       week_cards: store.producerWeekCards ? await store.producerWeekCards(P.weekStart(ymd)) : 0, cap: P.WEEKLY_CAP,
