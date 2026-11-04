@@ -18,29 +18,22 @@
 const express = require('express');
 const path = require('path');
 const { personOf } = require('./review');
-const { checkPhrase, changeLogPlaces } = require('../lib/cadet-search');
+const { checkPhrase, changeLogDraft } = require('../lib/cadet-search');
+const producer = require('../lib/producer');
 
 const PAGE = path.join(__dirname, '..', 'public', 'cadet.html');
-const BUCKETS = ['marketing', 'menus'];
-const MAX_PLACES = 40;
 
 // Dispatch's Change Log form, filled from one search. The draft rides in the
 // URL fragment, so it never reaches a server log; Dispatch's page reads it.
-function changeLogUrl(result, { bucket = 'marketing', base = process.env.DISPATCH_BRIDGE_URL || 'https://dispatch.infinityhospitalitygroup.com' } = {}) {
-  const found = (result.materials || []).filter((m) => m.status === 'FOUND');
-  const sitePlaces = changeLogPlaces({ sites: result.sites });
-  const draft = {
-    from: 'cadet',
-    bucket: BUCKETS.includes(bucket) ? bucket : 'marketing',
-    title: `Change "${result.phrase}"`.slice(0, 160),
-    before: result.phrase,
-    collateral: found.map((m) => ({ company: m.company, title: m.title })),
-    places: sitePlaces.slice(0, MAX_PLACES),
-  };
+// #2902: `after` (a marked change) names the new wording in the title.
+function changeLogUrl(result, { bucket = 'marketing', after = null, base = process.env.DISPATCH_BRIDGE_URL || 'https://dispatch.infinityhospitalitygroup.com' } = {}) {
+  const draft = changeLogDraft(result, { bucket, after });
   return `${String(base).replace(/\/$/, '')}/changes#submit?cadet=${encodeURIComponent(JSON.stringify(draft))}`;
 }
 
-function createCadetRouter({ store }) {
+// agentStore (#2902) is where the fact-change re-checks queue; without it, or
+// with PRODUCER_FACT_CHANGE off, the "changed" route answers 404 as before.
+function createCadetRouter({ store, agentStore = null, env = process.env }) {
   const r = express.Router();
   const who = (req, res) => { const p = personOf(req); if (!p) res.status(403).json({ error: 'Signed-in leadership only.' }); return p; };
 
@@ -49,7 +42,8 @@ function createCadetRouter({ store }) {
   r.get('/api/cadet', async (req, res) => {
     if (!who(req, res)) return;
     const m = await store.map();
-    res.json({ map: m ? { read_at: m.read_at, summary: m.summary } : null, asks: await store.asks(30) });
+    res.json({ map: m ? { read_at: m.read_at, summary: m.summary } : null, asks: await store.asks(30),
+      fact_change: !!agentStore && producer.factChangeOn(env) });
   });
 
   r.get('/api/cadet/asks/:id', async (req, res) => {
@@ -59,7 +53,24 @@ function createCadetRouter({ store }) {
     const a = await store.ask(id);
     if (!a) return res.status(404).json({ error: 'no such search' });
     const out = { id: a.id, phrase: a.phrase, asked_by: a.asked_by, status: a.status, created_at: a.created_at, finished_at: a.finished_at, error: a.error, result: a.result || null };
-    if (a.result) out.change_log = { marketing: changeLogUrl(a.result, { bucket: 'marketing' }), menus: changeLogUrl(a.result, { bucket: 'menus' }) };
+    const after = a.changed_to || null;
+    if (a.result) out.change_log = { marketing: changeLogUrl(a.result, { bucket: 'marketing', after }), menus: changeLogUrl(a.result, { bucket: 'menus', after }) };
+    if (after) out.changed = { to: after, by: a.changed_by, at: a.changed_at };
+    out.fact_change = !!agentStore && producer.factChangeOn(env);
+    res.json(out);
+  });
+
+  // #2902: "This changed" { to }. Queues the re-checks (drafts only) and
+  // returns the pre-filled Change Log links. Off: 404, as if it were not here.
+  r.post('/api/cadet/asks/:id/changed', async (req, res) => {
+    if (!agentStore || !producer.factChangeOn(env)) return res.status(404).json({ error: 'not found' });
+    const p = who(req, res); if (!p) return;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'bad id' });
+    const out = await producer.cadetChanged({ id, to: (req.body || {}).to, who: p, cadetStore: store, agentStore, env });
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    const a = await store.ask(id);
+    out.change_log = { marketing: changeLogUrl(a.result, { bucket: 'marketing', after: out.after }), menus: changeLogUrl(a.result, { bucket: 'menus', after: out.after }) };
     res.json(out);
   });
 
