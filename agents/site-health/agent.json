@@ -9,6 +9,7 @@
       "required": true,
       "label": "crawl of our 12 sites",
       "pages_per_site": 15,
+      "same_titles_to_seo_when": "PRODUCER_QUEUE",
       "sites": [
         "infinityhospitalitygroup.com",
         "dreameventsandcatering.com",

@@ -12,8 +12,11 @@ const path = require('path');
 const { treeRoot } = require('../lib/agent-sources');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
 
-async function takeAndRun({ store, runOne, log = console.log }) {
-  const reqs = await store.takeRunRequests(5);
+// #2901: with PRODUCER_QUEUE on, the one queue is taken in the Producer's
+// priority order (deadline, then a person's ask, then a chain).
+async function takeAndRun({ store, runOne, log = console.log, env = process.env }) {
+  const byPriority = require('../lib/producer').queueOn(env);
+  const reqs = await store.takeRunRequests(5, { byPriority });
   for (const q of reqs) {
     let r;
     try { r = await runOne(q.agent, q.ask); } catch (e) { r = { ok: false, error: e.message, cards: [] }; }
@@ -59,7 +62,7 @@ async function main({ env = process.env, log = console.log } = {}) {
     await ensureAgentTables(pool);
     const store = createPgStore(pool, { lint });
     const llm = textClientFromEnv().client;
-    await takeAndRun({ store, log, runOne: (slug, ask) => runAgent({ slug, store, llm, ask, env, log }) });
+    await takeAndRun({ store, log, env, runOne:(slug, ask) => runAgent({ slug, store, llm, ask, env, log }) });
     const root = treeRoot(env);
     if (root) await mirror({ store, root, log }); else log('mirror skipped: project tree not found');
     return 0;
