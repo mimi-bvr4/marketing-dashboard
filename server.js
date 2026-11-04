@@ -106,7 +106,7 @@ app.use(pageGate);
     // ORDER #1688: the Collateral Cadet (searches queued here, run on the Box; same gate).
     const cadet = require('./lib/cadet-store');
     cadet.ensureCadetTables(reviewPool).catch(e => console.error('[cadet] ensureCadetTables:', e.message));
-    app.use(require('./routes/cadet').createCadetRouter({ store: cadet.createPgStore(reviewPool) }));
+    app.use(require('./routes/cadet').createCadetRouter({ store: cadet.createPgStore(reviewPool), agentStore }));
     // ORDER #1717: Katherine's own dashboards (her files, read nightly on the Box; same gate).
     const her = require('./lib/katherine-store');
     her.ensureKatherineTables(reviewPool).catch(e => console.error('[her-numbers] ensureKatherineTables:', e.message));

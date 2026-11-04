@@ -118,12 +118,32 @@
       <div class="bar"><a class="btn primary" href="${esc(a.change_log.marketing)}" target="_blank" rel="noopener">Post to the Change Log (Marketing)</a>
         <a class="btn" href="${esc(a.change_log.menus)}" target="_blank" rel="noopener">Post to the Change Log (Menus)</a>
         <span class="meta">Opens Dispatch's Change Log with these places filled in. You check it and post it; nothing is posted for you.</span></div>
+      ${changedBlock(a)}
       <h3>Materials, found (${found.length})</h3>${found.length ? `<ul class="plain">${found.map(material).join('')}</ul>` : '<p class="empty">None of the materials the Cadet could read has it.</p>'}
       <h3>Websites</h3><ul class="plain">${res.sites.map(site).join('')}</ul>
       <details ${found.length ? '' : 'open'}><summary><strong>Materials not checked (${unchecked.length})</strong>: the Cadet could not read these, so they may still have it</summary><ul class="plain">${unchecked.map(material).join('')}</ul></details>
       ${clean.length ? `<details><summary>Materials read and not found (${clean.length})</summary><ul class="plain">${clean.map(material).join('')}</ul></details>` : ''}`;
     $('#close').onclick = () => { box.hidden = true; };
+    const mark = $('#mark-changed');
+    if (mark) mark.onclick = async () => {
+      mark.disabled = true;
+      const p = await fetch('/api/cadet/asks/' + a.id + '/changed', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: $('#changed-to').value }) });
+      const j = await p.json().catch(() => ({}));
+      if (!p.ok) { mark.disabled = false; $('#changed-said').className = 'err'; $('#changed-said').textContent = j.error || 'Not marked. Please try again.'; return; }
+      open(a.id);
+    };
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // "This changed" (the fact-change fan-out). Shown only when it is turned on.
+  function changedBlock(a) {
+    if (a.changed) return `<div class="bar"><span class="ok">Marked changed to "${esc(a.changed.to)}" by ${esc(a.changed.by)}${a.changed.at ? ' ' + esc(when(a.changed.at)) : ''}.</span>
+      <span class="meta">Email, Listings + Citations and Google Business were each asked to re-check and draft fixes; their drafts arrive on the Review tab. The Change Log buttons above now carry the new wording.</span></div>`;
+    if (!a.fact_change) return '';
+    return `<div class="bar"><label for="changed-to"><strong>This changed to</strong></label>
+      <input id="changed-to" maxlength="120" placeholder="the new wording">
+      <button class="btn" id="mark-changed">This changed</button>
+      <span id="changed-said" class="meta">Asks Email, Listings + Citations and Google Business to re-check and draft fixes, and fills the Change Log entry. Drafts only; nothing is published or sent.</span></div>`;
   }
 
   $('#ask').addEventListener('submit', async (e) => {
