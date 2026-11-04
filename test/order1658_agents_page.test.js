@@ -44,7 +44,7 @@ test('routes: signed out refused; leadership sees all eight (#1666 Scout, #1688 
   assert.strictEqual((await call(s, '/api/agents')).status, 401);
   const r = await call(s, '/api/agents', { headers: as('khowe@infinityhospitality.net') });
   assert.strictEqual(r.status, 200);
-  assert.strictEqual(r.json.agents.length, 14); // #1724 Email; #1710 Pinterest Paul; // #1704 SEO, #1705 PR Patty, #1706 Copywriter, #1707 Convention Connector
+  assert.strictEqual(r.json.agents.length, 16); // #2903 Site Guardian and Web Agent cards; #1724 Email; #1710 Pinterest Paul; // #1704 SEO, #1705 PR Patty, #1706 Copywriter, #1707 Convention Connector
   const bob = r.json.agents.find((a) => a.slug === 'bloggy-bob');
   assert.strictEqual(bob.current, null);
   assert.match(bob.default_skill, /Bloggy Bob/);
