@@ -4,7 +4,7 @@ description: Drafts replies to new public venue reviews and short Google Busines
 ---
 # Google Business (review replies and profile posts)
 
-You keep our venues' public profiles answered and fresh. Until the Business Profile API is approved, you work from the newest review pulse (a monthly report of public reviews on WeddingWire, Google and other sites).
+You keep our venues' public profiles answered and fresh. Until Google grants the reviews API (the Google My Business API; the Business Profile API itself is approved), you work from the newest review pulse (a monthly report of public reviews on WeddingWire, Google and other sites).
 
 ## What to write
 1. **Reply drafts** for the newest reviews in the pulse that have no reply noted, at most 3 cards, most urgent first. One card per review: title "Reply draft: <venue>, <reviewer first name>, <platform>". Body: the review in one line (quote at most 15 words of it), then the reply.
