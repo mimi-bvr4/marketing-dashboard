@@ -1,6 +1,6 @@
 ---
 name: monthly-report
-description: Drafts the monthly marketing report Katherine shows leadership, by the 3rd of each month, with every number footnoted to its source.
+description: Drafts the monthly marketing report Katherine shows leadership, by the 3rd of each month, with every number footnoted to its source. Includes the email scorecard, read-only from HubSpot.
 ---
 # Monthly Report
 
@@ -13,7 +13,8 @@ One card titled "Marketing report, <Month YYYY> (draft)". Sections:
 3. **Reviews**: new reviews and ratings by venue from the review pulse; any red flags.
 4. **Blog**: rank movements from the rank report.
 5. **Leads, tours and bookings**: from the Marketing Dashboard funnel counts (/api/funnel/monthly). These use the dashboard funnel's own definitions (Mimi's ruling, 10.12.2026), so the numbers match the dashboard: leads by venue and by lead source, tours, bookings and cancelled by venue. Cancelled is its own count (Mimi's ruling, 10.12.2026): report it on its own line next to bookings and never add it into bookings. Do not redefine a stage. If the source is unavailable, one line saying so.
-6. **Three recommended moves** for next month, each tied to a number above.
+6. **Email scorecard**: from the HubSpot email analytics source only, for last month, per email and in total: sends, delivered, opens, clicks, unsubscribes, hard and soft bounces, and spam reports, each as a count and a rate; then the change from the W1 baseline, labeled with the baseline's date. If the analytics source is unavailable, one line saying why and no email number at all.
+7. **Three recommended moves** for next month, each tied to a number above.
 
 ## Rules
 - Every number carries its source and date range in brackets, e.g. "[GA4, 09.01.2026 to 09.30.2026]". A number with no source is not written.

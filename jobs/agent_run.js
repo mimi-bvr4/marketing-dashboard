@@ -22,10 +22,15 @@ function dueAgents(ymd) {
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 Sunday
   const due = ['gbp', 'pr-patty']; // #1705: Patty reads the press requests every morning
   if (dow === 1) due.push('site-health', 'paid-ads', 'scout', 'seo', 'convention-connector'); // #1704, #1707
-  if (d === 3) due.push('monthly-report', 'email'); // #1724: the email scorecard
+  // #2903: the email scorecard (#1724) is now a section of the Monthly Report,
+  // so the Email agent no longer runs on the 3rd.
+  if (d === 3) due.push('monthly-report');
   // #1699: Listings folded into Citations; its 15th run in Jan/Apr/Jul/Oct also writes the refresh packs.
   if (d === 15) due.push('citations');
-  return due;
+  // #2903: a paused agent (Paid Ads, until its export Sheet exists) is not
+  // scheduled; it is one line on the Producer's board instead of a weekly card.
+  const { pausedFor, cardOnly } = require('../lib/producer');
+  return due.filter((s) => { const def = loadAgent(s); return !pausedFor(def) && !cardOnly(def); });
 }
 
 function nashvilleYmd(now = new Date()) {
@@ -109,7 +114,7 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   if (producer) {
     const maxCardsOf = (slug) => { try { return loadAgent(slug).max_cards || 3; } catch (e) { return 3; } };
     const settings = new Map(((store.allCurrentSettings ? await store.allCurrentSettings() : []) || []).map((s) => [s.agent, s]));
-    await P.runDay({ ymd, store, log, runOne,
+    await P.runDay({ ymd, store, log, runOne, defOf: loadAgent,
       maxCardsOf: (slug) => (settings.get(slug) ? settings.get(slug).max_cards : maxCardsOf(slug)) });
   } else {
     for (const slug of slugs) await runOne(slug);

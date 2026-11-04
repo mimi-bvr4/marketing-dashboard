@@ -1,7 +1,8 @@
 {
   "name": "Paid Ads Auditor",
   "job": "weekly ads audit",
-  "cadence": "Mondays 06:00 CT",
+  "cadence": "Weekly, once the ads export Sheet exists (paused until then)",
+  "paused_until": "Google + Meta ads export Sheet",
   "max_cards": 1,
   "sources": [
     {

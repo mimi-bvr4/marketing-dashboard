@@ -120,7 +120,7 @@ test('requests job: runs each queued request once and marks it; mirror writes th
   assert.strictEqual(store.requests[0].note, 'card(s) #7');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tree-'));
   await store.saveSettings('gbp', { skill_md: '# GBP v1 words', max_cards: 2, who: 'khowe@x', note: 'warmer' });
-  assert.strictEqual(await mirror({ store, root, log: () => {} }), 14); // #1704 to #1707 add four, #1710 one more, #1724 one more // #1688 the Cadet made nine; #1699 folds Listings into Citations
+  assert.strictEqual(await mirror({ store, root, log: () => {} }), 16); // #2903 adds the Site Guardian and Web Agent cards // #1704 to #1707 add four, #1710 one more, #1724 one more // #1688 the Cadet made nine; #1699 folds Listings into Citations
   const f = fs.readFileSync(path.join(root, '07_Marketing_and_Brand', 'Agents', 'gbp.SKILL.md'), 'utf8');
   assert.match(f, /Version 1, saved by khowe@x \(warmer\)\. ON, 2 draft/);
   assert.match(f, /# GBP v1 words$/);
