@@ -194,6 +194,9 @@
         <div class="week">${WEEK.map(([k, l]) => `<div class="day" data-day="${k}"><h3>${l}</h3>${weekly.filter((e) => e.days.includes(k)).map((e) => chip(e, k)).join('')}</div>`).join('')}</div></div>
       <div><h2 class="serif" style="margin:0 0 6px;font-size:21px">Who is stuck</h2>
         <ul class="boardl">${p.board.map((b) => `<li class="b-${b.state}"><strong>${esc(b.name)}</strong>: ${esc(b.line)}</li>`).join('')}</ul></div>
+      ${p.health ? `<div><h2 class="serif" style="margin:0 0 6px;font-size:21px">This morning's check</h2>
+        <p class="meta" style="margin:0 0 6px">${esc(p.health.line)}</p>
+        ${p.health.alerts.length ? `<ul class="boardl">${p.health.alerts.map((a) => `<li class="b-held">${esc(a.line)}</li>`).join('')}</ul>` : ''}</div>` : ''}
       <p class="note">${esc(p.exempt.length ? 'Never held by the brakes: the press requests and the review replies.' : '')} When ${p.hold_at} or more drafts wait, the other scheduled runs wait too, and the board says so.</p>
       <p class="msg" hidden></p>
     </section>`;
