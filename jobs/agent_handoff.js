@@ -21,9 +21,9 @@ async function handoff({ store, fetchImpl, login, secrets, env = process.env, lo
     // #2940: an approved Convention Connector card becomes one HubSpot task for
     // Cameron Creasy. The card is claimed first, so it can never make two.
     if (c.payload.sales) {
-      if (!salesTarget(env)) { log(`card ${c.id}: Sales hand-off is off (CONVENTION_TO_HUBSPOT), left as is`); continue; }
+      if (!salesTarget(env, null)) { log(`card ${c.id}: Sales hand-off is off (CONVENTION_TO_HUBSPOT), left as is`); continue; }
       if (!(await store.claimHandoff(c.id, { at: now().toISOString(), pending: true, to: 'hubspot-sales' }))) { log(`card ${c.id}: already taken`); continue; }
-      const r = await sendToSales({ card: c, env, fetchImpl, now });
+      const r = await sendToSales({ card: c, env, fetchImpl, now, ...(secrets ? { secrets } : {}) });
       const at = now().toISOString();
       if (r.ok) { await store.finishHandoff(c.id, { at, ...r }); log(`card ${c.id}: HubSpot task ${r.task_id} for ${r.owner_name} in ${r.where} ${r.portal}${r.company_created ? `, company ${r.company_id} created` : ''}`); done++; }
       else if (r.skip || r.alarm) { await store.finishHandoff(c.id, { at, ok: false, alarm: !!r.alarm, why: r.why, to: 'hubspot-sales', company_id: r.company_id || null }); log(`card ${c.id}: ${r.alarm ? 'ALARM ' : 'not sent to Sales: '}${r.why}`); }
