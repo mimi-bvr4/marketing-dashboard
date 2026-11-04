@@ -96,9 +96,11 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     try { drive = require('../lib/drive-client').createDriveClient(); } catch (e) { log(`competitors: no service account key (${e.message.slice(0, 80)})`); }
     await C.syncFromSheet({ store, drive, log });
   }
-  const runOne = async (slug) => {
+  // #2909: opts.only comes from the Producer while its hold is on (Google Business: RED replies only).
+  const runOne = async (slug, opts = {}) => {
+    const split = opts.only ? P.holdSplit(slug, opts.only) : null;
     const r = await runAgent({ slug, store, llm: model, ask: args.ask, env, fetchImpl: fetchImpl || globalThis.fetch, log, dryRun: args.dry,
-      scheduled: args.due, blockedToBoard: producer });
+      scheduled: args.due, blockedToBoard: producer, ...(split ? { split } : {}) });
     if (r.skipped) { log(`${slug}: skipped (${r.skipped})`); return r; }
     if (r.blocked) { log(`${slug}: waiting on ${r.blocked.join('; ')} (on the board)`); return r; }
     log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.seen_skipped ? `, ${r.seen_skipped} skipped as already seen` : ''}${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
