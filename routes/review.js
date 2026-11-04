@@ -1,9 +1,9 @@
 // ORDER #1015 Part 2: the Review tab.
 //
 //   GET  /review                    the page
-//   GET  /api/review/cards?status=  draft (default) | ready | rejected; &agent=
+//   GET  /api/review/cards?status=  draft (default) | ready | rejected | archived; &agent=
 //   GET  /api/review/runs           each agent's last run (done / failed / missing sources)
-//   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit', reason?, body? }
+//   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit' | 'restore', reason?, body? }
 //   POST /api/review/lint           { text } -> the AI-tells lint ("Check text")
 //
 // ACCESS: mounted below the #654/#1370 page gate, so only an exec or Katherine
@@ -21,7 +21,8 @@ const path = require('path');
 const { lint } = require('../lib/ai-tells');
 
 const PAGE = path.join(__dirname, '..', 'public', 'review.html');
-const STATUSES = new Set(['draft', 'ready', 'rejected']);
+// #2908: 'archived' is the Archived filter (hidden from Drafts, never deleted).
+const STATUSES = new Set(['draft', 'ready', 'rejected', 'archived']);
 
 function personOf(req) {
   const u = req.mktUser;
