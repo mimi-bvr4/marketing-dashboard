@@ -127,6 +127,24 @@
     if (h.ok) return `<p class="meta"><span class="badge good">WordPress draft saved</span> <a href="${esc(h.edit_link)}" target="_blank" rel="noopener">Open draft #${esc(h.wp_id)} in WordPress</a>. Not published; finish and publish it there.</p>`;
     return `<p class="meta"><span class="badge bad">${h.alarm ? 'ALARM' : 'Not sent to WordPress'}</span> ${esc(h.why)}${h.edit_link ? ` <a href="${esc(h.edit_link)}" target="_blank" rel="noopener">open</a>` : ''}</p>`;
   }
+  // The sources the agent read for this card, by name; the ones it could not read are marked.
+  function sourcesHtml(c) {
+    const list = (c.sources || []).filter((s) => s && s.label);
+    if (!list.length) return '';
+    return `<p class="meta sources">Sources: ${list.map((s) => s.ok === false
+      ? `<span class="badge bad">${esc(s.label)} (unavailable)</span>`
+      : `<span>${esc(s.label)}</span>`).join(', ')}</p>`;
+  }
+  // One line per card kind saying what Approve does. Only pins and blog posts leave this page.
+  function nextHtml(c) {
+    if (c.status !== 'draft') return '';
+    const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
+    let what;
+    if (pin) what = `pinned live on Pinterest${pin.board ? `, board ${esc(pin.board)}` : ''}.`;
+    else if (post) what = `saved as an unpublished WordPress draft on ${esc(post.site || 'the site')}. Nothing is published.`;
+    else what = 'marked ready for you to use. Nothing is posted or sent.';
+    return `<p class="meta next">After Approve: ${what}</p>`;
+  }
   function cardHtml(c) {
     const tells = (c.checks && c.checks.ai_tells_summary) || '';
     const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
@@ -137,10 +155,12 @@
       <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
         ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
       <h3 style="margin:0">${esc(c.title)}</h3>
+      ${sourcesHtml(c)}
       <div class="body">${md(c.body)}</div>
       ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}
       ${pinHtml(c)}
       ${handoffHtml(c)}
+      ${nextHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
       ${c.status === 'archived' ? `<p class="meta">Archived ${fmt(c.decided_at)} without a decision. Nothing was approved, rejected or deleted. Restore puts it back on Drafts.</p>` : ''}
