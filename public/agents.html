@@ -215,10 +215,43 @@
     return `<div class="intro"><div><h1 class="serif">Katherine's marketing team</h1>
         <p>Katherine's ${agents.length} AI employees, each with one job. They work for her: every piece of work lands in Review as a draft for her to approve, and they never publish, post, send or spend on their own. Click a name to rename someone; open a profile to change what they do.</p></div>
       <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
+      ${questionHtml()}
       ${producerHtml()}
       <div class="grid">${agents.map(cardHtml).join('')}</div>
       <p class="note">A name or portrait shows everywhere that team member appears (Review cards, the Monday digest) and saves at once. It changes nothing about what they are allowed to do.</p>`;
   }
+
+  // #2915: ask a question about the team's own cards and runs. Read only; the
+  // answer names the cards it used, each a link to it on Review.
+  let lastAnswer = null;
+  function answerHtml(r) {
+    if (!r) return '';
+    const cards = (r.cards || []).length ? `<ul class="asks">${r.cards.map((c) => `<li><a href="${esc(c.link)}">${esc(c.title)}</a> <span class="meta">${esc(c.member)} · ${esc(c.status)} · ${fmt(c.decided_at || c.created_at)}</span></li>`).join('')}</ul>${r.more ? `<p class="meta">and ${r.more} more on <a href="/review">Review</a>.</p>` : ''}` : '';
+    const runs = (r.runs || []).length ? `<ul class="asks">${r.runs.map((x) => `<li>${fmt(x.started_at)} <span class="meta">${esc(x.status)} · ${x.cards} card${x.cards === 1 ? '' : 's'}</span></li>`).join('')}</ul>` : '';
+    const can = r.can_answer ? `<ul class="asks">${r.can_answer.map((x) => `<li><button type="button" class="btn ghost" style="min-height:32px;font-size:13px" data-teamq-try="${esc(x)}">${esc(x)}</button></li>`).join('')}</ul>` : '';
+    return `<p class="msg ${r.understood ? 'ok' : 'err'}" style="display:block">${esc(r.answer)}</p>${cards}${runs}${can}`;
+  }
+  function questionHtml() {
+    return `<section class="panel" data-teamq-panel><h2 class="serif">Ask about your team</h2>
+      <p class="meta" style="margin:0">Answers come only from your team's own cards and runs. Nothing is changed by asking.</p>
+      <form class="row" data-teamq><input type="text" name="q" maxlength="300" placeholder="e.g. how many drafts are waiting" aria-label="Your question">
+        <button class="btn primary" type="submit">Ask</button></form>
+      <div data-teamq-out>${answerHtml(lastAnswer)}</div></section>`;
+  }
+  async function askTeam(question, panel) {
+    const out = panel.querySelector('[data-teamq-out]');
+    out.innerHTML = '<p class="meta">Looking…</p>';
+    try { lastAnswer = await api('/api/team/question', { method: 'POST', body: JSON.stringify({ question }) }); out.innerHTML = answerHtml(lastAnswer); }
+    catch (x) { out.innerHTML = `<p class="err">${esc(x.message)}</p>`; }
+  }
+  main.addEventListener('submit', (e) => {
+    const f = e.target.closest('form[data-teamq]'); if (!f) return;
+    e.preventDefault(); askTeam(f.q.value, f.closest('[data-teamq-panel]'));
+  });
+  main.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-teamq-try]'); if (!b) return;
+    const p = b.closest('[data-teamq-panel]'); p.querySelector('form[data-teamq]').q.value = b.dataset.teamqTry; askTeam(b.dataset.teamqTry, p);
+  });
 
   const STATUS = { new: 'Waiting for the Box to sort it', sorting: 'Being sorted', awaiting_exec: 'Instruction change proposed, waiting for Mimi',
     applied: 'Added', declined: 'Declined', building: 'Being built', built: 'Built', cant: "Can't", failed: 'The Box could not sort it' };
