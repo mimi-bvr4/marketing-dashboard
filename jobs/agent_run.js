@@ -117,7 +117,8 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   // #1759: once a day, a post newly published on one of our sites becomes a
   // queued Pinterest Paul run. The pin still waits for Approve on the Review tab.
   if (args.due && !args.dry) {
-    try { await require('../lib/agent-chains').newPostsToPaul({ store, fetchImpl: fetchImpl || globalThis.fetch, log }); }
+    // #2901: routed through the Producer (capped at 3 a day with PRODUCER_QUEUE on).
+    try { await P.dailyRoutes({ store, fetchImpl: fetchImpl || globalThis.fetch, env, log }); }
     catch (e) { log(`new posts: chain did not run: ${e.message}`); }
   }
   if (weekly) {

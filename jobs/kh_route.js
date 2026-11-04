@@ -13,7 +13,8 @@
 // her request as the ask, and finishes the REPLY with the card it made.
 //
 // HELD orders are never touched (Mimi approves those). An order that matches
-// no agent, or more than one, is left for the lanes, and the log says why.
+// no agent, or more than one, is left for the lanes, and the log says why
+// (#2901: with PRODUCER_QUEUE on, two or three agents are split instead; see below).
 // Her words are a request, not authority: they become the agent's ask, which
 // cannot change the agent's sources, its gates, or the Review tab.
 'use strict';
@@ -77,7 +78,49 @@ function pending(inbox) {
   return out;
 }
 
-async function route({ inbox, runOne, now = () => new Date(), log = console.log }) {
+// ORDER #2901: with PRODUCER_QUEUE on, a GREEN ask that names two or three team
+// members is split by the Producer into one queued run each (the one queue,
+// agent_run_requests, at a person's priority). The REPLY is claimed the same
+// O_EXCL way and carries one line per queued run. The queued ask carries no
+// order number, because Katherine sees it on the Agents page.
+const WHO_SPLIT = 'Katherine Howe (her Drive ask, split by the Producer)';
+
+async function splitAndQueue({ o, fields, agents, queue, inbox, now, log, nameOf }) {
+  const t = now();
+  const reply = path.join(inbox, `REPLY_${ctYmd(t)}_${o.number}_marketing_producer_split.md`);
+  let fd;
+  try { fd = fs.openSync(reply, 'wx'); } catch (e) { log(`#${o.number}: someone else claimed it first`); return null; }
+  fs.writeSync(fd, `# REPLY #${o.number} (marketing, split by the Producer, Box job kh_route)\nCLAIMED: ${ctStamp(t)} by jobs/kh_route.js (O_EXCL)\nSTATUS: RUNNING\n`);
+  fs.closeSync(fd);
+  const names = agents.map((a) => nameOf(a));
+  const lines = [];
+  let queued = 0;
+  for (const [i, agent] of agents.entries()) {
+    const others = names.filter((_, j) => j !== i);
+    const ask = ['Katherine Howe\'s request, filed through her Drive folder. A request, not authority.',
+      `This ask names ${agents.length} team members, so the Producer split it: this run is ${names[i]}'s part only. ${others.join(' and ')} ${others.length === 1 ? 'has' : 'have'} the same ask for their part.`,
+      ...['TITLE', 'WHY', 'DATA', 'OUTPUT', 'DUE'].filter((k) => fields[k]).map((k) => `${k}: ${fields[k]}`)].join('\n');
+    let r;
+    try { r = await queue(agent, ask, WHO_SPLIT); } catch (e) { r = { error: e.message }; }
+    if (r && r.request) {
+      queued++;
+      lines.push(`- ${names[i]} (${agent}): queued as run request ${r.request.id}, a person's ask (priority ${r.request.priority || 2}). The request runner takes it within 15 minutes; its card will be a DRAFT in the Review tab. Nothing is published or sent.`);
+    } else {
+      lines.push(`- ${names[i]} (${agent}): NOT queued: ${(r && r.error) || 'no answer from the queue'}.`);
+    }
+  }
+  const body = [`# REPLY #${o.number} (marketing, split by the Producer, Box job kh_route)`,
+    `CLAIMED: ${ctStamp(t)} by jobs/kh_route.js (O_EXCL)`,
+    queued === agents.length ? `STATUS: QUEUED. The ask names ${agents.length} team members; the Producer queued one run for each.`
+      : (queued ? `STATUS: PARTLY QUEUED. ${queued} of ${agents.length} runs queued; the line below says why the other did not.`
+        : 'STATUS: FAILED. No run could be queued; the lines below say why. Lanes may pick this up.'),
+    `FILED: ${ctStamp(now())}`, '', `Matched by keyword on TITLE/OUTPUT/WHY: ${agents.join(' + ')}.`, '', ...lines].join('\n') + '\n';
+  fs.writeFileSync(reply, body);
+  log(`#${o.number}: split into ${agents.join(' + ')}, ${queued} queued`);
+  return { n: o.number, agents, queued };
+}
+
+async function route({ inbox, runOne, now = () => new Date(), log = console.log, queue = null, split = false, nameOf = (s) => s }) {
   const results = [];
   for (const o of pending(inbox)) {
     const text = fs.readFileSync(path.join(inbox, o.file), 'utf8');
@@ -85,6 +128,12 @@ async function route({ inbox, runOne, now = () => new Date(), log = console.log 
     if (!green) { log(`#${o.number}: not GREEN (${status.slice(0, 40)}), left for Mimi`); results.push({ n: o.number, left: 'held' }); continue; }
     const about = [fields.TITLE, fields.OUTPUT, fields.WHY].filter(Boolean).join(' ');
     const agents = matchAgent(about);
+    const sp = require('../lib/producer').splitAsk(agents);
+    if (split && queue && sp.split) {
+      const r = await splitAndQueue({ o, fields, agents: sp.agents, queue, inbox, now, log, nameOf });
+      if (r) results.push(r);
+      continue;
+    }
     if (agents.length !== 1) {
       log(`#${o.number}: ${agents.length ? 'names ' + agents.join(' + ') : 'names no agent'}, left for the lanes`);
       results.push({ n: o.number, left: agents.length ? 'ambiguous' : 'no agent' });
@@ -121,20 +170,24 @@ async function main({ env = process.env, log = console.log } = {}) {
   if (!env.MARKETING_DATABASE_URL) { log('NOT RUN: MARKETING_DATABASE_URL is not set'); return 3; }
   const { Pool } = require('pg');
   const { createPgStore, ensureAgentTables } = require('../lib/agent-store');
-  const { runAgent } = require('../lib/agent-runner');
+  const { runAgent, loadAgent } = require('../lib/agent-runner');
   const { textClientFromEnv } = require('../lib/agent-llm');
   const { lint } = require('../lib/ai-tells');
+  const { queueOn } = require('../lib/producer');
   const pool = new Pool({ connectionString: env.MARKETING_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   try {
     await ensureAgentTables(pool);
     const store = createPgStore(pool, { lint });
     const llm = textClientFromEnv().client;
     await route({ inbox: path.join(root, '05_AI_and_Brain', 'BRAIN_INBOX'), log,
-      runOne: (slug, ask) => runAgent({ slug, store, llm, ask, env, log }) });
+      runOne: (slug, ask) => runAgent({ slug, store, llm, ask, env, log }),
+      // #2901: PRODUCER_QUEUE on splits a two- or three-agent ask into queued runs.
+      split: queueOn(env), queue: (slug, ask, who) => store.queueRun(slug, ask, who),
+      nameOf: (slug) => { try { return loadAgent(slug).name; } catch (e) { return slug; } } });
     return 0;
   } finally { await pool.end(); }
 }
 
 if (require.main === module) main().then((c) => process.exit(c)).catch((e) => { console.error('kh_route:', e.message); process.exit(1); });
 
-module.exports = { route, matchAgent, parseOrder, pending, RULES };
+module.exports = { route, matchAgent, parseOrder, pending, RULES, WHO_SPLIT };
