@@ -136,8 +136,10 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
       const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
       const defs = listAgents().map((s) => { const d = loadAgent(s); return { ...d, name: displayName(d, profiles.get(s)) }; });
       const root = require('../lib/agent-sources').treeRoot(env);
+      // #2919: the line also goes to box_driver_state/marketing_team_health.txt for Mimi Today.
       await require('../lib/team-health').dailyStep({ ymd, store, defs, due: slugs, log, env,
-        inbox: root ? require('path').join(root, '05_AI_and_Brain', 'BRAIN_INBOX') : null });
+        inbox: root ? require('path').join(root, '05_AI_and_Brain', 'BRAIN_INBOX') : null,
+        healthFile: require('../lib/team-health').healthFile(root) });
     } catch (e) { log(`team health: not checked: ${e.message}`); }
   }
   if (weekly) {
