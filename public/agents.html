@@ -84,6 +84,20 @@
   table.hist { border-collapse: collapse; font-size: 13px; width: 100%; }
   table.hist td, table.hist th { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: top; }
   .meta { font-size: 13px; color: var(--muted); }
+  /* #2900 the Producer */
+  .producer { background: #fff; border: 2px solid var(--terra); border-radius: 20px; padding: 22px; display: grid; gap: 16px; }
+  .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 720px) { .week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .day { background: #FBF7F1; border: 1px dashed #E4D8C6; border-radius: 12px; padding: 8px; min-height: 84px; display: flex; flex-direction: column; gap: 6px; }
+  .day.over { border-color: var(--terra); background: #F8E9E6; }
+  .day h3 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--rust); }
+  .chip { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+  .chip[draggable=true] { cursor: grab; }
+  .chip select { font: inherit; font-size: 12px; min-height: 28px; }
+  .boardl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+  .boardl li { border-left: 3px solid var(--line); padding-left: 10px; }
+  .b-waiting, .b-failed { border-left-color: #b42318 !important; } .b-held { border-left-color: #8a5300 !important; }
+  .b-ran { border-left-color: #1d6b42 !important; } .b-paused { border-left-color: #8B8178 !important; }
 </style>
 </head>
 <body>
@@ -154,12 +168,54 @@
       <p class="msg" hidden></p>
     </article>`;
   }
+  // #2900 the Producer: the week, the brakes and the board. It never writes,
+  // approves or sends anything; moving a day is a schedule change she may make.
+  let producer = null;
+  const WEEK = [['mon', 'Mon'], ['tue', 'Tue'], ['wed', 'Wed'], ['thu', 'Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
+  function producerHtml() {
+    const p = producer; if (!p) return '';
+    const weekly = p.calendar.filter((e) => e.movable);
+    const daily = p.calendar.filter((e) => e.days && e.days.includes('daily')).map((e) => e.name);
+    const monthly = p.calendar.filter((e) => e.month_days).map((e) => `${e.name} (the ${e.month_days.join(', ')})`);
+    const chip = (e, d) => `<div class="chip" draggable="true" data-move="${e.agent}" data-from="${d}"><strong>${esc(e.name)}</strong>
+      <select data-movesel="${e.agent}" data-from="${d}" aria-label="Move ${esc(e.name)} to another day">${WEEK.map(([k, l]) => `<option value="${k}" ${k === d ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
+    return `<section class="producer" data-slug="producer">
+      <div class="who">${face({ slug: 'producer', name: p.name }, 84)}<div class="txt"><span class="role">The producer</span>
+        <input class="name" data-pname value="${esc(p.name)}" maxlength="40" aria-label="Name for the producer" title="Click to rename">
+        <span class="job">Runs the team's week. It never writes, approves or sends anything.</span></div></div>
+      <div class="pills"><span class="pill ${p.waiting >= p.hold_at ? 's-wait' : 's-ok'}">${p.waiting} drafts waiting (holds at ${p.hold_at})</span>
+        <span class="pill ${p.week_cards >= p.cap ? 's-wait' : 's-ok'}">${p.week_cards} of ${p.cap} cards this week</span>
+        <span class="pill ${p.on ? 's-ok' : 's-off'}">${p.on ? 'Running the week' : 'Not switched on yet'}</span></div>
+      ${p.on ? '' : '<p class="note">Not switched on yet: the old schedule still runs. The week below is the proposed one, and your moves are kept for the day it starts.</p>'}
+      <div><p class="meta" style="margin:0 0 6px">Every day: ${esc(daily.join(', '))}. Monthly: ${esc(monthly.join(', '))}. Drag a name to another day, or pick the day under it.</p>
+        <div class="week">${WEEK.map(([k, l]) => `<div class="day" data-day="${k}"><h3>${l}</h3>${weekly.filter((e) => e.days.includes(k)).map((e) => chip(e, k)).join('')}</div>`).join('')}</div></div>
+      <div><h2 class="serif" style="margin:0 0 6px;font-size:21px">Who is stuck</h2>
+        <ul class="boardl">${p.board.map((b) => `<li class="b-${b.state}"><strong>${esc(b.name)}</strong>: ${esc(b.line)}</li>`).join('')}</ul></div>
+      <p class="note">${esc(p.exempt.length ? 'Never held by the brakes: the press requests and the review replies.' : '')} When ${p.hold_at} or more drafts wait, the other scheduled runs wait too, and the board says so.</p>
+      <p class="msg" hidden></p>
+    </section>`;
+  }
+  async function moveDay(agent, from, to, el) {
+    if (!to || to === from) return;
+    const e = producer.calendar.find((x) => x.agent === agent);
+    const days = [...new Set(e.days.filter((d) => d !== from).concat(to))];
+    try { await api(`/api/producer/calendar/${agent}`, { method: 'POST', body: JSON.stringify({ days }) }); await load(); say(main.querySelector('.producer') || main, `Moved. ${e.name} now runs ${days.map((d) => (WEEK.find((w) => w[0] === d) || [d, d])[1]).join(', ')}.`, true); }
+    catch (x) { say(el, x.message); }
+  }
+  main.addEventListener('dragstart', (e) => { const c = e.target.closest && e.target.closest('[data-move]'); if (c) e.dataTransfer.setData('text/plain', `${c.dataset.move}|${c.dataset.from}`); });
+  main.addEventListener('dragover', (e) => { const d = e.target.closest && e.target.closest('.day'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+  main.addEventListener('dragleave', (e) => { const d = e.target.closest && e.target.closest('.day'); if (d) d.classList.remove('over'); });
+  main.addEventListener('drop', (e) => {
+    const d = e.target.closest && e.target.closest('.day'); if (!d) return; e.preventDefault(); d.classList.remove('over');
+    const [agent, from] = String(e.dataTransfer.getData('text/plain')).split('|'); if (agent) moveDay(agent, from, d.dataset.day, d);
+  });
   function rosterHtml() {
     const c = { ok: 0, part: 0, wait: 0 };
     agents.forEach((a) => { const s = status(a).cls; if (s === 's-ok') c.ok++; else if (s === 's-part') c.part++; else c.wait++; });
     return `<div class="intro"><div><h1 class="serif">Katherine's marketing team</h1>
         <p>Katherine's ${agents.length} AI employees, each with one job. They work for her: every piece of work lands in Review as a draft for her to approve, and they never publish, post, send or spend on their own. Click a name to rename someone; open a profile to change what they do.</p></div>
       <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
+      ${producerHtml()}
       <div class="grid">${agents.map(cardHtml).join('')}</div>
       <p class="note">A name or portrait shows everywhere that team member appears (Review cards, the Monday digest) and saves at once. It changes nothing about what they are allowed to do.</p>`;
   }
@@ -238,7 +294,9 @@
     document.title = a ? `${a.name} · Katherine's Team` : "Katherine's Team · Marketing";
   }
   async function load() {
-    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; render(); }
+    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec;
+      try { producer = await api('/api/producer'); } catch (x) { producer = null; }
+      render(); }
     catch (e) { main.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
   function say(from, text, ok) {
@@ -250,11 +308,22 @@
 
   // Names save on Enter or when the box loses focus. Esc puts it back.
   main.addEventListener('keydown', (e) => {
+    const pn = e.target.closest('input[data-pname]');
+    if (pn && e.key === 'Enter') { e.preventDefault(); pn.blur(); return; }
     const i = e.target.closest('input[data-name]'); if (!i) return;
     if (e.key === 'Enter') { e.preventDefault(); i.blur(); }
     if (e.key === 'Escape') { i.value = agents.find((x) => x.slug === i.dataset.name).name; i.blur(); }
   });
   main.addEventListener('change', async (e) => {
+    const ms = e.target.closest('select[data-movesel]');
+    if (ms) { await moveDay(ms.dataset.movesel, ms.dataset.from, ms.value, ms); return; }
+    const pn = e.target.closest('input[data-pname]');
+    if (pn) {
+      try { const r = await api('/api/producer/name', { method: 'POST', body: JSON.stringify({ name: pn.value }) });
+        producer.name = r.name; pn.value = r.name; say(pn, `Saved. Now "${r.name}".`, true); }
+      catch (x) { pn.value = producer.name; say(pn, x.message); }
+      return;
+    }
     const i = e.target.closest('input[data-name]');
     if (i) {
       const a = agents.find((x) => x.slug === i.dataset.name);

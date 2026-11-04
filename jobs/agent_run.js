@@ -73,6 +73,15 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   }
   let failed = 0;
   const ymd = args.date || nashvilleYmd();
+  // #2900: with PRODUCER_CALENDAR on, the Producer's calendar (Katherine's moves
+  // over the default week) replaces dueAgents(), with the brakes. Off: unchanged.
+  const P = require('../lib/producer');
+  const producer = args.due && P.producerOn(env);
+  if (producer) {
+    const cal = P.calendar(store.calendarRows ? await store.calendarRows() : []);
+    slugs.splice(0, slugs.length, ...P.dueOn(ymd, cal));
+    log(`producer: on; due ${ymd}: ${slugs.join(', ')}`);
+  }
   if (args.due && !args.dry && new Date(ymd + 'T12:00:00Z').getUTCDay() === 1) {
     const { writeDigest } = require('../lib/agent-digest');
     const d = await writeDigest({ store });
@@ -87,13 +96,23 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     try { drive = require('../lib/drive-client').createDriveClient(); } catch (e) { log(`competitors: no service account key (${e.message.slice(0, 80)})`); }
     await C.syncFromSheet({ store, drive, log });
   }
-  for (const slug of slugs) {
+  const runOne = async (slug) => {
     const r = await runAgent({ slug, store, llm: model, ask: args.ask, env, fetchImpl: fetchImpl || globalThis.fetch, log, dryRun: args.dry,
-      scheduled: args.due });
-    if (r.skipped) { log(`${slug}: skipped (${r.skipped})`); continue; }
+      scheduled: args.due, blockedToBoard: producer });
+    if (r.skipped) { log(`${slug}: skipped (${r.skipped})`); return r; }
+    if (r.blocked) { log(`${slug}: waiting on ${r.blocked.join('; ')} (on the board)`); return r; }
     log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.seen_skipped ? `, ${r.seen_skipped} skipped as already seen` : ''}${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
     if (args.dry) for (const c of r.cards) log(`\n----- ${c.title} -----\n${c.body}\n`);
     if (!r.ok) failed++;
+    return r;
+  };
+  if (producer) {
+    const maxCardsOf = (slug) => { try { return loadAgent(slug).max_cards || 3; } catch (e) { return 3; } };
+    const settings = new Map(((store.allCurrentSettings ? await store.allCurrentSettings() : []) || []).map((s) => [s.agent, s]));
+    await P.runDay({ ymd, store, log, runOne,
+      maxCardsOf: (slug) => (settings.get(slug) ? settings.get(slug).max_cards : maxCardsOf(slug)) });
+  } else {
+    for (const slug of slugs) await runOne(slug);
   }
   // #1759: once a day, a post newly published on one of our sites becomes a
   // queued Pinterest Paul run. The pin still waits for Approve on the Review tab.

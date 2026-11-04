@@ -18,6 +18,9 @@
 //   GET  /api/agents/:slug/watch        #1666 the competitor sites (Scout only)
 //   POST /api/agents/:slug/watch        { site, label }  add one (15 max)
 //   DELETE /api/agents/:slug/watch/:id  remove one (and what was seen on it)
+//   GET  /api/producer                  #2900 the Producer's card: the week, the brakes, the board
+//   POST /api/producer/calendar/:slug   { days: ['tue'] }  move a weekly team member (logged)
+//   POST /api/producer/name             { name }  Katherine names the Producer ('' = default)
 //
 // #1664 NAMES AND PORTRAITS ARE COSMETIC (Mimi, 10.12.2026): they save at once,
 // no exec approval, because they change nothing about what an agent may do.
@@ -191,6 +194,43 @@ function createAgentsRouter({ store, identity }) {
     const out = await store.createAsk(req.params.slug, (req.body || {}).ask, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ ask: out.ask });
+  });
+
+  // #2900 the Producer: its card, the week, and the board. Read-only except a
+  // day move (a schedule change Katherine may make herself, ruling 2) and its name.
+  r.get('/api/producer', need, async (req, res) => {
+    const P = require('../lib/producer');
+    const ymd = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    const cal = P.calendar(store.calendarRows ? await store.calendarRows() : []);
+    const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
+    const defs = listAgents().map((slug) => { const d = loadAgent(slug); return { ...d, name: displayName(d, profiles.get(slug)) }; });
+    const settings = new Map((await store.allCurrentSettings()).map((s) => [s.agent, s]));
+    const history = new Map();
+    for (const h of (store.runHistory ? await store.runHistory(20) : [])) { const a = history.get(h.agent) || []; a.push(h); history.set(h.agent, a); }
+    const today = store.producerDay ? await store.producerDay(ymd) : [];
+    const me = profiles.get('producer');
+    res.json({
+      on: P.producerOn(), name: me && me.display_name ? me.display_name : 'The Producer', named_by: me && me.display_name ? me.updated_by : null,
+      waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.WAITING_HOLD,
+      week_cards: store.producerWeekCards ? await store.producerWeekCards(P.weekStart(ymd)) : 0, cap: P.WEEKLY_CAP,
+      exempt: Object.keys(P.EXEMPT),
+      calendar: cal.map((e) => ({ ...e, name: (defs.find((d) => d.slug === e.agent) || {}).name || e.agent, movable: P.movable(e) })),
+      board: P.board({ ymd, defs, settings, history, today, cal }),
+      today,
+    });
+  });
+  r.post('/api/producer/calendar/:slug', need, async (req, res) => {
+    const P = require('../lib/producer');
+    const c = P.checkMove(req.params.slug, (req.body || {}).days);
+    if (c.error) return res.status(400).json({ error: c.error });
+    const out = await store.setCalendarDays(req.params.slug, c.days, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ calendar: out.calendar });
+  });
+  r.post('/api/producer/name', need, async (req, res) => {
+    const out = await store.setName('producer', (req.body || {}).name, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ name: out.profile && out.profile.display_name ? out.profile.display_name : 'The Producer' });
   });
 
   r.post('/api/agents/asks/:id/decide', need, async (req, res) => {

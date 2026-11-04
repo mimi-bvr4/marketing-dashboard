@@ -8,6 +8,7 @@
       "type": "pending",
       "required": true,
       "label": "Google + Meta ads export Sheet",
+      "since": "2026-10-13",
       "why": "the export Sheet (Google Ads script + scheduled Meta report, #1011 Amd C) has not been created and shared to the service account yet; Katherine owns it"
     },
     {
