@@ -51,18 +51,10 @@ test('a drafting request never reads or reports the scorecard sources', async ()
   assert.doesNotMatch(llm.calls[0].user, /HubSpot marketing email analytics/);
 });
 
-// #1733: the read now exists and fails closed; a missing scope is still a "could not run" card.
-test('the 3rd with HubSpot email statistics unreadable (scope missing): one card that says so, no model call, no number', async () => {
-  const store = createMemoryStore({ lint });
-  const llm = fakeModel(['{"cards":[{"title":"Email scorecard","body":"Opens 41%"}]}']);
-  const fetchImpl = async () => ({ status: 200, json: async () => ({ ok: false, why: 'scope missing: scope-from-hubspot' }) });
-  const r = await runAgent({ slug: 'email', store, llm, env: { ...ENV, MARKETING_FLEET_KEY: 'mkt_test', MARKETING_BASE_URL: 'https://example.test' },
-    fetchImpl, log: () => {}, scheduled: true });
-  assert.strictEqual(llm.calls.length, 0);
-  assert.strictEqual(r.cards.length, 1);
-  assert.match(r.cards[0].title, /could not run: a required source is missing/);
-  assert.match(r.cards[0].body, /HubSpot marketing email analytics \(last month\): scope missing: scope-from-hubspot/);
-  assert.doesNotMatch(r.cards[0].body, /\d+%/);
+// #2903: the scorecard moved into the Monthly Report; the Email agent no longer reads HubSpot statistics.
+test('#2903: the Email agent carries no scorecard source; the Monthly Report carries it', () => {
+  assert.ok(!loadAgent('email').sources.some((s) => s.type === 'hubspot_email_stats'));
+  assert.ok(loadAgent('monthly-report').sources.some((s) => s.type === 'hubspot_email_stats'));
 });
 
 test('only the Email agent opts into the code check; the Copywriter measures the same codes', () => {
@@ -72,14 +64,13 @@ test('only the Email agent opts into the code check; the Copywriter measures the
     [['TBB (write "The Bridge Building")', 1], ['ECD (write "The Estate at Cherokee Dock")', 2]]);
 });
 
-test('schedule: the scorecard runs on the 3rd only', () => {
-  assert.ok(dueAgents('2026-11-03').includes('email'));
-  assert.ok(!dueAgents('2026-10-13').includes('email'));
-  assert.ok(!dueAgents('2026-10-12').includes('email'));
+test('schedule: #2903 the Email agent has no scheduled run; the Monthly Report on the 3rd carries the scorecard', () => {
+  for (const d of ['2026-11-03', '2026-10-13', '2026-10-12']) assert.ok(!dueAgents(d).includes('email'), d);
+  assert.ok(dueAgents('2026-12-03').includes('monthly-report'));
 });
 
 test("Katherine's Drive orders reach the Email agent, and the Copywriter keeps its own", () => {
   assert.deepStrictEqual(matchAgent('Draft the wedding nurture series for Saddle Woods Farm'), ['email']);
-  assert.deepStrictEqual(matchAgent('Email scorecard for September'), ['email']);
+  assert.deepStrictEqual(matchAgent('Email scorecard for September'), ['monthly-report']); // #2903
   assert.deepStrictEqual(matchAgent('Copy check on the holiday party email'), ['copywriter']);
 });

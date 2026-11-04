@@ -46,6 +46,7 @@ const path = require('path');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
+const { pausedFor, cardOnly } = require('../lib/producer');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
@@ -111,6 +112,8 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
         named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, sources: (d.sources || []).map(sourceView),
+        // #2903: paused until a source exists (Paid Ads), or a card only (Web Agent, Site Guardian).
+        paused: pausedFor(d), card_only: cardOnly(d),
         default_skill: d.skill, default_max_cards: d.max_cards || 3,
         current: s ? { version: s.version, skill_md: s.skill_md, enabled: s.enabled, max_cards: s.max_cards,
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
@@ -188,8 +191,11 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
 
   r.post('/api/agents/:slug/run', need, known, async (req, res) => {
     // #1688: a team member with his own page (the Collateral Cadet) is asked there, not run here.
-    const page = loadAgent(req.params.slug).ask_page;
+    const def = loadAgent(req.params.slug);
+    const page = def.ask_page;
     if (page) return res.status(409).json({ error: `Ask on his own page: ${page}` });
+    // #2903: a card-only team member is not run from here.
+    if (cardOnly(def)) return res.status(409).json({ error: `Not run from this page: ${cardOnly(def)}` });
     const out = await store.queueRun(req.params.slug, String((req.body || {}).ask || '').trim() || null, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ request: out.request });

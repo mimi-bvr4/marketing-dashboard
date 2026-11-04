@@ -277,7 +277,7 @@ test('dashboard source: no fleet key is "unavailable"; with one it sends the key
 
 test('every agent folder loads, has a SKILL.md with a name and description, and no em dash', () => {
   const slugs = listAgents();
-  assert.deepStrictEqual(slugs, ['bloggy-bob', 'citations', 'collateral-cadet', 'convention-connector', 'copywriter', 'email', 'gbp', 'monthly-report', 'paid-ads', 'pinterest-paul', 'pr-patty', 'scout', 'seo', 'site-health']); // #1688 adds the Cadet; #1704 SEO; #1705 PR Patty; #1724 Email
+  assert.deepStrictEqual(slugs, ['bloggy-bob', 'citations', 'collateral-cadet', 'convention-connector', 'copywriter', 'email', 'gbp', 'monthly-report', 'paid-ads', 'pinterest-paul', 'pr-patty', 'scout', 'seo', 'site-guardian', 'site-health', 'web']); // #1688 adds the Cadet; #1704 SEO; #1705 PR Patty; #1724 Email; #2903 the Site Guardian and Web Agent cards
   for (const s of slugs) {
     const a = loadAgent(s);
     assert.match(a.skill, new RegExp(`^---\\nname: ${s}\\ndescription: .+\\n---`), s);
@@ -289,7 +289,7 @@ test('every agent folder loads, has a SKILL.md with a name and description, and 
 
 test('schedule: Google Business daily; Mondays add Site Health and Paid Ads; 3rd, 15th, quarter starts', () => {
   assert.deepStrictEqual(dueAgents('2026-10-13'), ['gbp', 'pr-patty']);             // Tuesday (#1705 Patty daily)
-  assert.deepStrictEqual(dueAgents('2026-10-12'), ['gbp', 'pr-patty', 'site-health', 'paid-ads', 'scout', 'seo', 'convention-connector']); // Monday (#1666 Scout, #1704 SEO, #1707)
+  assert.deepStrictEqual(dueAgents('2026-10-12'), ['gbp', 'pr-patty', 'site-health', 'scout', 'seo', 'convention-connector']); // Monday (#1666 Scout, #1704 SEO, #1707; #2903 Paid Ads paused)
   assert.ok(dueAgents('2026-11-03').includes('monthly-report'));
   assert.ok(dueAgents('2026-10-15').includes('citations'));
   assert.ok(!dueAgents('2027-01-04').includes('listings'));                         // #1699: folded into citations

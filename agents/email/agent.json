@@ -1,7 +1,7 @@
 {
   "name": "Email Agent",
-  "job": "nurture email drafts and the monthly email scorecard",
-  "cadence": "on request (nurture drafts); the 3rd of each month, 06:00 CT (the email scorecard)",
+  "job": "nurture email drafts",
+  "cadence": "on request (the monthly email scorecard is in the Monthly Report)",
   "max_cards": 7,
   "max_tokens": 12000,
   "copy_check": true,
@@ -36,18 +36,6 @@
       "type": "file",
       "path": "07_Marketing_and_Brand/BLOGGY_BOB_VOICE_PROFILE_10.09.2026.md",
       "label": "how our published writing sounds"
-    },
-    {
-      "type": "hubspot_email_stats",
-      "only_scheduled": true,
-      "required": true,
-      "label": "HubSpot marketing email analytics (last month)"
-    },
-    {
-      "type": "file",
-      "only_scheduled": true,
-      "newest": "07_Marketing_and_Brand/Email_Buildout/W1_AUDIT_",
-      "label": "the W1 email audit (the 12-month baseline)"
     }
   ],
   "character": {
@@ -55,8 +43,7 @@
     "does": [
       "On request, drafts the nurture emails for a brand or venue: the wedding series (7), the tour series (4) and the corporate and social series (6)",
       "Each email has a subject, preview text, body and one call to action, written to one audience from the W2 definitions",
-      "Every draft goes through the Copywriter's rules: the AI-tells check, no internal codes, venue facts from the canonical source",
-      "On the 3rd of each month, the email scorecard: sends, delivery, opens, clicks, unsubscribes and bounces, read-only from HubSpot"
+      "Every draft goes through the Copywriter's rules: the AI-tells check, no internal codes, venue facts from the canonical source"
     ],
     "traits": [
       {
@@ -68,12 +55,10 @@
         "instead": "Names the audience in HubSpot terms; Katherine builds it"
       },
       {
-        "cant": "Report email numbers HubSpot did not give it",
-        "instead": "If the read-only statistics read fails (for example a scope missing on the token), says why on the 3rd and writes no number"
+        "cant": "Write the monthly email scorecard",
+        "instead": "The Monthly Report carries it on the 3rd, so there is one report, not two"
       }
     ],
-    "needs": [
-      "The HubSpot token's marketing-email statistics scope (checked by the 3rd's run; a missing one is named on the card)"
-    ]
+    "needs": []
   }
 }
