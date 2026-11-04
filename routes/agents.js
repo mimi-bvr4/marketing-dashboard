@@ -8,6 +8,7 @@
 //   POST /api/agents/:slug/revert       { version }  -> a new version copying that one
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
 //                                       (409 for an agent with an ask_page, #1688: asked on that page)
+//   POST /api/agents/:slug/cards/:id/redo { words } -> #2914 one revised draft of that card, queued
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
 //   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
 //   POST /api/agents/:slug/name         { name }  -> #1664, '' puts the default back
@@ -45,6 +46,8 @@ const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
+// #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
+const REDO_MESSAGE = 'Redo asked. The new version lands here within about 15 minutes.';
 
 function sourceView(src) {
   const label = src.label || src.path || (src.newest ? `newest ${src.newest}*` : src.type);
@@ -190,6 +193,16 @@ function createAgentsRouter({ store, identity }) {
     res.json({ request: out.request });
   });
 
+  // #2914: "this missed X" / "redo it this way" on one draft card. Same queue as
+  // Run now; the card must be this agent's own. Drafts only, nothing publishes.
+  r.post('/api/agents/:slug/cards/:id/redo', need, known, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'bad id' });
+    const out = await store.queueRedo(id, { agent: req.params.slug, words: (req.body || {}).words, who: personOf(req) });
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ request: out.request, card: out.card, message: REDO_MESSAGE });
+  });
+
   r.post('/api/agents/:slug/asks', need, known, async (req, res) => {
     const out = await store.createAsk(req.params.slug, (req.body || {}).ask, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
@@ -262,4 +275,4 @@ function createAgentsRouter({ store, identity }) {
   return r;
 }
 
-module.exports = { createAgentsRouter, sourceView, characterOf, isExec, watchNeed };
+module.exports = { createAgentsRouter, sourceView, characterOf, isExec, watchNeed, REDO_MESSAGE };

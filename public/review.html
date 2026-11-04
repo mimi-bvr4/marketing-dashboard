@@ -139,10 +139,13 @@
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
       ${c.status === 'archived' ? `<p class="meta">Archived ${fmt(c.decided_at)} without a decision. Nothing was approved, rejected or deleted. Restore puts it back on Drafts.</p>` : ''}
+      ${c.redo && c.status === 'draft' ? `<p class="meta redo-note"><span class="badge">Redo asked</span> Redo asked. The new version lands here within about 15 minutes. You said: ${esc(c.redo.words)}</p>` : ''}
+      ${c.redo_of ? '<p class="meta"><span class="badge">Revised version</span> This replaces an earlier draft; the earlier one is kept under Rejected.</p>' : ''}
       <div class="actions">
         <button data-a="copy">Copy text</button>
         ${c.status === 'draft' ? `<button data-a="approve">Approve</button><button data-a="edit">Edit</button>
-        <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>` : ''}
+        <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>
+        <input data-f="redo" placeholder="This missed X, or redo it this way" aria-label="What to redo"><button data-a="redo">Redo</button>` : ''}
         ${c.status === 'archived' ? '<button data-a="restore">Restore to Drafts</button>' : ''}
       </div>
       <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}${c.payload && c.payload.pin ? '<p class="meta">You are editing the pin description (what goes on Pinterest, up to 500 characters).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : (c.payload && c.payload.pin ? (c.payload.pin.description || '') : c.body))}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
@@ -173,6 +176,13 @@
     if (b.dataset.a === 'approve') act({ action: 'approve' });
     if (b.dataset.a === 'restore') act({ action: 'restore' });
     if (b.dataset.a === 'reject') act({ action: 'reject', reason: el.querySelector('[data-f=reason]').value });
+    // #2914: one revised draft of this card, by the same agent, through the Run now queue.
+    if (b.dataset.a === 'redo') {
+      try {
+        await api('/api/agents/' + encodeURIComponent(c.agent) + '/cards/' + id + '/redo', { method: 'POST', body: JSON.stringify({ words: el.querySelector('[data-f=redo]').value }) });
+        await load();
+      } catch (x) { err.textContent = x.message; err.hidden = false; }
+    }
     if (b.dataset.a === 'edit') el.querySelector('.edit').hidden = false;
     if (b.dataset.a === 'cancel') el.querySelector('.edit').hidden = true;
     if (b.dataset.a === 'save') act({ action: 'edit', body: el.querySelector('.edit textarea').value });
