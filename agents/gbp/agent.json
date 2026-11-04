@@ -28,6 +28,11 @@
       "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md"
     },
     {
+      "type": "open_dates",
+      "months": 3,
+      "when_flag": "OPEN_DATES_TO_AGENTS"
+    },
+    {
       "type": "pending",
       "label": "Google Business Profile API",
       "why": "API access requested 10.09.2026 (case 2-2788000041229); re-probe on or after 10.20.2026 (ORDER #1589). Until then replies are drafted from the public reviews in the review pulse."

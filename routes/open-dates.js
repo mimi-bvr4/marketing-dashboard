@@ -1,5 +1,6 @@
-// Open Date Filler: GET /api/open-dates?months=6
-// Open Friday, Saturday and Sunday dates at the 7 venues (lib/open-dates.js).
+// Open Date Filler: GET /api/open-dates?months=6[&days=all]
+// Open Friday, Saturday and Sunday dates at the 7 venues (lib/open-dates.js);
+// days=all (#2904) answers every day of the week, for the agents.
 // Dates and counts only: no client names, no money. Cached 30 minutes.
 //
 // Readable by a signed-in exec/Katherine session and by a read-only fleet key
@@ -17,11 +18,13 @@ function createOpenDatesRouter({ search, now = () => new Date(), cacheMs = CACHE
   const cache = new Map();
   r.get('/api/open-dates', async (req, res) => {
     const months = Math.max(1, Math.min(18, parseInt(req.query.months, 10) || 6));
-    const hit = cache.get(months);
+    const days = req.query.days === 'all' ? 'all' : 'prime'; // #2904: the agents ask for every day of the week
+    const key = `${months}:${days}`;
+    const hit = cache.get(key);
     if (hit && hit.expires > now().getTime()) { res.set('X-Cache', 'HIT'); return res.json(hit.body); }
     try {
-      const body = { ...(await computeOpenDates({ search, months, now: now() })), fetched_at: now().toISOString() };
-      cache.set(months, { expires: now().getTime() + cacheMs, body });
+      const body = { ...(await computeOpenDates({ search, months, now: now(), days })), fetched_at: now().toISOString() };
+      cache.set(key, { expires: now().getTime() + cacheMs, body });
       res.set('X-Cache', 'MISS');
       res.json(body);
     } catch (e) {
