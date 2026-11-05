@@ -227,7 +227,7 @@
     // #2941: collapsed to one summary row by default; "Show the week" opens the calendar and the stuck list.
     return `<section class="producer" data-slug="producer">
       <div class="psum">
-        <div class="who">${face({ slug: 'producer', name: p.name }, 84)}<div class="txt">${eyebrow('producer', 'The producer', p.name)}
+        <div class="who">${face({ slug: 'producer', name: p.name, portrait: p.portrait }, 84)}<div class="txt">${eyebrow('producer', 'The producer', p.name)}
           <input class="name" data-pname value="${esc(p.name)}" maxlength="40" aria-label="Name for the producer" title="Click to rename">
           <span class="job">Runs the team's week. It never writes, approves or sends anything.</span>${V.speakerHtml(voices, 'producer', p.name, esc)}</div></div>
         <div class="pills"><span class="pill ${p.waiting >= p.hold_at ? 's-wait' : 's-ok'}">${p.waiting} drafts waiting (holds at ${p.hold_at})</span>
