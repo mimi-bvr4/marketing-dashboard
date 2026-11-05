@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reviewer facts</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; color: #231F20; }
+  h1 { font-size: 20px; } h2 { font-size: 17px; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e3e3; }
+  th { color: #6D6E71; font-weight: 600; }
+  .note { color: #6D6E71; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Reviewer facts</h1>
+<p class="note">ORDER #2962. For Mimi and NB only. Counts and times from the agent tables; nothing on this page is sent to anyone.</p>
+<label>Week starting (a Monday) <input type="date" id="week"></label>
+<div id="out">Loading…</div>
+<script>
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const row = (k, a, b) => `<tr><td>${esc(k)}</td><td>${esc(a)}</td><td>${esc(b)}</td></tr>`;
+const hrs = (n) => (n == null ? 'none decided' : n + ' h');
+function section(s) {
+  const w = s.week, p = s.prior, n = s.now;
+  let h = `<h2>${esc(s.department_name)}: ${esc(s.head)}</h2><table><tr><th></th><th>This week</th><th>Prior week</th></tr>`;
+  h += row('Drafts the agents made', w.drafts_made, p.drafts_made) + row('Agent runs', w.runs, p.runs);
+  h += row('Decided by a person', w.decided_by_person, p.decided_by_person);
+  h += row('Approved', w.approved, p.approved) + row('Rejected', w.rejected, p.rejected);
+  h += row('Rejected with a reason', w.rejected_with_reason, p.rejected_with_reason) + row('Rejected without a reason', w.rejected_without_reason, p.rejected_without_reason);
+  h += row('Archived by a person', w.archived_by_person, p.archived_by_person) + row('Closed by the system', w.decided_by_machine, p.decided_by_machine);
+  h += row('Drafts edited', w.drafts_edited, p.drafts_edited);
+  h += row('Hours draft to decision (median)', hrs(w.hours_to_decide_median), hrs(p.hours_to_decide_median));
+  h += row('Hours draft to decision (longest)', hrs(w.hours_to_decide_max), hrs(p.hours_to_decide_max));
+  h += row('Abilities asked', w.asks, p.asks) + row('Instruction edits saved', w.instruction_edits, p.instruction_edits) + '</table>';
+  h += '<p><b>What each approved card became</b></p><ul>' + (w.approved_use.length ? w.approved_use.map((a) => `<li><a href="${esc(a.link)}">#${a.id}</a> ${esc(a.agent)}: ${esc(a.use)}</li>`).join('') : '<li>no cards approved this week</li>') + '</ul>';
+  h += `<p><b>Drafts waiting now: ${n.drafts_waiting}</b></p><table><tr><th>Agent</th><th>Waiting</th><th>Oldest</th></tr>` + n.backlog.map((b) => `<tr><td>${esc(b.name)}</td><td>${b.waiting}</td><td>${b.oldest_hours} h</td></tr>`).join('') + '</table>';
+  h += n.visits_recorded
+    ? `<p>Last Review visit: ${esc(n.last_review_visit || 'none recorded')} · last Agents visit: ${esc(n.last_agents_visit || 'none recorded')} · agent runs since: ${n.runs_since_last_visit}</p>`
+    : '<p class="note">Visits: not trackable yet (recorded from the day the switch is on).</p>';
+  h += '<p><b>3 oldest drafts nobody has edited or asked to redo</b></p><ul>' + (n.oldest_untouched.length ? n.oldest_untouched.map((u) => `<li><a href="${esc(u.link)}">#${u.id}</a> ${esc(u.agent)}, ${u.age_hours} h: ${esc(u.title)}</li>`).join('') : '<li>none</li>') + '</ul>';
+  return h;
+}
+async function load() {
+  const wk = document.getElementById('week').value;
+  const r = await fetch('/api/reviewer-watch' + (wk ? '?week=' + encodeURIComponent(wk) : ''));
+  const j = await r.json();
+  if (!r.ok) { document.getElementById('out').textContent = j.error || 'not available'; return; }
+  if (!wk) document.getElementById('week').value = j.week_start;
+  document.getElementById('out').innerHTML = `<p class="note">Week of ${esc(j.week_start)}</p>` + j.departments.map(section).join('');
+}
+document.getElementById('week').addEventListener('change', load);
+load();
+</script>
+</body>
+</html>
