@@ -23,6 +23,8 @@
 //                                       (#2918 .health: this morning's team health check)
 //   POST /api/producer/calendar/:slug   { days: ['tue'] }  move a weekly team member (logged)
 //   POST /api/producer/name             { name }  Katherine names the Producer ('' = default)
+//   GET  /api/agent-voices              #2955 { on: false } unless AGENT_VOICES is on; then
+//                                       { on: true, voices: { slug: [{ src, line }] } }
 //   POST /api/team/question             { question }  #2915 a plain answer from her team's own
 //                                       cards and runs, with links to the cards. Read only.
 //
@@ -48,6 +50,7 @@ const { listAgents, loadAgent } = require('../lib/agent-runner');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly } = require('../lib/producer');
+const agentVoices = require('../lib/agent-voices');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
@@ -93,6 +96,12 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   const known = (req, res, next) => (listAgents().includes(req.params.slug) ? next() : res.status(404).json({ error: 'no such agent' }));
 
   r.get(['/agents', '/agents.html'], (req, res) => (personOf(req) ? res.sendFile(PAGE) : res.status(403).send('Signed-in leadership only.')));
+
+  // #2955 the "say something" clips. AGENT_VOICES off: { on: false }, no button.
+  r.get('/api/agent-voices', need, (req, res) => {
+    try { res.json(agentVoices.apiBody(process.env)); }
+    catch (e) { res.json({ on: false }); }
+  });
 
   r.get('/api/agents', need, async (req, res) => {
     const current = new Map((await store.allCurrentSettings()).map((s) => [s.agent, s]));
