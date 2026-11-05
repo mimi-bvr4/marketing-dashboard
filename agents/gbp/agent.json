@@ -1,7 +1,7 @@
 {
   "name": "Google Business",
   "job": "review replies and profile posts",
-  "cadence": "daily 06:00 CT (hourly once Google grants the reviews API)",
+  "cadence": "daily 06:00 CT",
   "max_cards": 4,
   "copy_prepass": true,
   "seen_before": {
@@ -10,10 +10,12 @@
   },
   "sources": [
     {
-      "type": "file",
-      "newest": "07_Marketing_and_Brand/Venue_Review_Pulse_",
+      "type": "gbp_reviews",
       "required": true,
-      "label": "the newest review pulse"
+      "label": "Google reviews and posts (Google Business Profile API)",
+      "days": 60,
+      "per_venue": 5,
+      "skip": ["The Harding House"]
     },
     {
       "type": "file",
@@ -31,18 +33,13 @@
       "type": "open_dates",
       "months": 3,
       "when_flag": "OPEN_DATES_TO_AGENTS"
-    },
-    {
-      "type": "pending",
-      "label": "Google reviews and posts (Google My Business API)",
-      "why": "Re-probed 11.04.2026 13:01 CT (ORDER #2944): the Business Profile API is approved and brain@ sees all 11 profiles, but reviews and posts sit behind the older Google My Business API (mybusiness.googleapis.com), which answers 403 SERVICE_DISABLED. Google has to grant it to project 308053229449; Mimi asked on case 2-2788000041229 (10.20); Google routed it to its API support form (10.23); Mimi filed that form 11.04.2026 19:11 CT, new case 1-9567000042317, waiting on Google. Until then replies are drafted from the public reviews in the review pulse."
     }
   ],
   "character": {
     "role": "The concierge",
     "does": [
-      "Drafts a reply to each new public review, warm for 5 stars, calm and flagged RED for 3 stars or less",
-      "Suggests a Google Business post for the quietest venue"
+      "Drafts a reply to each new Google review, warm for 5 stars, calm and flagged RED for 3 stars or less",
+      "Suggests a Google Business post for the venue that has gone longest without one"
     ],
     "traits": [
       {
@@ -50,16 +47,14 @@
         "instead": "Drafts it with a copy button for a person to post"
       },
       {
-        "cant": "Read Google reviews directly yet",
-        "instead": "Works from the monthly review pulse until Google grants the reviews API"
+        "cant": "Read reviews on WeddingWire, The Knot or other sites",
+        "instead": "Reads Google reviews and posts straight from Google every morning (ORDER #2977)"
       },
       {
         "cant": "Promise a refund, discount or change",
         "instead": "Offers a direct line to sales@"
       }
     ],
-    "needs": [
-      "Google: grant the Google My Business API (reviews and posts) to project 308053229449 (case 1-9567000042317, filed by Mimi 11.04.2026)"
-    ]
+    "needs": []
   }
 }

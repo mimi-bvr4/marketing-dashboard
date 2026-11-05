@@ -44,6 +44,9 @@ function web() {
 }
 
 const PULSE = { '07_Marketing_and_Brand/Venue_Review_Pulse_2026-10.md': '# Review pulse 10.2026\n- The Bridge Building, Google, Ana P.: "Lovely night."\n- Saddle Woods Farm, The Knot, Ben R.: "Great team."' };
+// #2977: the real gbp agent reads Google's API now; these tests are about the
+// memory, so they keep its REAL seen_before spec and read the pulse fixture.
+const gbpDef = () => ({ ...loadAgent('gbp'), sources: [{ type: 'file', newest: '07_Marketing_and_Brand/Venue_Review_Pulse_', required: true, label: 'the newest review pulse' }] });
 const gbpCards = (text = 'Lovely night.') => [
   { title: 'Reply to Ana P. on Google', target: 'The Bridge Building', body: 'Thank you, Ana. We loved hosting you.',
     seen: { venue: 'The Bridge Building', reviewer: 'Ana P.', platform: 'Google', review_text: text } },
@@ -56,10 +59,10 @@ test('KNOWN-BAD: two GBP runs on the same review pulse draft cards only on the f
   const env = tree(t, PULSE);
   const fetchImpl = web();
   const llm = model(() => gbpCards());
-  const r1 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl, scheduled: true });
+  const r1 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl, scheduled: true });
   assert.ok(r1.ok, r1.error);
   assert.strictEqual(r1.cards.length, 2, 'the first run drafts both replies');
-  const r2 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl, scheduled: true });
+  const r2 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl, scheduled: true });
   assert.ok(r2.ok, r2.error);
   assert.strictEqual(r2.cards.length, 0, 'the second run over the same pulse redrafts nothing');
   assert.strictEqual(store.cards.length, 2);
@@ -102,11 +105,11 @@ test('the model is told the fields to name and, on the next run, what it already
   const store = createMemoryStore({ lint });
   const env = tree(t, PULSE);
   const llm = model(() => gbpCards());
-  await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.match(llm.calls[0].system, /SEEN-BEFORE MEMORY: add to every card "seen": \{"venue", "reviewer", "platform", "review_id" \(when known\), "review_text"\}/);
   assert.doesNotMatch(llm.calls[0].user, /ALREADY DRAFTED/);
   const n = llm.calls.length;
-  await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.match(llm.calls[n].user, /ALREADY DRAFTED[\s\S]*venue=the bridge building\|reviewer=ana p\|platform=google \(waiting for review\)/);
 });
 
@@ -115,27 +118,27 @@ test('approved and waiting items are skipped; a rejected one comes back only whe
   const env = tree(t, PULSE);
   let text = 'Lovely night.';
   const llm = model(() => gbpCards(text));
-  await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   const [ana, ben] = store.cards;
   await store.decide(ana.id, { action: 'reject', who: 'katherine@x', reason: 'too short' });
   await store.decide(ben.id, { action: 'approve', who: 'katherine@x' });
   assert.strictEqual(store.cards[1].status, 'ready');
 
   // Rejected, same review text: still skipped. Approved: skipped.
-  const r2 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  const r2 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.strictEqual(r2.cards.length, 0);
   assert.strictEqual(r2.seen_skipped, 2);
 
   // The reviewer edited the review: the rejected item comes back, once, with a note.
   text = 'Lovely night, and the bar team was quick.';
-  const r3 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  const r3 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.strictEqual(r3.cards.length, 1);
   assert.strictEqual(r3.seen_skipped, 1, 'the approved one stays skipped');
   const back = r3.cards[0];
   assert.match(back.body, /### Seen before\n\nThis item was drafted before and rejected on \d\d\.\d\d\.\d{4} \("too short"\)\. It is back because its source changed: review text\./);
   assert.ok(!modelText(back.body).includes('Seen before'), 'the note is the Box\'s, never linted as the bot\'s words');
   assert.deepStrictEqual(back.seen_source, { review_text: text });
-  const r4 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  const r4 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.strictEqual(r4.cards.length, 0, 'the returned card is now waiting, so it is not drafted a third time');
 });
 
@@ -146,10 +149,10 @@ test('a card the model did not key is saved as before; the same item twice in on
     { title: 'Post idea for Saddle Woods Farm', target: 'Saddle Woods Farm', body: 'A fall post for the quietest venue.' },
     gbpCards()[0], gbpCards()[0],
   ]);
-  const r1 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  const r1 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.deepStrictEqual(r1.cards.map((c) => c.title), ['Post idea for Saddle Woods Farm', 'Reply to Ana P. on Google']);
   assert.strictEqual(r1.seen_skipped, 1);
-  const r2 = await runAgent({ slug: 'gbp', store, llm, env, fetchImpl: web(), scheduled: true });
+  const r2 = await runAgent({ def: gbpDef(), store, llm, env, fetchImpl: web(), scheduled: true });
   assert.deepStrictEqual(r2.cards.map((c) => c.title), ['Post idea for Saddle Woods Farm'], 'the memory never hides a card it cannot match');
 });
 
