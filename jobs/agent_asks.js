@@ -8,8 +8,9 @@ const path = require('path');
 const { treeRoot } = require('../lib/agent-sources');
 const { loadAgent, listAgents } = require('../lib/agent-runner');
 const { triageAsk, fileBuildOrder, isBuilt } = require('../lib/agent-asks');
+const IC = require('../lib/instruction-changes');
 
-async function sortAsks({ store, llm, inbox, now = () => new Date(), log = console.log }) {
+async function sortAsks({ store, llm, inbox, now = () => new Date(), log = console.log, env = process.env }) {
   if (!llm) { log('asks: no model key, nothing sorted'); return 0; }
   const asks = await store.takeNewAsks(5);
   for (const a of asks) {
@@ -17,7 +18,13 @@ async function sortAsks({ store, llm, inbox, now = () => new Date(), log = conso
       if (!listAgents().includes(a.agent)) throw new Error(`no agent ${a.agent}`);
       const def = loadAgent(a.agent);
       const t = await triageAsk({ ask: a, def, current: await store.currentSettings(a.agent), llm });
-      if (t.kind === 'instructions') {
+      if (t.kind === 'instructions' && IC.liveOn(env)) {
+        // #2979 (Mimi 11.05.2026): live on save; Mimi sees it on /agents and can undo.
+        const saved = await IC.applyAsk({ store, ask: a, triage: t, def });
+        if (saved.stale) { await store.updateAsk(a.id, { status: 'new', note: 'instructions changed while this was sorted; the Box sorts it again' }); log(`ask ${a.id}: stale, sorted again next run`); continue; }
+        if (saved.error) throw new Error(saved.error);
+        await store.updateAsk(a.id, { kind: t.kind, triage: t, status: 'applied', decided_by: 'live on save (ORDER #2979)', decided_at: now() });
+      } else if (t.kind === 'instructions') {
         await store.updateAsk(a.id, { kind: t.kind, triage: t, status: 'awaiting_exec' });
       } else if (t.kind === 'build') {
         if (!inbox) throw new Error('project tree not found, so the build order could not be filed');

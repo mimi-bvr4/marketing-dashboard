@@ -11,6 +11,9 @@
 //   POST /api/agents/:slug/cards/:id/redo { words } -> #2914 one revised draft of that card, queued
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
 //   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
+//   GET  /api/agents/changes            #2979 every instruction change a person saved (Mimi's notice list)
+//   GET  /api/agents/:slug/changes/:v   #2979 that change, before and after
+//   POST /api/agents/:slug/changes/:v/undo  #2979 EXEC ONLY: a new version copying the one before
 //   POST /api/agents/:slug/name         { name }  -> #1664, '' puts the default back
 //   PUT  /api/agents/:slug/portrait     raw PNG/JPG/WebP body, 1.5 MB max  -> #1664
 //   DELETE /api/agents/:slug/portrait   -> back to the drawn portrait
@@ -210,6 +213,36 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   });
 
   r.get('/api/agents/:slug/history', need, known, async (req, res) => res.json({ versions: await store.settingsHistory(req.params.slug) }));
+
+  // #2979: every instruction change a person saved, newest first, for Mimi to see
+  // and undo. Leadership can read the list; only an exec sees Undo work.
+  r.get('/api/agents/changes', need, async (req, res) => {
+    const IC = require('../lib/instruction-changes');
+    const slugs = new Set(listAgents());
+    const rows = (store.recentSettings ? await store.recentSettings(300) : []).filter((x) => slugs.has(x.agent));
+    res.json({ live: IC.liveOn(), copy: IC.COPY, exec: await isExec(req, identity), changes: IC.changeList(rows) });
+  });
+  r.get('/api/agents/:slug/changes/:version', need, known, async (req, res) => {
+    const IC = require('../lib/instruction-changes');
+    const v = Number(req.params.version);
+    if (!Number.isInteger(v) || v < 1) return res.status(400).json({ error: 'bad version' });
+    const history = await store.settingsHistory(req.params.slug, 500);
+    const after = history.find((x) => x.version === v);
+    if (!after) return res.status(404).json({ error: 'no such version' });
+    const before = IC.priorOf(history, v, loadAgent(req.params.slug));
+    res.json({ agent: req.params.slug, version: v, who: after.edited_by, at: after.created_at, note: after.note,
+      before_version: before.version, diff: IC.lineDiff(before.skill_md, after.skill_md),
+      settings: { before: { enabled: before.enabled, max_cards: before.max_cards }, after: { enabled: after.enabled, max_cards: after.max_cards } } });
+  });
+  r.post('/api/agents/:slug/changes/:version/undo', need, known, async (req, res) => {
+    if (!(await isExec(req, identity))) return res.status(403).json({ error: 'Only Mimi (an exec) can undo an instruction change.' });
+    const v = Number(req.params.version);
+    if (!Number.isInteger(v) || v < 1) return res.status(400).json({ error: 'bad version' });
+    const out = await require('../lib/instruction-changes').undoChange({ store, agent: req.params.slug, version: v,
+      def: loadAgent(req.params.slug), who: personOf(req) });
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ settings: out.settings });
+  });
 
   r.post('/api/agents/:slug', need, known, async (req, res) => {
     const b = req.body || {};
