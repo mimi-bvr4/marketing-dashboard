@@ -12,12 +12,19 @@ const NOW = new Date('2026-11-04T20:00:00-06:00');
 const daysAgo = (n) => new Date(NOW.getTime() - n * 86400000).toISOString();
 
 test('a still-pending source shows its LIVE why, not the old run reason', () => {
-  const gbp = loadAgent('gbp');
-  const label = gbp.sources.find((s) => s.type === 'pending').label;
+  // #2977: the Concierge's Google source went live, so this uses a pending source of its own.
+  const label = 'Google reviews and posts (Google My Business API)';
+  const d = { sources: [{ type: 'pending', label, why: 'waiting on Google, case 1-9567000042317' }], character: { needs: [] } };
   const run = { started_at: daysAgo(0.5), unavailable: [{ label, type: 'pending', why: 're-probe on or after 10.20.2026 (ORDER #1589)' }] };
-  const needs = characterOf(gbp, [], run, NOW).needs;
+  const needs = characterOf(d, [], run, NOW).needs;
   assert.ok(!needs.some((n) => /10\.20\.2026 \(ORDER #1589\)/.test(n)), 'the stale run reason is gone');
   assert.ok(needs.some((n) => n.startsWith(`${label}:`) && /1-9567000042317/.test(n)), 'the live source why is shown');
+});
+
+test('#2977: the Concierge waits on nothing once Google answered, even with the old run on record', () => {
+  const gbp = loadAgent('gbp');
+  const run = { started_at: daysAgo(0.5), unavailable: [{ label: 'Google reviews and posts (Google My Business API)', type: 'pending', why: '403 SERVICE_DISABLED' }] };
+  assert.deepStrictEqual(characterOf(gbp, [], run, NOW).needs, []);
 });
 
 test('a pending reason whose source is connected since is dropped', () => {
