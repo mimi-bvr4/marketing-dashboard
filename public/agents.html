@@ -342,6 +342,8 @@
         ${a.ask_page ? `<div class="row"><a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a></div>
         <p class="meta" style="margin:0">Asked on his own page; the Box answers there within 15 minutes.</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
           <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
+        <p class="meta" style="margin:0" data-runonce>This applies to this run only. To change it for good, use Ask for a new ability.
+          <button class="btn ghost" data-a="permanent" style="min-height:32px;font-size:13px">Make this permanent</button></p>
         <p class="meta" style="margin:0">The Box picks it up within 15 minutes; the draft lands in <a href="/review">Review</a>.</p>`}
         <p class="msg" hidden></p>
       </div>
@@ -404,6 +406,14 @@
     const i = e.target.closest('input[data-name]'); if (!i) return;
     if (e.key === 'Enter') { e.preventDefault(); i.blur(); }
     if (e.key === 'Escape') { i.value = agents.find((x) => x.slug === i.dataset.name).name; i.blur(); }
+  });
+  // #2961: when the Run-now request reads like a lasting change, make the one-run note stand out
+  // (the same words as lib/run-now-note.js STANDING_RE).
+  main.addEventListener('input', (e) => {
+    const i = e.target.closest('input[data-f=ask]'); if (!i) return;
+    const n = main.querySelector('[data-runonce]'); if (!n) return;
+    const standing = /\b(change|changes|always|never again|from now on|going forward|instead of|every time|each time|permanent(ly)?|for good)\b/i.test(i.value);
+    n.style.fontWeight = standing ? '600' : ''; n.style.color = standing ? 'inherit' : '';
   });
   main.addEventListener('change', async (e) => {
     const ms = e.target.closest('select[data-movesel]');
@@ -469,6 +479,9 @@
       if (b.dataset.a === 'watch') { await api(`/api/agents/${slug}/watch`, { method: 'POST', body: JSON.stringify({ site: q('wsite').value, label: q('wlabel').value }) }); await load(); say(main.querySelector('.panels'), 'Added. It is read next Monday (first week is a baseline).', true); }
       if (b.dataset.a === 'unwatch') { await api(`/api/agents/${slug}/watch/${b.dataset.id}`, { method: 'DELETE' }); await load(); }
       if (b.dataset.a === 'noportrait') { await api(`/api/agents/${slug}/portrait`, { method: 'DELETE' }); await load(); }
+      // #2961: a Run-now request that should last is filed as an Ask (the Box sorts it; an instruction change waits for Mimi).
+      if (b.dataset.a === 'permanent') { const t = q('ask') ? q('ask').value.trim() : ''; if (!t) { say(b, 'Type the change in the request box first.'); return; }
+        await api(`/api/agents/${slug}/asks`, { method: 'POST', body: JSON.stringify({ ask: t, permanent: true }) }); await load(); say(main.querySelector('.panels'), 'Filed as an Ask for a lasting change. The Box sorts it within about 15 minutes; an instruction change waits for Mimi.', true); }
       if (b.dataset.a === 'ask') { await api(`/api/agents/${slug}/asks`, { method: 'POST', body: JSON.stringify({ ask: q('newask').value }) }); await load(); say(main.querySelector('.panels'), 'Asked. The Box sorts it within about 15 minutes.', true); }
       if (b.dataset.a === 'apply' || b.dataset.a === 'decline') { const li = b.closest('li'); await api(`/api/agents/asks/${b.dataset.id}/decide`, { method: 'POST', body: JSON.stringify({ decision: b.dataset.a, note: (li.querySelector('[data-f=dnote]') || {}).value }) }); await load(); }
       if (b.dataset.a === 'save') { const r = await api(`/api/agents/${slug}`, { method: 'POST', body: JSON.stringify({ skill_md: q('skill').value, enabled: q('enabled').checked, max_cards: Number(q('max').value), note: q('note').value }) }); await load(); say(main.querySelector('#instr'), `Saved as version ${r.settings.version}. The next run uses it.`, true); }

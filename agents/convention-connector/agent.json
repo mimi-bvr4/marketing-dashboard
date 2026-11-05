@@ -15,10 +15,11 @@
       "type": "web_trends",
       "required": true,
       "label": "web search for conventions coming to Nashville and who works them",
-      "instruction": "Only events whose dates fall between today and 9 months from today. For each item give: the event name, the dates, the host venue, expected attendance if the page states it, the organizer, and the link. For companies, give the company name, what it does for the event, and the link to its own public website or contact page. Never give a person's email or phone unless it is printed on a public business page you found, and then give that page's link.",
+      "instruction": "Only events whose dates fall between today and 4 years from today. List the next 9 months first, then later events grouped by year. If you find nothing for a year, say so for that year. For each item give: the event name, the dates, the host venue, expected attendance if the page states it, the organizer, and the link. For companies, give the company name, what it does for the event, and the link to its own public website or contact page. Never give a person's email or phone unless it is printed on a public business page you found, and then give that page's link.",
       "queries": [
-        "conventions, trade shows and association conferences booked at Music City Center in Nashville in the next 9 months, with dates and expected attendance",
-        "large conferences and corporate meetings at Gaylord Opryland Resort and Convention Center and downtown Nashville hotels in the next 9 months",
+        "conventions, trade shows and association conferences booked at Music City Center in Nashville in the next 4 years, with dates and expected attendance",
+        "large conferences and corporate meetings at Gaylord Opryland Resort and Convention Center and downtown Nashville hotels in the next 4 years",
+        "associations and conventions that have announced Nashville as a future host city for 2028, 2029 and 2030 and later years, with the year and the announcement link",
         "Nashville destination management companies (DMCs) and corporate meeting planners that run offsite events, receptions and dinners for conventions",
         "official general service contractors, event production and decor companies working Nashville conventions this year",
         "meeting planners or associations that have announced Nashville as the host city for an upcoming conference, and their event or partnership contacts"
@@ -47,7 +48,7 @@
   "character": {
     "role": "The convention scout",
     "does": [
-      "Every Monday, finds the conventions, trade shows and big corporate meetings coming to Nashville in the next 9 months, with dates, host venue, size and organizer",
+      "Every Monday, finds the conventions, trade shows and big corporate meetings coming to Nashville in the next 4 years, soonest first, with dates, host venue, size and organizer",
       "Finds the companies that work them and hire out the extras: destination management companies, meeting planners, production and decor contractors",
       "Drafts a short, specific email to each one offering our venues, catering, bar and lighting for their receptions, dinners and offsite nights",
       "Every item carries the link it came from"

@@ -250,7 +250,12 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   });
 
   r.post('/api/agents/:slug/asks', need, known, async (req, res) => {
-    const out = await store.createAsk(req.params.slug, (req.body || {}).ask, personOf(req));
+    // #2961: "Make this permanent" under the Run-now box files the request as a
+    // standing-change Ask; the Box sorts it and an instruction change waits for Mimi.
+    const body = req.body || {};
+    const typed = String(body.ask || '').trim();
+    const text = body.permanent === true && typed.length >= 5 ? require('../lib/run-now-note').permanentAsk(typed) : body.ask;
+    const out = await store.createAsk(req.params.slug, text, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ ask: out.ask });
   });

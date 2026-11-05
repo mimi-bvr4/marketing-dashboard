@@ -24,7 +24,8 @@ test('Copywriter: the text is measured by code first (AI tells and internal code
   assert.match(none.why, /paste the text to check/);
 });
 
-test('Convention Connector: its web search looks ahead 9 months, with links, never a guessed contact', async () => {
+// #2961 (Mimi's standing ruling 11.04.2026): the window is 4 years, no longer 9 months.
+test('Convention Connector: its web search looks ahead 4 years, with links, never a guessed contact', async () => {
   const a = loadAgent('convention-connector');
   const src = a.sources.find((s) => s.type === 'web_trends');
   const prompts = [];
@@ -33,7 +34,7 @@ test('Convention Connector: its web search looks ahead 9 months, with links, nev
   assert.strictEqual(r.got.length, 1, JSON.stringify(r.unavailable));
   assert.strictEqual(prompts.length, src.queries.length);
   for (const p of prompts) {
-    assert.match(p, /between today and 9 months from today/);
+    assert.match(p, /between today and 4 years from today/);
     assert.match(p, /Never list an item without a link you actually found/);
     assert.doesNotMatch(p, /last 14 days/);
   }
