@@ -1,0 +1,12 @@
+{
+  "name": "agent-platform",
+  "version": "0.1.0",
+  "description": "Shared agent-team module (ORDER #2963): runner, team page, review queue, edit chain, Producer and reviewer watch, configured per department",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
