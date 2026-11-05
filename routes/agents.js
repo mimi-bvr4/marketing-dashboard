@@ -47,6 +47,7 @@
 const express = require('express');
 const path = require('path');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
+const { sourceLabel } = require('../lib/agent-sources');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly } = require('../lib/producer');
@@ -72,11 +73,32 @@ async function isExec(req, identity) {
   return !!who.active && Number(who.rung) >= 3;
 }
 
-function characterOf(d, asks, run) {
+// #2958: a run's "unavailable" reasons are a snapshot of that run, so they go
+// stale (Concierge kept a 10.20 re-probe date after the 11.04 re-probe).
+// Waiting on shows a run reason only if it is still true:
+//   - a source still pending in agent.json: its LIVE `why` wins over the run's;
+//   - a pending source that is no longer pending (connected since): dropped;
+//   - any other read failure: shown only while the run is under STALE_RUN_DAYS
+//     old; older, it describes a past run, not a wait (last_run keeps it).
+const STALE_RUN_DAYS = 7;
+function liveMissing(d, run, now) {
+  if (!run) return [];
+  const pending = new Map((d.sources || []).filter((s) => s.type === 'pending').map((s) => [sourceLabel(s), s.why || 'not connected yet']));
+  const at = run.started_at ? new Date(run.started_at).getTime() : NaN;
+  const fresh = Number.isFinite(at) && (now.getTime() - at) < STALE_RUN_DAYS * 86400000;
+  const out = [];
+  for (const u of run.unavailable || []) {
+    if (pending.has(u.label)) out.push(`${u.label}: ${pending.get(u.label)}`);
+    else if (u.type !== 'pending' && fresh) out.push(`${u.label}: ${u.why}`);
+  }
+  return out;
+}
+
+function characterOf(d, asks, run, now = new Date()) {
   const c = d.character || { role: d.job, does: [], traits: [], needs: [] };
   const applied = asks.filter((a) => a.status === 'applied');
   const cants = asks.filter((a) => a.status === 'cant');
-  const missing = ((run && run.unavailable) || []).map((u) => `${u.label}: ${u.why}`);
+  const missing = liveMissing(d, run, now);
   return {
     role: c.role,
     does: [...(c.does || []), ...applied.map((a) => `${a.ask} (added from ask #${a.id})`)],
@@ -135,7 +157,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
-        character: watchNeed(characterOf(d, asks, runs.get(slug)), watchers[slug]),
+        character: watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug]),
         watch: watchers[slug] || null,
         asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
           reason: a.triage ? a.triage.reason : null, instead: a.triage ? a.triage.instead : null,
@@ -317,4 +339,4 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   return r;
 }
 
-module.exports = { createAgentsRouter, sourceView, characterOf, isExec, watchNeed, REDO_MESSAGE };
+module.exports = { createAgentsRouter, sourceView, characterOf, liveMissing, STALE_RUN_DAYS, isExec, watchNeed, REDO_MESSAGE };

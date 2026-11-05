@@ -46,6 +46,8 @@
   .line { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
   .does { margin: 0; font-size: 15px; line-height: 1.5; }
   .need { background: #FBF7F1; border: 1px solid #EFE6D8; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.45; }
+  .need .more { display: inline; } .need .more summary { display: inline; cursor: pointer; text-decoration: underline; }
+  .need .more[open] summary { display: block; } .need .more ul { margin: 6px 0 0; padding-left: 18px; }
   .acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
   .btn { min-height: 44px; padding: 0 18px; border-radius: 10px; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; }
   .btn.primary { border: none; background: var(--terra); color: #fff; }
@@ -181,7 +183,7 @@
       <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name)}${nameInput(a)}<span class="job">${esc(a.job)}</span>${V.speakerHtml(voices, a.slug, a.name, esc)}</div></div>
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
-      ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
+      ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${a.character.needs.length - 1} more)</summary><ul>${a.character.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
       ${a.paused ? `<div class="need"><strong>Paused:</strong> ${esc(a.paused)}</div>` : ''}
       <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(a.card_only)}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
