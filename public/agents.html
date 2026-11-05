@@ -104,6 +104,9 @@
   .boardl li { border-left: 3px solid var(--line); padding-left: 10px; }
   .b-waiting, .b-failed { border-left-color: #b42318 !important; } .b-held { border-left-color: #8a5300 !important; }
   .b-ran { border-left-color: #1d6b42 !important; } .b-paused { border-left-color: #8B8178 !important; }
+  .speak { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: inherit; cursor: pointer; padding: 0; margin-top: 4px; }
+  .speak:hover, .speak.playing { background: #F4EFE8; }
+  .speakcap { display: block; font-size: 13px; font-style: italic; color: #5b534b; margin-top: 4px; max-width: 32ch; }
 </style>
 </head>
 <body>
@@ -175,7 +178,7 @@
     const st = status(a);
     const need = a.character.needs[0];
     return `<article class="card" data-slug="${a.slug}">
-      <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name)}${nameInput(a)}<span class="job">${esc(a.job)}</span></div></div>
+      <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name)}${nameInput(a)}<span class="job">${esc(a.job)}</span>${V.speakerHtml(voices, a.slug, a.name, esc)}</div></div>
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? ` (+${a.character.needs.length - 1} more)` : ''}</div>` : ''}
@@ -184,6 +187,24 @@
       <p class="msg" hidden></p>
     </article>`;
   }
+  // The "say something" button: off unless the switch is on (GET /api/agent-voices).
+  // Plays only on a click, one clip at a time, never loops; the line shows as a
+  // caption while it plays.
+  let voices = { on: false };
+  const lastClip = {};
+  let player = null;
+  main.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-speak]'); if (!b) return;
+    const slug = b.dataset.speak; const clips = V.speakerFor(voices, slug); if (!clips) return;
+    if (player) { player.pause(); player = null; main.querySelectorAll('.speak.playing').forEach((x) => x.classList.remove('playing')); main.querySelectorAll('[data-speakcap]').forEach((x) => { x.hidden = true; }); }
+    const i = V.pickClip(clips.length, lastClip[slug]); lastClip[slug] = i;
+    const cap = main.querySelector(`[data-speakcap="${slug}"]`);
+    const a = new Audio(clips[i].src); a.loop = false; player = a;
+    const done = () => { b.classList.remove('playing'); if (cap) cap.hidden = true; if (player === a) player = null; };
+    a.addEventListener('ended', done); a.addEventListener('error', done);
+    b.classList.add('playing'); if (cap) { cap.textContent = clips[i].line; cap.hidden = false; }
+    a.play().catch(done);
+  });
   // #2900 the Producer: the week, the brakes and the board. It never writes,
   // approves or sends anything; moving a day is a schedule change she may make.
   let producer = null;
@@ -208,7 +229,7 @@
       <div class="psum">
         <div class="who">${face({ slug: 'producer', name: p.name }, 84)}<div class="txt">${eyebrow('producer', 'The producer', p.name)}
           <input class="name" data-pname value="${esc(p.name)}" maxlength="40" aria-label="Name for the producer" title="Click to rename">
-          <span class="job">Runs the team's week. It never writes, approves or sends anything.</span></div></div>
+          <span class="job">Runs the team's week. It never writes, approves or sends anything.</span>${V.speakerHtml(voices, 'producer', p.name, esc)}</div></div>
         <div class="pills"><span class="pill ${p.waiting >= p.hold_at ? 's-wait' : 's-ok'}">${p.waiting} drafts waiting (holds at ${p.hold_at})</span>
           <span class="pill ${p.week_cards >= p.cap ? 's-wait' : 's-ok'}">${p.week_cards} of ${p.cap} cards this week</span>
           <span class="pill ${p.on ? 's-ok' : 's-off'}">${p.on ? 'Running the week' : 'Not switched on yet'}</span>
@@ -363,6 +384,7 @@
   async function load() {
     try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec;
       try { producer = await api('/api/producer'); } catch (x) { producer = null; }
+      try { voices = await api('/api/agent-voices'); } catch (x) { voices = { on: false }; }
       render(); }
     catch (e) { main.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
