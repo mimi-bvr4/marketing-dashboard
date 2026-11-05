@@ -10,9 +10,10 @@ const path = require('path');
 
 const AV = require('../lib/agent-voices');
 
-// web: its voice in the script ("Charlotte") is not a default voice on the
-// account, so it was not recorded. Remove it from here once its clips land.
-const WAITING = ['web'];
+// Characters still waiting on a voice. Empty since ORDER #2978 (11.05.2026):
+// web was recorded in Bella, a default voice, after Charlotte (not on the
+// account) and Emma (a professional voice) were ruled out.
+const WAITING = [];
 
 const files = fs.readdirSync(AV.CLIP_DIR).filter((f) => !f.startsWith('.'));
 
