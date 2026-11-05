@@ -55,6 +55,8 @@ const agentVoices = require('../lib/agent-voices');
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
 const REDO_MESSAGE = 'Redo asked. The new version lands here within about 15 minutes.';
+// #2900: the Producer's profile key in agent_profiles.
+const PRODUCER = 'producer';
 
 function sourceView(src) {
   const label = src.label || src.path || (src.newest ? `newest ${src.newest}*` : src.type);
@@ -94,6 +96,10 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   const r = express.Router();
   const need = (req, res, next) => (personOf(req) ? next() : res.status(403).json({ error: 'Signed-in leadership only.' }));
   const known = (req, res, next) => (listAgents().includes(req.params.slug) ? next() : res.status(404).json({ error: 'no such agent' }));
+  // #2953: the Producer has no agents/ folder but has a profile (key 'producer', #2900),
+  // so its portrait is stored and served through the same routes as every card's.
+  const hasFace = (req, res, next) => (req.params.slug === PRODUCER || listAgents().includes(req.params.slug)
+    ? next() : res.status(404).json({ error: 'no such agent' }));
 
   r.get(['/agents', '/agents.html'], (req, res) => (personOf(req) ? res.sendFile(PAGE) : res.status(403).send('Signed-in leadership only.')));
 
@@ -145,17 +151,17 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     res.json({ name: displayName(loadAgent(req.params.slug), out.profile), profile: out.profile });
   });
   const raw = express.raw({ type: () => true, limit: '2mb' });
-  r.put('/api/agents/:slug/portrait', need, known, raw, async (req, res) => {
+  r.put('/api/agents/:slug/portrait', need, hasFace, raw, async (req, res) => {
     const out = await store.setPortrait(req.params.slug, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ profile: out.profile });
   });
-  r.delete('/api/agents/:slug/portrait', need, known, async (req, res) => {
+  r.delete('/api/agents/:slug/portrait', need, hasFace, async (req, res) => {
     const out = await store.setPortrait(req.params.slug, null, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ profile: out.profile });
   });
-  r.get('/api/agents/:slug/portrait', need, known, async (req, res) => {
+  r.get('/api/agents/:slug/portrait', need, hasFace, async (req, res) => {
     const p = await store.portrait(req.params.slug);
     if (!p) return res.status(404).json({ error: 'no portrait' });
     res.set({ 'Content-Type': p.portrait_type, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
@@ -249,6 +255,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     res.json({
       health,
       on: P.producerOn(), name: me && me.display_name ? me.display_name : 'The Producer', named_by: me && me.display_name ? me.updated_by : null,
+      portrait: me && me.portrait_at ? `/api/agents/${PRODUCER}/portrait?v=${new Date(me.portrait_at).getTime()}` : null,
       waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.WAITING_HOLD,
       week_cards: store.producerWeekCards ? await store.producerWeekCards(P.weekStart(ymd)) : 0, cap: P.WEEKLY_CAP,
       exempt: Object.keys(P.EXEMPT),
