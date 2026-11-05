@@ -98,6 +98,12 @@ app.use(pageGate);
   if (reviewPool) {
     ensureAgentTables(reviewPool).catch(e => console.error('[review] ensureAgentTables:', e.message));
     const agentStore = createAgentStore(reviewPool, { lint });
+    // ORDER #2962: the reviewer facts (exec only) and its visit log, both behind
+    // REVIEWER_WATCH (default OFF). The recorder sits above the Review and Agents
+    // routers so a head's page visit is seen; it never changes the page.
+    // Rollback: delete these two lines (the router and the recorder are self-contained).
+    app.use(require('./routes/reviewer-watch').visitRecorder({ pool: reviewPool }));
+    app.use(require('./routes/reviewer-watch').createReviewerWatchRouter({ pool: reviewPool, identity: require('./lib/staff-identity').createIdentityClient() }));
     app.use(createReviewRouter({ store: agentStore }));
     // ORDER #1658: the Agents page (Katherine edits her bots; same gate, same store).
     app.use(require('./routes/agents').createAgentsRouter({ store: agentStore, identity: require('./lib/staff-identity').createIdentityClient() }));
@@ -117,7 +123,8 @@ app.use(pageGate);
     app.use(require('./routes/web').createWebRouter({ store: web.createPgStore(reviewPool) }));
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
-      '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*'],
+      '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*',
+      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }
