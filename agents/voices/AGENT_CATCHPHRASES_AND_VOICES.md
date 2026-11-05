@@ -22,7 +22,7 @@ RULES FOR THE LINES: no em dashes, no hard capacity numbers, no "barn" unless th
 | Bloggy Bob | Charlie | male, middle-aged, Australian, natural | easygoing storyteller |
 | Copywriter | Callum | male, middle-aged, Transatlantic, intense | eagle-eyed editor |
 | Collateral Cadet | Laura | female, young, American, upbeat | eager new recruit |
-| Web Agent | Charlotte | female, young, Swedish, seductive | cool, unbothered builder |
+| Web Agent | Bella | (Mimi's pick 11.05.2026, replacing Emma, a professional voice, which replaced Charlotte, not on the account; Bella is a premade default voice) | cool, unbothered builder |
 | Site Guardian (the night watch) | Brian | male, middle-aged, American, deep | quiet night guard |
 
 ## The Producer (Alice)
@@ -205,7 +205,7 @@ RULES FOR THE LINES: no em dashes, no hard capacity numbers, no "barn" unless th
 9. A change log entry is ready for review. It's very tidy. I'm very proud.
 10. Cadet out. Back to the archive!
 
-## Web Agent (Charlotte)
+## Web Agent (Bella)
 1. Send me the HTML. I'll make it live. Well, live as a draft.
 2. You want it bigger? Everyone wants it bigger.
 3. Mobile first. Always mobile first.
