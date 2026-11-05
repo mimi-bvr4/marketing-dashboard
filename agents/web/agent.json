@@ -28,8 +28,6 @@
         "instead": "Names the photo on the card and leaves it out"
       }
     ],
-    "needs": [
-      "Page screenshots on the Review card wait on the browser install for the Box"
-    ]
+    "needs": []
   }
 }

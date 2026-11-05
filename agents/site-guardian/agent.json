@@ -38,7 +38,7 @@
       }
     ],
     "needs": [
-      "A WP Engine login for the Brain (a Full user with API access), for backups and patching"
+      "Mimi's decision: a WP Engine login for the Brain (a Full user with API access), for backups and patching"
     ]
   }
 }

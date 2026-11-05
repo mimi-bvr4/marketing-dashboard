@@ -35,7 +35,7 @@
     {
       "type": "pending",
       "label": "Google reviews and posts (Google My Business API)",
-      "why": "Re-probed 11.04.2026 13:01 CT (ORDER #2944): the Business Profile API is approved and brain@ sees all 11 profiles, but reviews and posts sit behind the older Google My Business API (mybusiness.googleapis.com), which answers 403 SERVICE_DISABLED. Google has to grant it to project 308053229449; Mimi asked on case 2-2788000041229 (10.20); Google routed it to its API support form (10.23). Until then replies are drafted from the public reviews in the review pulse."
+      "why": "Re-probed 11.04.2026 13:01 CT (ORDER #2944): the Business Profile API is approved and brain@ sees all 11 profiles, but reviews and posts sit behind the older Google My Business API (mybusiness.googleapis.com), which answers 403 SERVICE_DISABLED. Google has to grant it to project 308053229449; Mimi asked on case 2-2788000041229 (10.20); Google routed it to its API support form (10.23); Mimi filed that form 11.04.2026 19:11 CT, new case 1-9567000042317, waiting on Google. Until then replies are drafted from the public reviews in the review pulse."
     }
   ],
   "character": {
@@ -59,7 +59,7 @@
       }
     ],
     "needs": [
-      "Google to grant the Google My Business API (reviews and posts) to project 308053229449"
+      "Google: grant the Google My Business API (reviews and posts) to project 308053229449 (case 1-9567000042317, filed by Mimi 11.04.2026)"
     ]
   }
 }

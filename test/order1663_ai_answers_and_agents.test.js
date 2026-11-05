@@ -130,20 +130,22 @@ test('agent.json sources validate: every type is registered, no pending source l
   const mr = loadAgent('monthly-report');
   assert.ok(mr.sources.some((s) => s.type === 'dashboard' && s.paths.includes('/api/funnel/monthly')));
   assert.ok(!mr.sources.some((s) => s.type === 'pending' && /HubSpot/.test(s.label)));
-  assert.deepStrictEqual(mr.character.needs, ['A read-only dashboard key in the Box Keychain (marketing-fleet-key)',
-    "The HubSpot token's marketing-email statistics scope (a missing one is named in the email section)", 'The ads export Sheet']); // #2903 the email scorecard
+  // #2958: every need names its owner.
+  assert.deepStrictEqual(mr.character.needs, ['Mimi: mint a read-only key at /settings/api-tokens and store it in the Box Keychain as marketing-fleet-key (one command, it never shows the key)',
+    "Mimi: the HubSpot private app's marketing-email statistics scope (HubSpot names the exact scope once the key above exists)",
+    'Katherine: the Google + Meta ads export Sheet, shared to the service account']); // #2903 the email scorecard
   assert.ok(!/Katherine's call|stages count/i.test(mr.skill));
 
   const c = loadAgent('citations');
   assert.ok(!c.sources.some((s) => s.type === 'pending'));
   assert.ok(c.sources.some((s) => s.type === 'file' && s.newest === '07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_'));
-  assert.ok(c.character.needs.includes('Keys for ChatGPT, Gemini and Perplexity (Claude runs now)'));
+  assert.ok(c.character.needs.includes("Mimi's decision: keys for ChatGPT, Gemini and Perplexity (Claude runs now)"));
   assert.ok(dueAgents('2026-10-15').includes('citations') && !dueAgents('2026-10-14').includes('citations'));
   assert.match(c.cadence, /^the 15th of each month, 06:00 CT/); // #1699 adds the quarterly packs
 
   // #1699: Listings lives inside Citations now; the listings draft is read but not required, so the monthly check still runs without it.
   assert.ok(c.sources.some((s) => s.newest === '07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_' && !s.required));
-  assert.ok(c.character.needs.includes('Katherine confirms which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)'));
+  assert.ok(c.character.needs.includes('Katherine: confirm which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)'));
 });
 
 test('monthly report: the dashboard source asks /api/funnel/monthly with the fleet key', async () => {

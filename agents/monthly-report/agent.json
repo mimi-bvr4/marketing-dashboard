@@ -66,9 +66,9 @@
       }
     ],
     "needs": [
-      "A read-only dashboard key in the Box Keychain (marketing-fleet-key)",
-      "The HubSpot token's marketing-email statistics scope (a missing one is named in the email section)",
-      "The ads export Sheet"
+      "Mimi: mint a read-only key at /settings/api-tokens and store it in the Box Keychain as marketing-fleet-key (one command, it never shows the key)",
+      "Mimi: the HubSpot private app's marketing-email statistics scope (HubSpot names the exact scope once the key above exists)",
+      "Katherine: the Google + Meta ads export Sheet, shared to the service account"
     ]
   }
 }
