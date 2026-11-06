@@ -340,7 +340,7 @@
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
           <span class="meta">${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}` : 'Has not run yet'}</span></div>
         ${a.ask_page ? `<div class="row"><a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a></div>
-        <p class="meta" style="margin:0">Asked on his own page; the Box answers there within 15 minutes.</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
+        <p class="meta" style="margin:0">${esc(a.ask_note || 'Asked on his own page; the Box answers there within 15 minutes.')}</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
           <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
         <p class="meta" style="margin:0" data-runonce>This applies to this run only. To change it for good, use Ask for a new ability.
           <button class="btn ghost" data-a="permanent" style="min-height:32px;font-size:13px">Make this permanent</button></p>
