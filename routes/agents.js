@@ -50,7 +50,7 @@ const { listAgents, loadAgent } = require('../lib/agent-runner');
 const { sourceLabel } = require('../lib/agent-sources');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
-const { pausedFor, cardOnly } = require('../lib/producer');
+const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
 const agentVoices = require('../lib/agent-voices');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
@@ -151,7 +151,8 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
         named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, sources: (d.sources || []).map(sourceView),
         // #2903: paused until a source exists (Paid Ads), or a card only (Web Agent, Site Guardian).
-        paused: pausedFor(d), card_only: cardOnly(d),
+        // #3000: a new member that ships OFF shows the same "Paused:" line, naming its switch.
+        paused: switchOff(d) || pausedFor(d), card_only: cardOnly(d),
         default_skill: d.skill, default_max_cards: d.max_cards || 3,
         current: s ? { version: s.version, skill_md: s.skill_md, enabled: s.enabled, max_cards: s.max_cards,
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
