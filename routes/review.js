@@ -6,6 +6,7 @@
 //   GET  /api/review/runs           each agent's last run (done / failed / missing sources)
 //   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit' | 'restore', reason?, body? }
 //   POST /api/review/lint           { text } -> the AI-tells lint ("Check text")
+//   POST /api/review/detective      { text } -> the AI Tell Detective (#3008; 404 while AI_TELL_DETECTIVE is off)
 //
 // ACCESS: mounted below the #654/#1370 page gate, so only an exec or Katherine
 // with a live SSO session reaches here (req.mktUser). The decision is recorded
@@ -21,6 +22,7 @@ const express = require('express');
 const path = require('path');
 const { lint } = require('../lib/ai-tells');
 const handover = require('../lib/handover');
+const detective = require('../lib/ai-tell-detective');
 
 const PAGE = path.join(__dirname, '..', 'public', 'review.html');
 // #2908: 'archived' is the Archived filter (hidden from Drafts, never deleted).
@@ -71,6 +73,15 @@ function createReviewRouter({ store }) {
     const text = String((req.body && req.body.text) || '');
     if (text.length > 200000) return res.status(413).json({ error: 'too long' });
     res.json(lint(text));
+  });
+  // ORDER #3008: the AI Tell Detective (verdict, rule numbers, fixes, clean
+  // rewrite). Behind AI_TELL_DETECTIVE, default OFF: while off it answers 404
+  // and the page keeps the plain lint above. Nothing is stored.
+  r.post('/api/review/detective', need, (req, res) => {
+    if (!detective.on()) return res.status(404).json({ error: 'off', switch: 'AI_TELL_DETECTIVE' });
+    const text = String((req.body && req.body.text) || '');
+    if (text.length > 200000) return res.status(413).json({ error: 'too long' });
+    res.json(detective.check(text));
   });
   return r;
 }

@@ -243,6 +243,16 @@
     if (b.dataset.a === 'save') act({ action: 'edit', body: el.querySelector('.edit textarea').value });
   });
   $('#checkBtn').addEventListener('click', async () => {
+    // #3008: the AI Tell Detective when AI_TELL_DETECTIVE is on (404 while off).
+    try {
+      const d = await api('/api/review/detective', { method: 'POST', body: JSON.stringify({ text: $('#checkText').value }) });
+      const rows = d.hits.map((h) => `<li><b>Rule ${esc(String(h.rule_no))}</b> ${esc(h.rule)}${h.phrase ? ': "' + esc(h.phrase) + '"' : ''}${h.line ? ' (line ' + h.line + ')' : ''}. ${esc(h.why)} <i>Fix:</i> ${esc(h.fix)}</li>`).join('');
+      const left = d.rewrite_left.length ? `<p>Still needs a person: ${d.rewrite_left.map((h) => 'rule ' + esc(String(h.rule_no)) + (h.phrase ? ' "' + esc(h.phrase) + '"' : '')).join(', ')}</p>` : '';
+      $('#checkOut').innerHTML = `<span class="badge ${d.count ? 'bad' : 'good'}">${esc(d.verdict)}</span>${rows ? '<ul>' + rows + '</ul>' : ''}`
+        + (d.count ? `<p>Clean rewrite (only the tells removed):</p><textarea readonly>${esc(d.rewrite)}</textarea>${left}` : '')
+        + `<p class="empty">${esc(d.footer)}</p>`;
+      return;
+    } catch (x) { /* off or unavailable: the plain lint below */ }
     try {
       const r = await api('/api/review/lint', { method: 'POST', body: JSON.stringify({ text: $('#checkText').value }) });
       const hits = [...r.fails, ...r.flags];
