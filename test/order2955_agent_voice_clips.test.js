@@ -13,7 +13,9 @@ const AV = require('../lib/agent-voices');
 // Characters still waiting on a voice. Empty since ORDER #2978 (11.05.2026):
 // web was recorded in Bella, a default voice, after Charlotte (not on the
 // account) and Emma (a professional voice) were ruled out.
-const WAITING = [];
+// ORDER #3000 (11.05.2026): NB's three new agents have their lines and voices in
+// the script (Roger, River, Adam) but no clips recorded yet.
+const WAITING = ['planner-scout', 'gala-scout', 'engagement-sleuth'];
 
 const files = fs.readdirSync(AV.CLIP_DIR).filter((f) => !f.startsWith('.'));
 
