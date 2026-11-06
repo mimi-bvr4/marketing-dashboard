@@ -7,6 +7,7 @@
 //   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit' | 'restore', reason?, body? }
 //   POST /api/review/lint           { text } -> the AI-tells lint ("Check text")
 //   POST /api/review/detective      { text } -> the AI Tell Detective (#3008; 404 while AI_TELL_DETECTIVE is off)
+//   GET  /api/review/ai-tell-cards  ids of proposed-tell cards on Drafts (#3015; 404 while AI_TELL_HUNT is off)
 //
 // ACCESS: mounted below the #654/#1370 page gate, so only an exec or Katherine
 // with a live SSO session reaches here (req.mktUser). The decision is recorded
@@ -23,6 +24,8 @@ const path = require('path');
 const { lint } = require('../lib/ai-tells');
 const handover = require('../lib/handover');
 const detective = require('../lib/ai-tell-detective');
+const tellReview = require('../lib/ai-tell-review');
+const fs = require('fs');
 
 const PAGE = path.join(__dirname, '..', 'public', 'review.html');
 // #2908: 'archived' is the Archived filter (hidden from Drafts, never deleted).
@@ -36,7 +39,19 @@ function personOf(req) {
 function createReviewRouter({ store }) {
   const r = express.Router();
   const need = (req, res, next) => (personOf(req) ? next() : res.status(403).json({ error: 'Signed-in leadership only.' }));
-  r.get(['/review', '/review.html'], (req, res) => (personOf(req) ? res.sendFile(PAGE) : res.status(403).send('Signed-in leadership only.')));
+  r.get(['/review', '/review.html'], (req, res) => {
+    if (!personOf(req)) return res.status(403).send('Signed-in leadership only.');
+    // #3015: AI_TELL_HUNT off = the file exactly as it was. On = one script tag
+    // that puts Approve tell / Reject tell on the proposed-tell cards.
+    if (!tellReview.on()) return res.sendFile(PAGE);
+    res.type('html').send(fs.readFileSync(PAGE, 'utf8').replace('</body>', `${tellReview.SCRIPT_TAG}</body>`));
+  });
+  // #3015: the ids of the proposed-tell cards waiting on Drafts (404 while off).
+  r.get('/api/review/ai-tell-cards', need, async (req, res) => {
+    if (!tellReview.on()) return res.status(404).json({ error: 'off', switch: 'AI_TELL_HUNT' });
+    const cards = await store.list({ status: 'draft', agent: tellReview.AGENT });
+    res.json({ ids: cards.filter(tellReview.isTellCard).map((c) => c.id) });
+  });
   // #2993: where the handover line is, for the page's "Examples from before handover" tab.
   r.get('/api/review/handover', need, (req, res) => {
     const at = handover.handoverAt();
