@@ -47,7 +47,7 @@
 const express = require('express');
 const path = require('path');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
-const { sourceLabel } = require('../lib/agent-sources');
+const { sourceLabel, scoutWatchList } = require('../lib/agent-sources');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
@@ -108,10 +108,12 @@ function characterOf(d, asks, run, now = new Date()) {
 }
 
 // #1666: a watcher with an empty list says so under Waiting on.
-function watchNeed(c, list) {
-  if (!list || list.length) return c;
-  const n = "Katherine's list of competitor websites to watch (add them on this page)";
-  return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites Katherine listed:/.test(x))] };
+// #3047: the IHG Competitors sheet's top competitors count, so a Scout that
+// watches the sheet is never shown as waiting on a list.
+function watchNeed(c, list, fromSheet = 0) {
+  if (!list || list.length || fromSheet > 0) return c;
+  const n = 'competitor websites to watch: none read from the IHG Competitors sheet yet, and none added on this page';
+  return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites (Katherine listed|\(IHG Competitors sheet)/.test(x))] };
 }
 
 function createAgentsRouter({ store, identity, clock = () => new Date() }) {
@@ -139,8 +141,13 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     const exec = await isExec(req, identity);
     const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
     const watchers = {};
+    const sheetWatch = {};
     for (const slug of listAgents()) {
-      if ((loadAgent(slug).sources || []).some((x) => x.type === 'competitor_watch')) watchers[slug] = store.watchlist ? await store.watchlist(slug) : [];
+      if ((loadAgent(slug).sources || []).some((x) => x.type === 'competitor_watch')) {
+        watchers[slug] = store.watchlist ? await store.watchlist(slug) : [];
+        // #3047: how many sheet competitors the Scout adds on top of this page's list.
+        try { sheetWatch[slug] = (await scoutWatchList(store, slug)).fromSheet; } catch (e) { sheetWatch[slug] = 0; }
+      }
     }
     res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
@@ -158,8 +165,9 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
-        character: watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug]),
+        character: watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug], sheetWatch[slug] || 0),
         watch: watchers[slug] || null,
+        watch_sheet: watchers[slug] ? (sheetWatch[slug] || 0) : null,
         asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
           reason: a.triage ? a.triage.reason : null, instead: a.triage ? a.triage.instead : null,
           proposed: a.status === 'awaiting_exec' && a.triage ? a.triage.proposed_skill_md : null,
