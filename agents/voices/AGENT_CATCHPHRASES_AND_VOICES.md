@@ -281,7 +281,7 @@ Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026:
 - ALT A (could replace line 8): Drafted a note to the CVB this morning. Sales will do the calling. I just bring the charm.
 - ALT B (could replace line 10): Every conference has a rep who books the after-party. I'd like to meet that rep.
 
-## PROPOSED 11.05.2026 (ORDER #3008, Mimi to OK): AI Slop Stopper, the janitor (Harry)
+## ADDED 11.06.2026 (ORDER #3008, Mimi wants him on the page): AI Slop Stopper, the janitor (Harry)
 Working name per Mimi 11.05.2026 (was "AI Tell Detective"). Lines rewritten for the janitor.
 1. Slop on aisle three. I'm on it.
 2. Found an em dash. Sweeping it up.

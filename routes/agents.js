@@ -149,7 +149,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
       const p = profiles.get(slug);
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
-        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, sources: (d.sources || []).map(sourceView),
+        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, ask_note: d.ask_note || null, sources: (d.sources || []).map(sourceView),
         // #2903: paused until a source exists (Paid Ads), or a card only (Web Agent, Site Guardian).
         // #3000: a new member that ships OFF shows the same "Paused:" line, naming its switch.
         paused: switchOff(d) || pausedFor(d), card_only: cardOnly(d),

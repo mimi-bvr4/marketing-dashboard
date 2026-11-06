@@ -185,5 +185,7 @@ test('the dry run: never writes the ban list, the lint or a card store; reports 
 test('it is not on the Producer calendar in this branch (a schedule change is Mimi\'s paste)', () => {
   const P = require('../lib/producer');
   assert.ok(!P.DEFAULT_WEEK.some((e) => e.agent === 'ai-tell-hunt'));
-  assert.ok(!fs.existsSync(path.join(__dirname, '..', 'agents', 'ai-tell-detective')), 'no card without its voice (slice 2)');
+  // #3045: slice 2 shipped the card WITH its voice. It is a card only, so it is never on the calendar either.
+  assert.ok(!P.DEFAULT_WEEK.some((e) => e.agent === 'ai-tell-detective'));
+  assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'agent-voices', 'ai-tell-detective_01.mp3')), 'the card ships with its voice');
 });

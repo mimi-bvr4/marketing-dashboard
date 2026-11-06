@@ -24,13 +24,14 @@ function clipDir(files) {
 }
 
 // #3000: 20 since the Marketing chat added Passport Pete, Gala Rory and Detective Diamond.
-test('the script: 20 characters, 10 lines each, one per card plus the Producer', () => {
+// #3045: 21 with the AI Slop Stopper (Harry).
+test('the script: 21 characters, 10 lines each, one per card plus the Producer', () => {
   const s = AV.loadScript();
-  assert.strictEqual(s.length, 20);
+  assert.strictEqual(s.length, 21);
   for (const c of s) assert.strictEqual(c.lines.length, 10, `${c.slug} has 10 lines`);
   const slugs = s.map((c) => c.slug).sort();
   assert.deepStrictEqual(slugs, ['producer', ...listAgents()].sort(), 'every card has a voice, and every voice a card');
-  assert.strictEqual(new Set(s.map((c) => c.voice)).size, 20, 'no voice shared');
+  assert.strictEqual(new Set(s.map((c) => c.voice)).size, 21, 'no voice shared');
 });
 
 test('the lines are verbatim from the source and carry no em dash', () => {
@@ -97,7 +98,7 @@ test('the page: button on every card and the Producer, click only, no loop, capt
 
 test('narration scripts: one per character, one line per paragraph', () => {
   const s = AV.narrationScripts();
-  assert.strictEqual(s.length, 20); // #3000
+  assert.strictEqual(s.length, 21); // #3000, #3045
   assert.ok(s.some((x) => x.slug === 'gala-scout' && x.text.startsWith('Another gala on the calendar.')));
   const p = s.find((x) => x.slug === 'producer');
   assert.strictEqual(p.text.split('\n\n').length, 10);
