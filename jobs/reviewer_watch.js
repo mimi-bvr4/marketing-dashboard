@@ -21,8 +21,8 @@ async function main(argv = process.argv.slice(2)) {
   const now = new Date();
   const wk = arg('--week');
   const weekStart = wk ? W.mondayOf(wk) : W.weekFor(now);
-  const rows = await W.readRows(pool, W.ctMidnight(W.addDays(weekStart, -7)));
-  const cards = W.DEPARTMENTS.map((dept) => W.scorecard({ dept, rows, now, weekStart }));
+  // ORDER #3006: every department, Baylee's read from Dispatch's bridge.
+  const cards = await W.scorecards({ pool, since: W.ctMidnight(W.addDays(weekStart, -7)), now, weekStart });
   const md = W.renderMarkdown(cards, { base: 'https://marketing.infinityhospitalitygroup.com' });
   const bad = W.labelWords(md);
   if (bad.length) { console.error(`refused: judgment words in the output: ${bad.join(', ')}`); return 3; }

@@ -28,13 +28,18 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const row = (k, a, b) => `<tr><td>${esc(k)}</td><td>${esc(a)}</td><td>${esc(b)}</td></tr>`;
 const hrs = (n) => (n == null ? 'none decided' : n + ' h');
 function section(s) {
+  // ORDER #3006: a department its own reader could not read says why.
+  if (s.unavailable) return `<h2>${esc(s.department_name)}: ${esc(s.head)}</h2><p class="note">Not read this week: ${esc(s.unavailable)}.</p>`;
   const w = s.week, p = s.prior, n = s.now;
+  const wd = s.words || { drafts: 'Drafts', approved: 'approved' };
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   // #2993: a week that ended before the handover line is labeled, never hidden.
   const bh = (x) => (x.before_handover ? ' (Before handover)' : '');
   let h = `<h2>${esc(s.department_name)}: ${esc(s.head)}</h2>${s.handover_at ? `<p class="note">Counted from the handover on ${esc(new Date(s.handover_at).toLocaleString('en-US', { timeZone: 'America/Chicago' }))} CT. Cards made before it are reference examples and are left out of counted weeks.</p>` : ''}<table><tr><th></th><th>This week${bh(w)}</th><th>Prior week${bh(p)}</th></tr>`;
-  h += row('Drafts the agents made', w.drafts_made, p.drafts_made) + row('Agent runs', w.runs, p.runs);
+  h = h.replace('<table>', (s.notes || []).map((x) => `<p class="note">${esc(x)}</p>`).join('') + '<table>');
+  h += row(wd.drafts + ' the agents made', w.drafts_made, p.drafts_made) + row('Agent runs', w.runs, p.runs);
   h += row('Decided by a person', w.decided_by_person, p.decided_by_person);
-  h += row('Approved', w.approved, p.approved) + row('Rejected', w.rejected, p.rejected);
+  h += row(cap(wd.approved), w.approved, p.approved) + row('Rejected', w.rejected, p.rejected);
   h += row('Rejected with a reason', w.rejected_with_reason, p.rejected_with_reason) + row('Rejected without a reason', w.rejected_without_reason, p.rejected_without_reason);
   h += row('Archived by a person', w.archived_by_person, p.archived_by_person) + row('Closed by the system', w.decided_by_machine, p.decided_by_machine);
   h += row('Drafts edited', w.drafts_edited, p.drafts_edited);

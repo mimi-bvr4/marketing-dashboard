@@ -34,7 +34,8 @@ function visitRecorder({ pool, env = process.env, log = console.error }) {
   };
 }
 
-function createReviewerWatchRouter({ pool, identity, env = process.env, clock = () => new Date(), read = W.readRows }) {
+// ORDER #3006: deps reach a department's own reader (Baylee's: fetchImpl, env).
+function createReviewerWatchRouter({ pool, identity, env = process.env, clock = () => new Date(), read = W.readRows, deps = {} }) {
   const r = express.Router();
   const gate = async (req, res, next) => {
     if (!personOf(req)) return res.status(403).json({ error: 'Signed-in leadership only.' });
@@ -53,8 +54,7 @@ function createReviewerWatchRouter({ pool, identity, env = process.env, clock = 
     const weekStart = /^\d{4}-\d{2}-\d{2}$/.test(q) ? W.mondayOf(q) : W.weekFor(now);
     try {
       const since = W.ctMidnight(W.addDays(weekStart, -7));
-      const rows = await read(pool, since);
-      const departments = W.DEPARTMENTS.map((dept) => W.scorecard({ dept, rows, now, weekStart }));
+      const departments = await W.scorecards({ pool, since, now, weekStart, read, deps });
       res.json({ week_start: weekStart, departments, markdown: W.renderMarkdown(departments) });
     } catch (e) {
       res.status(500).json({ error: `could not read the agent tables: ${e.message}` });
