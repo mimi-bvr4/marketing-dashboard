@@ -13,6 +13,7 @@ const { createDraft } = require('../lib/wp-draft');
 const { createPin } = require('../lib/pinterest');
 const { lint } = require('../lib/ai-tells');
 const { sendToSales, target: salesTarget } = require('../lib/hubspot-sales-task');
+const { ownerFor } = require('../lib/outreach');
 
 async function handoff({ store, fetchImpl, login, secrets, env = process.env, log = console.log, now = () => new Date() }) {
   const cards = await store.readyForHandoff(20);
@@ -21,6 +22,10 @@ async function handoff({ store, fetchImpl, login, secrets, env = process.env, lo
     // #2940: an approved Convention Connector card becomes one HubSpot task for
     // Cameron Creasy. The card is claimed first, so it can never make two.
     if (c.payload.sales) {
+      // #3000: only an agent whose salesperson is named hands off. The Planner
+      // Scout's and Gala Scout's cards wait, untouched, until Mimi names theirs;
+      // they never fall through to Cameron.
+      if (!ownerFor(c.agent)) { log(`card ${c.id}: no salesperson named for ${c.agent} yet (ORDER #3000), left as is`); continue; }
       if (!salesTarget(env, null)) { log(`card ${c.id}: Sales hand-off is off (CONVENTION_TO_HUBSPOT), left as is`); continue; }
       if (!(await store.claimHandoff(c.id, { at: now().toISOString(), pending: true, to: 'hubspot-sales' }))) { log(`card ${c.id}: already taken`); continue; }
       const r = await sendToSales({ card: c, env, fetchImpl, now, ...(secrets ? { secrets } : {}) });
