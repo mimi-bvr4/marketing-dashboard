@@ -52,6 +52,7 @@
     <button data-s="ready" aria-pressed="false">Ready</button>
     <button data-s="rejected" aria-pressed="false">Rejected</button>
     <button data-s="archived" aria-pressed="false">Archived</button>
+    <button data-s="reference" aria-pressed="false" id="refTab" hidden>Examples from before handover</button>
   </div>
   <details class="check"><summary>Check text for AI tells</summary>
     <p class="empty">Paste anything (an email, a caption, a page). Nothing is saved.</p>
@@ -66,7 +67,7 @@
   const $ = (s) => document.querySelector(s);
   // #2915: /review?status=ready opens that tab.
   { const s = new URLSearchParams(location.search).get('status');
-    if (['draft', 'ready', 'rejected', 'archived'].includes(s)) {
+    if (['draft', 'ready', 'rejected', 'archived', 'reference'].includes(s)) {
       status = s; document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.s === s)));
     } }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -171,7 +172,7 @@
     const cc = c.checks && c.checks.copy_check;
     return `<article class="card" data-id="${c.id}" id="card-${c.id}">
       <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
-        ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}</div>
+        ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}${c.reference ? `<span class="badge">Example, ${esc(c.status === 'ready' ? 'approved' : c.status === 'draft' ? 'not decided' : c.status)}, does not count</span>` : ''}</div>
       <h3 style="margin:0">${esc(c.title)}</h3>
       ${sourcesHtml(c)}
       <div class="body">${md(c.body)}</div>
@@ -200,9 +201,16 @@
   async function load() {
     $('#list').innerHTML = '<p class="empty">Loading…</p>';
     try {
-      const { cards } = await api('/api/review/cards?status=' + status);
+      const j = await api('/api/review/cards?status=' + status);
+      const cards = j.cards;
       cache = cards;
-      $('#list').innerHTML = cards.length ? cards.map(cardHtml).join('') : '<p class="empty">Nothing here.</p>';
+      if (j.reference) {
+        // #2993: every card made before the handover, grouped by agent, newest first. None of them counts.
+        const byId = new Map(cards.map((c) => [c.id, c]));
+        const when = j.at ? ` Made before ${fmt(j.at)}.` : '';
+        $('#list').innerHTML = `<p class="empty" style="margin:0"><strong>${esc(j.header)}</strong>${esc(when)} Open, copy or approve any of them; approving one still works and is recorded, and it never counts.</p>`
+          + (j.groups.length ? j.groups.map((g) => `<section class="ref-group"><h2 style="margin:var(--ihg-space-4, 16px) 0 var(--ihg-space-2, 8px)">${esc(g.agent_name)} <span class="badge">${g.ids.length}</span></h2>${g.ids.map((id) => cardHtml(byId.get(id))).join('')}</section>`).join('') : '<p class="empty">Nothing here.</p>');
+      } else $('#list').innerHTML = cards.length ? cards.map(cardHtml).join('') : '<p class="empty">Nothing here.</p>';
       // #2915: a link from "Ask about your team" lands on its card.
       const hit = /^#card-\d+$/.test(location.hash) && document.getElementById(location.hash.slice(1));
       if (hit) { hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
@@ -241,6 +249,8 @@
       $('#checkOut').innerHTML = r.clean ? '<span class="badge good">Clean</span>' : hits.map((h) => `<span class="badge bad">${esc(h.rule)}${h.phrase ? ': ' + esc(h.phrase) : ''}${h.line ? ' (line ' + h.line + ')' : ''}</span>`).join(' ');
     } catch (x) { $('#checkOut').textContent = x.message; }
   });
+  // #2993: the reference tab shows only while HANDOVER_AT is set.
+  api('/api/review/handover').then((h) => { if (h && h.on) $('#refTab').hidden = false; }).catch(() => {});
   load(); loadRuns();
 })();
 </script>

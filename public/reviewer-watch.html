@@ -29,7 +29,9 @@ const row = (k, a, b) => `<tr><td>${esc(k)}</td><td>${esc(a)}</td><td>${esc(b)}<
 const hrs = (n) => (n == null ? 'none decided' : n + ' h');
 function section(s) {
   const w = s.week, p = s.prior, n = s.now;
-  let h = `<h2>${esc(s.department_name)}: ${esc(s.head)}</h2><table><tr><th></th><th>This week</th><th>Prior week</th></tr>`;
+  // #2993: a week that ended before the handover line is labeled, never hidden.
+  const bh = (x) => (x.before_handover ? ' (Before handover)' : '');
+  let h = `<h2>${esc(s.department_name)}: ${esc(s.head)}</h2>${s.handover_at ? `<p class="note">Counted from the handover on ${esc(new Date(s.handover_at).toLocaleString('en-US', { timeZone: 'America/Chicago' }))} CT. Cards made before it are reference examples and are left out of counted weeks.</p>` : ''}<table><tr><th></th><th>This week${bh(w)}</th><th>Prior week${bh(p)}</th></tr>`;
   h += row('Drafts the agents made', w.drafts_made, p.drafts_made) + row('Agent runs', w.runs, p.runs);
   h += row('Decided by a person', w.decided_by_person, p.decided_by_person);
   h += row('Approved', w.approved, p.approved) + row('Rejected', w.rejected, p.rejected);
