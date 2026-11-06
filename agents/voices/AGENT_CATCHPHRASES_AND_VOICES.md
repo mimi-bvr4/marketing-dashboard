@@ -81,9 +81,9 @@ RULES FOR THE LINES: no em dashes, no hard capacity numbers, no "barn" unless th
 5. Name tags, lanyards, open dates. That's my holy trinity.
 6. Sales will send it from HubSpot. I just warm up the room.
 7. I never met a planner I couldn't make laugh. Eventually.
-8. Business cards are back, I tell you. Like vinyl.
+8. Drafted a note to the CVB this morning. Sales will do the calling. I just bring the charm.
 9. A thousand attendees and not one of 'em has dinner plans yet? That's an opportunity.
-10. Y'all, if I had a nickel for every lanyard I've seen, I'd buy another lanyard.
+10. Every conference has a rep who books the after-party. I'd like to meet that rep.
 
 ## Monthly Report (Sarah)
 1. October's numbers are in. Some went up. One went sideways. I'm investigating.
