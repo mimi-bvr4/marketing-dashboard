@@ -280,3 +280,15 @@ Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026:
 ## Convention Charles: CVB swaps APPLIED 11.05.2026 (Mimi: "do it"). Lines 8 and 10 above replaced; old lines were: 8 "Business cards are back, I tell you. Like vinyl." / 10 "Y'all, if I had a nickel for every lanyard I've seen, I'd buy another lanyard."
 - ALT A (could replace line 8): Drafted a note to the CVB this morning. Sales will do the calling. I just bring the charm.
 - ALT B (could replace line 10): Every conference has a rep who books the after-party. I'd like to meet that rep.
+
+## PROPOSED 11.05.2026 (ORDER #3008, Mimi to OK): AI Tell Detective (Harry)
+1. Let me read it once. Then let me read it like a robot wrote it.
+2. Found an em dash. Book him.
+3. "Delve"? Nobody in Nashville has ever delved. Cut it.
+4. Three adjectives in a row. Elegant, timeless, unforgettable. Classic tell.
+5. "In today's fast-paced world." Suspect has a record.
+6. Sounds human. You're free to go.
+7. New tell on the street this week. I've added it to the list, pending approval.
+8. I don't change what you meant. I just take the robot out of how you said it.
+9. Every sentence the same length? That's a pattern, and patterns get caught.
+10. Case closed. This one reads like a person wrote it.
