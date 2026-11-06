@@ -248,7 +248,8 @@
       const d = await api('/api/review/detective', { method: 'POST', body: JSON.stringify({ text: $('#checkText').value }) });
       const rows = d.hits.map((h) => `<li><b>Rule ${esc(String(h.rule_no))}</b> ${esc(h.rule)}${h.phrase ? ': "' + esc(h.phrase) + '"' : ''}${h.line ? ' (line ' + h.line + ')' : ''}. ${esc(h.why)} <i>Fix:</i> ${esc(h.fix)}</li>`).join('');
       const left = d.rewrite_left.length ? `<p>Still needs a person: ${d.rewrite_left.map((h) => 'rule ' + esc(String(h.rule_no)) + (h.phrase ? ' "' + esc(h.phrase) + '"' : '')).join(', ')}</p>` : '';
-      $('#checkOut').innerHTML = `<span class="badge ${d.count ? 'bad' : 'good'}">${esc(d.verdict)}</span>${rows ? '<ul>' + rows + '</ul>' : ''}`
+      // #3011: a stub (empty or "...") is Needs changes, shown red with why.
+      $('#checkOut').innerHTML = `<span class="badge ${d.count || d.stub ? 'bad' : 'good'}">${esc(d.verdict)}</span>${d.stub ? '<p>' + esc('This is a stub: ' + d.stub_reason + '.') + '</p>' : ''}${rows ? '<ul>' + rows + '</ul>' : ''}`
         + (d.count ? `<p>Clean rewrite (only the tells removed):</p><textarea readonly>${esc(d.rewrite)}</textarea>${left}` : '')
         + `<p class="empty">${esc(d.footer)}</p>`;
       return;
