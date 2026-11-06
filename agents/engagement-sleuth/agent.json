@@ -2,9 +2,7 @@
   "name": "Engagement Sleuth",
   "job": "weekly Meta ad plan for newly engaged couples",
   "cadence": "Fridays 06:00 CT once switched on",
-  "switch": "AGENT_ENGAGEMENT_SLEUTH",
-  "voice_pending": "ORDER #3000: Katherine names it, then the Marketing chat writes its 10 lines",
-  "max_cards": 1,
+  "switch": "AGENT_ENGAGEMENT_SLEUTH",  "max_cards": 1,
   "max_tokens": 6000,
   "copy_prepass": true,
   "sources": [
