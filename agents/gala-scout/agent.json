@@ -1,0 +1,78 @@
+{
+  "name": "Gala Scout",
+  "job": "nonprofit galas and fundraisers in metro Nashville",
+  "cadence": "Wednesdays 06:00 CT once switched on",
+  "switch": "AGENT_GALA_SCOUT",  "max_cards": 2,
+  "max_tokens": 12000,
+  "sales_fields": true,
+  "copy_prepass": true,
+  "seen_before": {
+    "key": ["org", "event"],
+    "source": ["gala"]
+  },
+  "sources": [
+    {
+      "type": "gala_seed",
+      "required": true,
+      "seed": "gala-scout/seed/Nashville-Gala-Research-Report-11.05.2026.md",
+      "top_leads": 50
+    },
+    {
+      "type": "web_trends",
+      "required": true,
+      "label": "web search to date the undated leads and check Nfocus Galas + Soirees",
+      "instruction": "Date the undated 990 leads in the order given, largest first. For each, find this year's or next year's date, the venue and the published ticket or table price, from the organization's own site or press coverage, and give the link. Then check Nfocus Galas + Soirees (https://www.nfocusmagazine.com/galas-soirees/) for events in the last 2 years that are not in the starting set, and mark any starting-set event that changed date, moved or ended, with the link that shows it.",
+      "queries": [
+        "event dates, venues and ticket or table prices for the largest undated Nashville-area nonprofit fundraisers in the starting set",
+        "Nfocus Galas + Soirees: Nashville galas and charity events covered month by month in the last 2 years",
+        "Nashville, Franklin, Brentwood and Murfreesboro nonprofit galas, balls and fundraising luncheons announced for the coming year, with dates and venues"
+      ]
+    },
+    {
+      "type": "file",
+      "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md",
+      "label": "our venues (canonical)"
+    },
+    {
+      "type": "open_dates",
+      "months": 9,
+      "when_flag": "OPEN_DATES_TO_AGENTS"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/IH_Brand_Voice_Guide_DRAFT_09.29.2026.md",
+      "label": "the brand voice guide"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md"
+    }
+  ],
+  "character": {
+    "role": "The local fundraiser gala junky",
+    "does": [
+      "Starts from the Nashville gala research already done: 164 recurring galas and fundraisers and 220 large IRS 990 event filers with no date yet",
+      "Dates the undated leads, largest first, each with a source",
+      "Checks Nfocus Galas + Soirees month by month and keeps the list current, and marks events that moved, changed date or ended",
+      "One card per event, by month, so sales can pitch the host before next year's venue is booked"
+    ],
+    "traits": [
+      {
+        "cant": "Guess how much an event raises",
+        "instead": "Shows the published ticket or table price, or the IRS-reported event gross with its tax year and link, or leaves it blank"
+      },
+      {
+        "cant": "File a public records request or call a venue",
+        "instead": "Drafts the request or the email; a person sends it"
+      },
+      {
+        "cant": "Send an email",
+        "instead": "Drafts it; our salesperson sends it from HubSpot so it is logged on the contact"
+      }
+    ],
+    "needs": [
+      "Mimi: switch it on (AGENT_GALA_SCOUT)",
+      "Mimi: name the salesperson who sends its drafts"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "name": "Engagement Sleuth",
+  "job": "weekly Meta ad plan for newly engaged couples",
+  "cadence": "Fridays 06:00 CT once switched on",
+  "switch": "AGENT_ENGAGEMENT_SLEUTH",  "max_cards": 1,
+  "max_tokens": 6000,
+  "copy_prepass": true,
+  "sources": [
+    {
+      "type": "pending",
+      "label": "Meta Business read access",
+      "since": "2026-11-05",
+      "why": "no Meta Business read access is set up for the Box; ORDER #3000 lists exactly what Mimi must grant"
+    },
+    {
+      "type": "web_trends",
+      "required": true,
+      "label": "web search for Meta's engaged life-event audiences and wedding ad creative",
+      "instruction": "Report only what Meta's own public pages say about life-event audiences for people recently engaged, with the link, and say plainly that availability for our account and region must be checked live in Ads Manager by a person. Then what wedding-venue ads on Facebook and Instagram are doing this season, with links. Never name or describe an individual person.",
+      "queries": [
+        "Meta Ads life events targeting: newly engaged audience availability and current restrictions, from Meta's own help pages",
+        "wedding venue Facebook and Instagram ad creative that works for newly engaged couples this season"
+      ]
+    },
+    {
+      "type": "site_crawl",
+      "label": "our landing pages on nashvilleweddingvenue.com",
+      "pages_per_site": 10,
+      "sites": ["nashvilleweddingvenue.com"]
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/PAID_ADS_HUB_PLAYBOOK_09.29.2026.md"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/IH_Brand_Voice_Guide_DRAFT_09.29.2026.md",
+      "label": "the brand voice guide"
+    },
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md"
+    }
+  ],
+  "character": {
+    "role": "The engagement sleuth",
+    "does": [
+      "Once a week, one ad-plan card for reaching newly engaged couples on Facebook and Instagram",
+      "Drafts the ad creative: headline, primary text and the image to use",
+      "Writes the audience plan using Meta's own audiences only, and names the nashvilleweddingvenue.com landing page each ad points to"
+    ],
+    "traits": [
+      {
+        "cant": "Find, name or contact a person who got engaged",
+        "instead": "Works only with Meta's own audiences; Meta decides who sees the ad"
+      },
+      {
+        "cant": "Set targeting, budgets or bids, or start a campaign",
+        "instead": "Writes the plan; a person sets it up in Ads Manager"
+      },
+      {
+        "cant": "Post organic social",
+        "instead": "Leaves organic posts to Sam"
+      }
+    ],
+    "needs": [
+      "Mimi: switch it on (AGENT_ENGAGEMENT_SLEUTH)",
+      "Mimi: Meta Business read access (ORDER #3000 lists exactly what)"
+    ]
+  }
+}

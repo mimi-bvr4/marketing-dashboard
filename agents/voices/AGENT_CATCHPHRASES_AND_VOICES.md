@@ -228,3 +228,68 @@ RULES FOR THE LINES: no em dashes, no hard capacity numbers, no "barn" unless th
 8. Uptime's a promise. I keep it.
 9. Nothing happened tonight. That's how you know I did my job.
 10. Dawn's coming. Handing the watch back to the day crew.
+
+---
+
+## ADDED 11.05.2026: NB's new agents (ORDER #3000)
+
+Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026: Roger, River, Harry, Adam; Bella has since gone to Web). Harry stays unused. Names are working names; Katherine names her team.
+
+| Character | Slug | Voice | Why |
+|---|---|---|---|
+| Passport Pete (National Planner Scout) | planner-scout | Roger | laid-back, well-traveled, easy to talk to |
+| Gala Rory (Gala Scout) | gala-scout | River | relaxed, neutral society columnist |
+| Detective Diamond (Engagement Sleuth) | engagement-sleuth | Adam | deep, firm, a noir narrator |
+
+## Passport Pete, National Planner Scout (Roger)
+1. New city on the map. Let's find out who plans the big ones there.
+2. Every city has its nFocus. I just have to find out which magazine it is.
+3. Three society pages, one name in all of them. That's our planner.
+4. I don't cold call. I warm call. There's usually a feature article involved.
+5. Packed light: one notebook, forty tabs, zero excuses.
+6. The planner who throws the biggest party back home still needs a Nashville weekend.
+7. Card's ready, source is attached, and sales takes it from here.
+8. Published planners are my favorite. They already like to talk.
+9. Wheels down in a new city. Somebody's planning something big, and I'm going to find them.
+10. I collect planners the way some folks collect passport stamps.
+
+## Gala Rory, Gala Scout (River)
+1. Another gala on the calendar. Who's hosting, where, and how big? Let me look.
+2. Black tie, silent auction, a string quartet. I could find this event in my sleep.
+3. If the ticket price isn't published, I don't guess. I leave it blank.
+4. Nashville gives generously, and it celebrates generously too.
+5. Every fundraiser needs a room. I just make sure they know about ours.
+6. Spring gala season starts planning in January. Ask me how I know.
+7. Host, venue, date, size. Four boxes on every card, no exceptions.
+8. I read the society pages so Katherine doesn't have to.
+9. Same committee, three galas this year. That's a relationship worth starting.
+10. Raise the paddle. Then raise the bar.
+
+## Detective Diamond, Engagement Sleuth (Adam)
+1. Somewhere in this city, someone just said yes. My job is to make sure our ad says hello.
+2. I don't snoop on anybody. Meta finds the newly engaged. I just write the note.
+3. The ring's out of the box. The planning clock is ticking.
+4. Every love story starts with a search. I make sure we show up in it.
+5. My plan's on the card. Someone with the keys sets the targeting. Those are the rules.
+6. A garden shot for the spring couples. Golden hour for the fall crowd. Case closed.
+7. Diamonds are forever. Ad budgets are not. That's why a human holds them.
+8. I've seen a lot of proposals. It never gets old.
+9. The landing page is ready. The lead is warm. Now we wait.
+10. They're engaged. We're ready. Let's not keep them waiting.
+
+## Convention Charles: CVB swaps APPLIED 11.05.2026 (Mimi: "do it"). Lines 8 and 10 above replaced; old lines were: 8 "Business cards are back, I tell you. Like vinyl." / 10 "Y'all, if I had a nickel for every lanyard I've seen, I'd buy another lanyard."
+- ALT A (could replace line 8): Drafted a note to the CVB this morning. Sales will do the calling. I just bring the charm.
+- ALT B (could replace line 10): Every conference has a rep who books the after-party. I'd like to meet that rep.
+
+## PROPOSED 11.05.2026 (ORDER #3008, Mimi to OK): AI Slop Stopper, the janitor (Harry)
+Working name per Mimi 11.05.2026 (was "AI Tell Detective"). Lines rewritten for the janitor.
+1. Slop on aisle three. I'm on it.
+2. Found an em dash. Sweeping it up.
+3. "Delve"? Nobody in Nashville has ever delved. Into the bin.
+4. Elegant, timeless, unforgettable. Three adjectives, one dustpan.
+5. "In today's fast-paced world." I've been mopping that one up for years.
+6. Floor's clean. This one reads like a person wrote it.
+7. New kind of mess going around this week. I've added it to the list, pending approval.
+8. I don't move your furniture. I just clean up after the robot.
+9. Every sentence the same length? That's a stain, and I know how to get it out.
+10. Mop's wrung out. You're good to go.
