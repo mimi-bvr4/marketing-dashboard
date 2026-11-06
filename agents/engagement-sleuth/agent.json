@@ -7,10 +7,10 @@
   "copy_prepass": true,
   "sources": [
     {
-      "type": "pending",
+      "type": "meta_ads_read",
       "label": "Meta Business read access",
       "since": "2026-11-05",
-      "why": "no Meta Business read access is set up for the Box; ORDER #3000 lists exactly what Mimi must grant"
+      "why": "read-only (ads_read) through lib/meta-read.js; pending, and the audience UNVERIFIED, until Mimi's Analyst system user token is in the Box's secret store (ORDER #3012)"
     },
     {
       "type": "web_trends",
