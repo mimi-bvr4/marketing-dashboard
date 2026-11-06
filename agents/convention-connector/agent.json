@@ -1,5 +1,5 @@
 {
-  "name": "Convention Connector",
+  "name": "Convention Charles",
   "job": "conventions coming to Nashville",
   "cadence": "Mondays 06:00 CT",
   "max_cards": 2,
@@ -15,14 +15,16 @@
       "type": "web_trends",
       "required": true,
       "label": "web search for conventions coming to Nashville and who works them",
-      "instruction": "Only events whose dates fall between today and 4 years from today. List the next 9 months first, then later events grouped by year. If you find nothing for a year, say so for that year. For each item give: the event name, the dates, the host venue, expected attendance if the page states it, the organizer, and the link. For companies, give the company name, what it does for the event, and the link to its own public website or contact page. Never give a person's email or phone unless it is printed on a public business page you found, and then give that page's link.",
+      "instruction": "Only events whose dates fall between today and 4 years from today. List the next 9 months first, then later events grouped by year. If you find nothing for a year, say so for that year. For each item give: the event name, the dates, the host venue, expected attendance if the page states it, the organizer, and the link. For companies, give the company name, what it does for the event, and the link to its own public website or contact page. Never give a person's email or phone unless it is printed on a public business page you found, and then give that page's link. For each convention also give (ORDER #3000): the convention and visitors bureau contact for it (Visit Music City / the Nashville Convention & Visitors Corp, or the bureau of the city it rotates from, as named on the bureau's own page), and the contacts for that individual conference's vendors and potential reps (its official contractors, exhibitor services, sponsorship or partnership office), each as a company or office with its public contact page link.",
       "queries": [
         "conventions, trade shows and association conferences booked at Music City Center in Nashville in the next 4 years, with dates and expected attendance",
         "large conferences and corporate meetings at Gaylord Opryland Resort and Convention Center and downtown Nashville hotels in the next 4 years",
         "associations and conventions that have announced Nashville as a future host city for 2028, 2029 and 2030 and later years, with the year and the announcement link",
         "Nashville destination management companies (DMCs) and corporate meeting planners that run offsite events, receptions and dinners for conventions",
         "official general service contractors, event production and decor companies working Nashville conventions this year",
-        "meeting planners or associations that have announced Nashville as the host city for an upcoming conference, and their event or partnership contacts"
+        "meeting planners or associations that have announced Nashville as the host city for an upcoming conference, and their event or partnership contacts",
+        "Visit Music City and Nashville Convention & Visitors Corp sales and convention services contacts for conventions booked in Nashville",
+        "official vendors, exhibitor services, sponsorship and partnership offices for individual conferences coming to Nashville, with their public contact pages"
       ]
     },
     {
@@ -50,6 +52,7 @@
     "does": [
       "Every Monday, finds the conventions, trade shows and big corporate meetings coming to Nashville in the next 4 years, soonest first, with dates, host venue, size and organizer",
       "Finds the companies that work them and hire out the extras: destination management companies, meeting planners, production and decor contractors",
+      "For each convention, names the visitors bureau contact and the conference's own vendor, sponsorship and rep contacts, each with its public page",
       "Drafts a short, specific email to each one offering our venues, catering, bar and lighting for their receptions, dinners and offsite nights",
       "Every item carries the link it came from"
     ],

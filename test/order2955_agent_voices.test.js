@@ -11,7 +11,7 @@ const path = require('path');
 
 const AV = require('../lib/agent-voices');
 const V = require('../public/agents-view');
-const { listAgents } = require('../lib/agent-runner');
+const { listAgents, loadAgent } = require('../lib/agent-runner');
 
 const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'agents.html'), 'utf8');
 const ROUTE = fs.readFileSync(path.join(__dirname, '..', 'routes', 'agents.js'), 'utf8');
@@ -28,7 +28,10 @@ test('the script: 17 characters, 10 lines each, one per card plus the Producer',
   assert.strictEqual(s.length, 17);
   for (const c of s) assert.strictEqual(c.lines.length, 10, `${c.slug} has 10 lines`);
   const slugs = s.map((c) => c.slug).sort();
-  assert.deepStrictEqual(slugs, ['producer', ...listAgents()].sort(), 'every card has a voice, and every voice a card');
+  // #3000: a new member whose lines are not written yet says so in its agent.json
+  // ("voice_pending"); it has no button until the Marketing chat's lines land.
+  const voiced = listAgents().filter((a) => !loadAgent(a).voice_pending);
+  assert.deepStrictEqual(slugs, ['producer', ...voiced].sort(), 'every card has a voice, and every voice a card');
   assert.strictEqual(new Set(s.map((c) => c.voice)).size, 17, 'no voice shared');
 });
 
