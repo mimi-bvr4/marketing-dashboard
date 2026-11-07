@@ -18,6 +18,7 @@ const BASE_LAWS = Object.freeze(['finance read-only', 'compensation never']);
 const ID_RE = /^[a-z][a-z0-9-]{1,31}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PATH_RE = /^\/[A-Za-z0-9/_.-]*$/;
+const YMD_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 function person(v, field, errs) {
   if (!v || typeof v !== 'object') { errs.push(`${field}: needs { name, emails }`); return null; }
@@ -62,6 +63,20 @@ function defineDepartment(raw) {
   const hold = p.waiting_hold == null ? DEFAULT_WAITING_HOLD : Number(p.waiting_hold);
   if (!Number.isInteger(weeklyCap) || weeklyCap < 1) errs.push('producer.weekly_cap: a whole number of 1 or more');
   if (!Number.isInteger(hold) || hold < 1) errs.push('producer.waiting_hold: a whole number of 1 or more');
+  // ORDER #3072: an optional dated window in which the hold is a different
+  // number. Days are the department's local calendar days, both ends included.
+  // Outside the window the base hold applies again with nobody doing anything.
+  let holdWindow = null;
+  if (p.waiting_hold_window != null) {
+    const w = p.waiting_hold_window;
+    const v = w && Number(w.value);
+    const okDay = (s) => typeof s === 'string' && YMD_RE.test(s);
+    if (!w || typeof w !== 'object' || !Number.isInteger(v) || v < 1 || !okDay(w.from) || !okDay(w.to) || w.from > w.to) {
+      errs.push('producer.waiting_hold_window: needs { value: a whole number of 1 or more, from: YYYY-MM-DD, to: YYYY-MM-DD } with from on or before to');
+    } else {
+      holdWindow = Object.freeze({ value: v, from: w.from, to: w.to });
+    }
+  }
   const rhythm = Array.isArray(p.rhythm) ? p.rhythm : [];
 
   const pages = { review: '/review', agents: '/agents', producer: '/api/producer', ...(raw.pages || {}) };
@@ -89,7 +104,7 @@ function defineDepartment(raw) {
     review_gate: Object.freeze(gate),
     copy_checks: raw.copy_checks !== false, // the department's own copy rules; the base checks always run
     laws: Object.freeze(allLaws),
-    producer: Object.freeze({ rhythm: Object.freeze(rhythm.slice()), weekly_cap: weeklyCap, waiting_hold: hold }),
+    producer: Object.freeze({ rhythm: Object.freeze(rhythm.slice()), weekly_cap: weeklyCap, waiting_hold: hold, waiting_hold_window: holdWindow }),
     voices: raw.voices === true,
     build_route: buildRoute,
     pages: Object.freeze(pages),
@@ -106,4 +121,13 @@ function isInstructionApprover(dept, email) {
   return !!email && dept.instruction_approver.emails.includes(String(email).trim().toLowerCase());
 }
 
-module.exports = { defineDepartment, isHead, isInstructionApprover, BASE_LAWS, DEFAULT_WEEKLY_CAP, DEFAULT_WAITING_HOLD };
+// ORDER #3072: the Producer's waiting hold on one local calendar day (YYYY-MM-DD):
+// the window's number inside its dates, the base hold every other day.
+function waitingHoldOn(dept, ymd) {
+  const p = dept.producer;
+  const w = p.waiting_hold_window;
+  const day = String(ymd).slice(0, 10);
+  return w && day >= w.from && day <= w.to ? w.value : p.waiting_hold;
+}
+
+module.exports = { defineDepartment, isHead, isInstructionApprover, waitingHoldOn, BASE_LAWS, DEFAULT_WEEKLY_CAP, DEFAULT_WAITING_HOLD };

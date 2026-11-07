@@ -292,7 +292,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
       health,
       on: P.producerOn(), name: me && me.display_name ? me.display_name : 'The Producer', named_by: me && me.display_name ? me.updated_by : null,
       portrait: me && me.portrait_at ? `/api/agents/${PRODUCER}/portrait?v=${new Date(me.portrait_at).getTime()}` : null,
-      waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.WAITING_HOLD,
+      waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.holdOn(ymd),
       week_cards: store.producerWeekCards ? await store.producerWeekCards(P.weekStart(ymd)) : 0, cap: P.WEEKLY_CAP,
       exempt: Object.keys(P.EXEMPT),
       calendar: cal.map((e) => ({ ...e, name: (defs.find((d) => d.slug === e.agent) || {}).name || e.agent, movable: P.movable(e) })),
