@@ -52,6 +52,13 @@ if [ "$FACTS_MIN" != "0" ]; then
     "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_facts.js --apply --budget-min $FACTS_MIN"
   facts=$?
 fi
+# ORDER #3085 step 1: the cosine distribution the cluster threshold is chosen
+# from (box_ro cannot read photo_embeddings). Measures only: no model, no key,
+# no tag or photo rows written (only the same idempotent ensurePhotoTables every
+# photo job runs). Its exit is printed but never turns the night red.
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/photo_tag.js --clusters --dry-run'
+echo "cluster dry run exit $?"
 # ORDER #3085 step 5: one pick-model call per group of near-identical shots;
 # the cap counts SEEDS (model calls), not photos.
 # FEATURE FLAG: PHOTO_CLUSTER_CAP default OFF (0 = skipped).

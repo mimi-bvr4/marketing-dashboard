@@ -341,4 +341,6 @@ test('the nightly ships both new steps OFF', () => {
   const sh = require('fs').readFileSync(require('path').join(__dirname, '..', 'jobs', 'photo_nightly.sh'), 'utf8');
   assert.match(sh, /FACTS_MIN="\$\{PHOTO_FACTS_MIN:-0\}"/);
   assert.match(sh, /CLUSTER_CAP="\$\{PHOTO_CLUSTER_CAP:-0\}"/);
+  // The always-on step is the measuring dry run, and only that.
+  assert.match(sh, /node jobs\/photo_tag.js --clusters --dry-run'/);
 });
