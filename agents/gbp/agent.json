@@ -19,6 +19,12 @@
     },
     {
       "type": "file",
+      "newest": "07_Marketing_and_Brand/Venue_Review_Pulse_",
+      "required": false,
+      "label": "the newest review pulse (WeddingWire and The Knot, optional, ORDER #3094)"
+    },
+    {
+      "type": "file",
       "path": "07_Marketing_and_Brand/IH_Brand_Voice_Guide_DRAFT_09.29.2026.md"
     },
     {
@@ -47,8 +53,8 @@
         "instead": "Drafts it with a copy button for a person to post"
       },
       {
-        "cant": "Read reviews on WeddingWire, The Knot or other sites",
-        "instead": "Reads Google reviews and posts straight from Google every morning (ORDER #2977)"
+        "cant": "Read Yelp, Facebook or sites outside the review pulse",
+        "instead": "Reads Google reviews and posts straight from Google every morning (ORDER #2977), and WeddingWire and The Knot from the newest review pulse (ORDER #3094)"
       },
       {
         "cant": "Promise a refund, discount or change",
