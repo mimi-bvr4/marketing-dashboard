@@ -42,6 +42,26 @@ EMBED_MIN="${PHOTO_EMBED_MIN:-90}"
 railway run --service Postgres -- sh -c \
   "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_embed.js --budget-min $EMBED_MIN"
 embed=$?
+# ORDER #3085 step 2: camera-clock facts (day / dusk / night) for photos loaded
+# before the crawl kept the time of day. Drive read-only, no model.
+# FEATURE FLAG: PHOTO_FACTS_MIN default OFF (0 = skipped; minutes of budget when set).
+FACTS_MIN="${PHOTO_FACTS_MIN:-0}"
+facts=0
+if [ "$FACTS_MIN" != "0" ]; then
+  railway run --service Postgres -- sh -c \
+    "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_facts.js --apply --budget-min $FACTS_MIN"
+  facts=$?
+fi
+# ORDER #3085 step 5: one pick-model call per group of near-identical shots;
+# the cap counts SEEDS (model calls), not photos.
+# FEATURE FLAG: PHOTO_CLUSTER_CAP default OFF (0 = skipped).
+CLUSTER_CAP="${PHOTO_CLUSTER_CAP:-0}"
+clusters=0
+if [ "$CLUSTER_CAP" != "0" ]; then
+  railway run --service Postgres -- sh -c \
+    "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_tag.js --clusters --cap $CLUSTER_CAP"
+  clusters=$?
+fi
 # ORDER #1788: PHOTO_TAG_CAP=0 turns tagging off, so the thumbnails can run
 # nightly while the tag model is still being chosen (#1789).
 if [ "$CAP" = "0" ]; then
@@ -52,5 +72,5 @@ else
     "MARKETING_DATABASE_URL=\"\$DATABASE_PUBLIC_URL\" node jobs/photo_tag.js --apply --cap $CAP"
   tag=$?
 fi
-echo "=== photo_nightly done: crawl exit $crawl, thumbs exit $thumbs, embed exit $embed, tag exit $tag ==="
-[ "$crawl" -eq 0 ] && [ "$thumbs" -eq 0 ] && [ "$embed" -eq 0 ] && [ "$tag" -eq 0 ]
+echo "=== photo_nightly done: crawl exit $crawl, thumbs exit $thumbs, embed exit $embed, facts exit $facts, clusters exit $clusters, tag exit $tag ==="
+[ "$crawl" -eq 0 ] && [ "$thumbs" -eq 0 ] && [ "$embed" -eq 0 ] && [ "$facts" -eq 0 ] && [ "$clusters" -eq 0 ] && [ "$tag" -eq 0 ]

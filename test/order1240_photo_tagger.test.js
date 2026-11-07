@@ -51,10 +51,12 @@ test('a synonym collapses to its head tag', async () => {
 });
 
 test('KNOWN-BAD (#1278): a vocabulary tag with its group in front still lands; an unknown word after a colon is still dropped', async () => {
-  const r = await T.tagPhoto({ model: answer({ tags: [{ tag: 'setting: night', confidence: 0.9 },
+  // ORDER #3085: "setting: night" is now dropped as a camera-clock word, so the
+  // group-prefix case is pinned with another setting tag.
+  const r = await T.tagPhoto({ model: answer({ tags: [{ tag: 'setting: exterior', confidence: 0.9 },
     { tag: 'lighting: string lights', confidence: 0.8 }, { tag: 'decor: zzz unknown thing', confidence: 0.7 }] }),
   vocab: VOCAB, prompt: PROMPT, thumb: THUMB });
-  assert.deepStrictEqual(r.ai, [{ tag: 'night', confidence: 0.9 }, { tag: 'string lights', confidence: 0.8 }]);
+  assert.deepStrictEqual(r.ai, [{ tag: 'exterior', confidence: 0.9 }, { tag: 'string lights', confidence: 0.8 }]);
   assert.strictEqual(r.dropped.length, 1);
 });
 
