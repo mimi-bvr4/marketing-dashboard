@@ -51,6 +51,8 @@ test('every static need names who it waits on, and none says the browser install
 
 test('the card makes "(+N more)" expandable', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'agents.html'), 'utf8');
-  assert.match(html, /<details class="more" data-more="\$\{esc\(a\.slug\)\}"><summary>\(\+\$\{a\.character\.needs\.length - 1\} more\)<\/summary>/);
-  assert.match(html, /a\.character\.needs\.slice\(1\)\.map/);
+  // #3128: the card reads its needs through V.cardBoxes (the paused duplicate drops out).
+  assert.match(html, /const boxes = V\.cardBoxes\(a\.character\.needs, a\.paused\);/);
+  assert.match(html, /<details class="more" data-more="\$\{esc\(a\.slug\)\}"><summary>\(\+\$\{boxes\.needs\.length - 1\} more\)<\/summary>/);
+  assert.match(html, /boxes\.needs\.slice\(1\)\.map/);
 });
