@@ -15,7 +15,7 @@ const { createRevenueGoalRouter } = require('../routes/revenue-goal');
 const { FLEET_READ_PREFIXES } = require('../middleware/page-gate');
 
 const NOW = new Date('2026-10-24T20:15:00Z'); // Sat 10.24.2026 15:15 CT
-const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'numbers.html'), 'utf8'); // ORDER #3116: the report moved off home
 
 // THE OLD METHOD, verbatim from updateGoalBar() in public/index.html on main
 // 3b6a455 (the page's own toEpochMs, filters and sum). It is the oracle the
@@ -153,7 +153,10 @@ test('page: the goal bar reads /api/revenue-goal once at boot, never pages HubSp
   assert.doesNotMatch(load, /updateGoalBar\(/, 'not re-run behind every period load');
   assert.strictEqual((HTML.match(/updateGoalBar\(\);/g) || []).length, 1, 'asked once at boot');
   assert.ok(HTML.indexOf('updateGoalBar();') < HTML.indexOf("await loadPeriod(resolvePeriod('ytd'))"), 'asked before the period load');
-  assert.match(HTML, /id="home-goal">Counting&hellip;</);
+  // ORDER #3116: the goal tile lives on home, which reads the same cached answer.
+  const HOME = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert.match(HOME, /id="home-goal">Counting&hellip;</);
+  assert.match(HOME, /get\('\/api\/revenue-goal'\)/);
   assert.match(HTML, /id="goal-refresh"/);
 });
 

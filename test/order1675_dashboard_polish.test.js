@@ -22,29 +22,32 @@ test('index loads the approved tokens and Inter, and its style block uses them',
 });
 
 test('no inline colour styles left in the markup or the drawn rows', () => {
-  const html = read('index.html');
+  const html = read('index.html') + read('numbers.html');
   assert.doesNotMatch(html, /style="[^"]*color:#/i);
   assert.doesNotMatch(html, /style="[^"]*background:#/i);
 });
 
+// ORDER #3116: the numbers (and the Elle tab) moved, unchanged, from home to numbers.html.
 test('every id the scripts write to is still on the page', () => {
-  const html = read('index.html');
+  const html = read('numbers.html');
   const ids = ['kpi-spend', 'kpi-leads', 'kpi-bookings', 'kpi-cancelled', 'kpi-revenue', 'kpi-roas', 'goal-fill', 'goal-pace-marker', 'ai-body', 'ceo-revenue-body', 'ceo-missing-count', 'proj-missing-count', 'trend-chart', 'tabbtn-ihg', 'tabbtn-elle'];
   for (const id of ids) assert.ok(html.includes(`id="${id}"`), 'missing #' + id);
 });
 
-test('the page scripts still parse', () => {
-  const html = read('index.html');
+for (const page of ['index.html', 'numbers.html']) {
+test(page + ': the page scripts still parse', () => {
+  const html = read(page);
   const blocks = [...html.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
   assert.ok(blocks.length > 0);
   for (const b of blocks) new vm.Script(b);
 });
 
-test('no em dash in headings or footnote prose', () => {
-  const html = read('index.html');
+test(page + ': no em dash in headings or footnote prose', () => {
+  const html = read(page);
   for (const m of html.matchAll(/<(h2|h3)[^>]*>([\s\S]*?)<\/\1>/g)) assert.doesNotMatch(m[2], /&mdash;\s*[A-Za-z]|— [A-Za-z]/, m[2]);
   for (const m of html.matchAll(/<div class="footnote"[^>]*>([\s\S]*?)<\/div>/g)) assert.doesNotMatch(m[1], / &mdash; /);
 });
+}
 
 test('the API keys page is on the tokens too', () => {
   const html = read('api-tokens.html');

@@ -16,6 +16,15 @@ const CACHE_MS = 30 * 60 * 1000;
 function createOpenDatesRouter({ search, now = () => new Date(), cacheMs = CACHE_MS }) {
   const r = express.Router();
   const cache = new Map();
+  const fill = async (months, days) => {
+    const body = { ...(await computeOpenDates({ search, months, now: now(), days })), fetched_at: now().toISOString() };
+    cache.set(`${months}:${days}`, { expires: now().getTime() + cacheMs, body });
+    return body;
+  };
+  // ORDER #3116: the home brief's Open Saturdays (months=3) is read ahead, so a
+  // cold home load answers from the cache instead of waiting its turn in the
+  // one HubSpot queue. Read-only, same search as a visitor's miss. Never throws.
+  r.warm = (months = 3, days = 'prime') => fill(months, days).catch((e) => console.error('[open dates] warm:', e.message));
   r.get('/api/open-dates', async (req, res) => {
     const months = Math.max(1, Math.min(18, parseInt(req.query.months, 10) || 6));
     const days = req.query.days === 'all' ? 'all' : 'prime'; // #2904: the agents ask for every day of the week
@@ -23,8 +32,7 @@ function createOpenDatesRouter({ search, now = () => new Date(), cacheMs = CACHE
     const hit = cache.get(key);
     if (hit && hit.expires > now().getTime()) { res.set('X-Cache', 'HIT'); return res.json(hit.body); }
     try {
-      const body = { ...(await computeOpenDates({ search, months, now: now(), days })), fetched_at: now().toISOString() };
-      cache.set(key, { expires: now().getTime() + cacheMs, body });
+      const body = await fill(months, days);
       res.set('X-Cache', 'MISS');
       res.json(body);
     } catch (e) {
