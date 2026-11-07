@@ -20,11 +20,20 @@ test('a minimal config gets the defaults: exec+head gate, cap 25, hold 15, base 
   assert.deepStrictEqual([...d.review_gate], ['exec', 'head']);
   assert.strictEqual(d.producer.weekly_cap, 25);
   assert.strictEqual(d.producer.waiting_hold, 15);
+  assert.strictEqual(d.producer.waiting_hold_window, null);
   assert.deepStrictEqual([...d.laws], ['finance read-only', 'compensation never']);
   assert.strictEqual(d.pages.review, '/review');
   assert.strictEqual(d.voices, false);
   assert.strictEqual(d.build_route, null);
   assert.ok(Object.isFrozen(d) && Object.isFrozen(d.head) && Object.isFrozen(d.laws));
+});
+
+test('#3072: a dated hold window is accepted, frozen, and applies only inside its days', () => {
+  const d = P.defineDepartment({ ...DEMO, producer: { waiting_hold: 15, waiting_hold_window: { value: 20, from: '2026-11-09', to: '2026-11-22' } } });
+  assert.strictEqual(d.producer.waiting_hold, 15);
+  assert.deepStrictEqual({ ...d.producer.waiting_hold_window }, { value: 20, from: '2026-11-09', to: '2026-11-22' });
+  assert.ok(Object.isFrozen(d.producer.waiting_hold_window));
+  assert.deepStrictEqual(['2026-11-08', '2026-11-09', '2026-11-22', '2026-11-23'].map((y) => P.waitingHoldOn(d, y)), [15, 20, 20, 15]);
 });
 
 test('emails are compared lowercase; head and approver are separate roles', () => {

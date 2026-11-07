@@ -21,7 +21,14 @@ module.exports = defineDepartment({
   copy_checks: true,
   laws: ['finance read-only', 'compensation never', 'HubSpot prod read-only'],
   // lib/producer.js WEEKLY_CAP, WAITING_HOLD
-  producer: { weekly_cap: 25, waiting_hold: 15 },
+  producer: {
+    weekly_cap: 25,
+    waiting_hold: 15,
+    // ORDER #3072 (Mimi 11.06.2026 19:21 CT, ruling on #2939): hold at 20 for the
+    // first two weeks after the 11.09 handover, Nashville days, both ends included.
+    // lib/producer.js holdAt() reads it. Delete this one line to go back to 15.
+    waiting_hold_window: { value: 20, from: '2026-11-09', to: '2026-11-22' },
+  },
   // lib/agent-voices.js (#2955)
   voices: true,
   // jobs/kh_route.js pending(): ORDER_<date>_<n>_KH_<slug>.md
