@@ -41,11 +41,12 @@ function fakeGoogle({ reviewsStatus = 200 } = {}) {
 }
 const ctx = (g) => ({ env: {}, fetch: g.fetchImpl, saKey: { client_email: 'x' }, saToken: async (scope, sub) => { g.token = [scope, sub]; return 't'; }, now: () => NOW });
 
-test('the Concierge reads the live Google source; the review pulse and the pending line are gone', () => {
+test('the Concierge reads the live Google source; the pending line is gone, and the review pulse is never required', () => {
   const src = def.sources.find((s) => s.type === 'gbp_reviews');
   assert.ok(src && src.required && REGISTRY.gbp_reviews);
   assert.ok(!def.sources.some((s) => s.type === 'pending'));
-  assert.ok(!def.sources.some((s) => s.newest === '07_Marketing_and_Brand/Venue_Review_Pulse_'));
+  // #3094 (Mimi 11.06.2026): the pulse is back as an OPTIONAL second source; it may never be required.
+  assert.ok(!def.sources.some((s) => s.newest === '07_Marketing_and_Brand/Venue_Review_Pulse_' && s.required));
   assert.deepStrictEqual(def.character.needs, []);
   assert.deepStrictEqual(def.seen_before.key, ['venue', 'reviewer', 'platform', 'review_id?'], 'the #1758 ruled key is unchanged');
   assert.ok(src.skip.includes('The Harding House'));
