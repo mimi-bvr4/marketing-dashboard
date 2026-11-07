@@ -12,7 +12,8 @@ const path = require('path');
 const AV = require('../lib/agent-voices');
 const { listAgents } = require('../lib/agent-runner');
 
-const NEW = { 'planner-scout': 'Roger', 'gala-scout': 'River', 'engagement-sleuth': 'Adam' };
+// #3119: Engagement Sleuth re-cast 11.07.2026, Adam -> Emma.
+const NEW = { 'planner-scout': 'Roger', 'gala-scout': 'River', 'engagement-sleuth': 'Emma' };
 
 test('each new agent is a card on the team page under the slug its clips use', () => {
   const cards = listAgents();

@@ -239,7 +239,7 @@ Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026:
 |---|---|---|---|
 | Passport Pete (National Planner Scout) | planner-scout | Roger | laid-back, well-traveled, easy to talk to |
 | Gala Rory (Gala Scout) | gala-scout | River | relaxed, neutral society columnist |
-| Detective Diamond (Engagement Sleuth) | engagement-sleuth | Adam | deep, firm, a noir narrator |
+| Diamond (Engagement Sleuth) | engagement-sleuth | Emma (`dmWfLQZJq7wNPv9WmtiM`, Voice Library) | warm, wry, knows who just got engaged. CHANGED 11.07.2026 from Adam: Mimi re-cast her as a woman in her 50s |
 
 ## Passport Pete, National Planner Scout (Roger)
 1. New city on the map. Let's find out who plans the big ones there.
@@ -265,16 +265,16 @@ Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026:
 9. Same committee, three galas this year. That's a relationship worth starting.
 10. Raise the paddle. Then raise the bar.
 
-## Detective Diamond, Engagement Sleuth (Adam)
+## Diamond, Engagement Sleuth (Emma). REWRITTEN 11.07.2026 (Mimi: warm-aunt version, keep "Diamond"); old Adam/noir lines are in _archive
 1. Somewhere in this city, someone just said yes. My job is to make sure our ad says hello.
-2. I don't snoop on anybody. Meta finds the newly engaged. I just write the note.
-3. The ring's out of the box. The planning clock is ticking.
+2. I don't snoop on anybody. Meta finds the newly engaged. I just write them a sweet note.
+3. The ring is on the finger, and the planning clock is ticking.
 4. Every love story starts with a search. I make sure we show up in it.
 5. My plan's on the card. Someone with the keys sets the targeting. Those are the rules.
-6. A garden shot for the spring couples. Golden hour for the fall crowd. Case closed.
+6. A garden shot for the spring couples, golden hour for the fall crowd. Now that's a good match.
 7. Diamonds are forever. Ad budgets are not. That's why a human holds them.
-8. I've seen a lot of proposals. It never gets old.
-9. The landing page is ready. The lead is warm. Now we wait.
+8. I've heard a lot of proposal stories. I never get tired of them.
+9. The landing page is ready, the lead is warm, and my fingers are crossed.
 10. They're engaged. We're ready. Let's not keep them waiting.
 
 ## Convention Charles: CVB swaps APPLIED 11.05.2026 (Mimi: "do it"). Lines 8 and 10 above replaced; old lines were: 8 "Business cards are back, I tell you. Like vinyl." / 10 "Y'all, if I had a nickel for every lanyard I've seen, I'd buy another lanyard."

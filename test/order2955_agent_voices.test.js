@@ -23,7 +23,7 @@ function clipDir(files) {
   return d;
 }
 
-// #3000: 20 since the Marketing chat added Passport Pete, Gala Rory and Detective Diamond.
+// #3000: 20 since the Marketing chat added Passport Pete, Gala Rory and Diamond (#3119 dropped "Detective").
 // #3045: 21 with the AI Slop Stopper (Harry).
 test('the script: 21 characters, 10 lines each, one per card plus the Producer', () => {
   const s = AV.loadScript();
