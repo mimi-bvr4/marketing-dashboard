@@ -26,10 +26,16 @@ const DEPARTMENT_INDEXES = Object.freeze([
 
 const ID_RE = /^[a-z][a-z0-9-]{1,31}$/;
 
+// ORDER #3071: the one plain-id check, shared by the migration and the stores.
+function checkDepartmentId(raw, where = 'department') {
+  const id = String(raw || '');
+  if (!ID_RE.test(id)) throw new Error(`${where}: "${id}" is not a department id`);
+  return id;
+}
+
 function departmentMigrationSql(defaultDepartmentId) {
-  const id = String(defaultDepartmentId || '');
   // The id is written into SQL as a literal, so it must be a plain department id and nothing else.
-  if (!ID_RE.test(id)) throw new Error(`department migration: "${id}" is not a department id`);
+  const id = checkDepartmentId(defaultDepartmentId, 'department migration');
   return [
     ...SHARED_TABLES.map((t) => `ALTER TABLE IF EXISTS ${t} ADD COLUMN IF NOT EXISTS department TEXT NOT NULL DEFAULT '${id}'`),
     ...DEPARTMENT_INDEXES.map(([name, table, cols]) => `CREATE INDEX IF NOT EXISTS ${name} ON ${table}(${cols})`),
@@ -43,4 +49,4 @@ async function ensureDepartmentColumn(db, defaultDepartmentId) {
   return sqls.length;
 }
 
-module.exports = { SHARED_TABLES, DEPARTMENT_INDEXES, departmentMigrationSql, ensureDepartmentColumn };
+module.exports = { SHARED_TABLES, DEPARTMENT_INDEXES, checkDepartmentId, departmentMigrationSql, ensureDepartmentColumn };
