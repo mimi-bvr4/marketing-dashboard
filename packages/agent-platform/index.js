@@ -5,10 +5,10 @@
 
 const { FENCE, forbidden } = require('./lib/fence');
 const { defineDepartment, isHead, isInstructionApprover, BASE_LAWS } = require('./lib/config');
-const { SHARED_TABLES, departmentMigrationSql, ensureDepartmentColumn } = require('./lib/schema');
+const { SHARED_TABLES, checkDepartmentId, departmentMigrationSql, ensureDepartmentColumn } = require('./lib/schema');
 
 module.exports = {
   FENCE, forbidden,
   defineDepartment, isHead, isInstructionApprover, BASE_LAWS,
-  SHARED_TABLES, departmentMigrationSql, ensureDepartmentColumn,
+  SHARED_TABLES, checkDepartmentId, departmentMigrationSql, ensureDepartmentColumn,
 };
