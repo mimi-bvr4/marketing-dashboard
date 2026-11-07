@@ -9,7 +9,7 @@ const A = require('../lib/photo-archive');
 const J = require('../jobs/photo_crawl');
 
 const F = A.FOLDER_MIME;
-const WIDTH = 29;   // COLS (26) + thumb, thumb_w, thumb_h
+const WIDTH = 31;   // COLS (28: ORDER #3085 appended taken_time, day_part) + thumb, thumb_w, thumb_h
 
 // A Postgres stand-in that keeps what is written and refuses what Postgres
 // refuses: a plain INSERT of an existing key, and one ON CONFLICT statement

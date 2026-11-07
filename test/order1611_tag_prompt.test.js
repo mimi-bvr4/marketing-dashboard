@@ -9,8 +9,11 @@ const { GROUPS, SYNONYMS } = require('../lib/photo-vocabulary');
 
 const PROMPT = T.buildPrompt({ groups: GROUPS, synonyms: SYNONYMS });
 
-test('day or night only when sky, sunlight or windows show it', () => {
-  assert.match(PROMPT, /day or night: ONLY when sky, sunlight or windows show it/);
+// ORDER #3085 replaced #1611's "day or night: ONLY when sky ..." rule: the
+// camera clock sets day / night / dusk now, and the model is told not to.
+test('day, night and dusk are not the model\'s to tag (ORDER #3085)', () => {
+  assert.match(PROMPT, /Do NOT tag day, night or dusk: they are set from the camera clock/);
+  assert.doesNotMatch(PROMPT, /day or night: ONLY when sky/);
 });
 
 test('exterior only outdoors', () => {

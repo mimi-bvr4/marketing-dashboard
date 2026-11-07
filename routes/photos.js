@@ -39,6 +39,7 @@ const T = require('../lib/photo-tagger');
 const { vocabFromRows, personTag } = T;
 const { rowsByDealId } = require('../lib/photo-sheet-rule');
 const { VENUES_DEFAULT } = require('../lib/photo-config');
+const { seedOf } = require('../lib/photo-clusters');
 const { sessionUser } = require('../middleware/page-gate');
 
 const PAGE = path.join(__dirname, '..', 'public', 'photos.html');
@@ -84,7 +85,12 @@ function assemble({ photos, tags, vocabRows, synonymRows, picks = [] }, sheetRow
   const byPhoto = new Map();
   for (const t of tags) {
     const e = byPhoto.get(t.drive_id) || { ai: [], added: [], removed: [] };
-    if (t.source === 'ai') e.ai.push({ tag: t.tag, confidence: Number(t.confidence) || 0 });
+    if (t.source === 'ai') {
+      e.ai.push({ tag: t.tag, confidence: Number(t.confidence) || 0 });
+      // ORDER #3085: tags shared from a near-identical shot say which one.
+      const seed = seedOf(t.who);
+      if (seed) e.sharedFrom = seed;
+    }
     else if (t.source === 'human_add') e.added.push(t.tag);
     else if (t.source === 'human_remove') e.removed.push(t.tag);
     byPhoto.set(t.drive_id, e);
@@ -233,7 +239,8 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
 
   router.get('/api/photos/:id', gate('view'), async (req, res) => {
     try {
-      const p = (await index()).byId.get(req.params.id);
+      const ix = await index();
+      const p = ix.byId.get(req.params.id);
       if (!p) return res.status(404).json({ error: 'No such photo' });
       const cleared = A.canDownload(p.rights.state);
       const segs = String(p.folder_path || '').split(' / ').filter(Boolean);
@@ -241,7 +248,8 @@ function createPhotosRouter({ store, identity, sheet = async () => null, venuesD
       res.json({
         ...lite(p), folder_path: p.folder_path, month: p.month, season: p.season, year: p.year,
         event_type: p.event_type, event_class: p.event_class, setup: p.setup, guest_band: p.guest_band,
-        orientation: p.orientation, width: p.width, height: p.height,
+        orientation: p.orientation, width: p.width, height: p.height, day_part: p.day_part || null,
+        shared_from: p.tagEdits.sharedFrom && ix.byId.has(p.tagEdits.sharedFrom) ? p.tagEdits.sharedFrom : null,
         breadcrumbs: segs.map((s, i) => ({ label: s, path: segs.slice(0, i + 1).join(' / ') })),
         rights: { state: p.rights.state, reason: p.rights.reason, badge: A.BADGES[p.rights.state] || null,
           internal_by_hand: !!p.manual_internal },
