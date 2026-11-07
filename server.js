@@ -132,6 +132,9 @@ app.use(pageGate);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', require('./routes/fleet'));
 app.get('/settings/api-tokens', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api-tokens.html')));
+// ORDER #3116: Katherine's Numbers, the full HubSpot report that used to sit under the home brief.
+// Below the gate like every page (app.use(pageGate) above).
+app.get('/numbers', (req, res) => res.sendFile(path.join(__dirname, 'public', 'numbers.html')));
 const { ensureTables } = require('./db');
 ensureTables().catch(e => console.error('[fleet] ensureTables:', e.message));
 
@@ -310,13 +313,20 @@ app.use(require('./routes/email-stats').createEmailStatsRouter({
 }));
 
 // ---- Open Date Filler: open Fri/Sat/Sun dates at the 7 venues (marketing + sales boards) ----
-app.use(require('./routes/open-dates').createOpenDatesRouter({
-  search: async (objectType, body) => {
-    const r = await enqueueHubSpot(() => hubspotFetch(objectType, excludeTestDeals(objectType, body)));
-    if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
-    return r.json();
-  },
-}));
+{
+  const { createOpenDatesRouter, CACHE_MS: OPEN_DATES_CACHE_MS } = require('./routes/open-dates');
+  const openDates = createOpenDatesRouter({
+    search: async (objectType, body) => {
+      const r = await enqueueHubSpot(() => hubspotFetch(objectType, excludeTestDeals(objectType, body)));
+      if (r.status !== 200) throw new Error(`HubSpot answered ${r.status}`);
+      return r.json();
+    },
+  });
+  app.use(openDates);
+  // ORDER #3116: the home brief's 90 days, read ahead at boot and before the cache runs out.
+  setTimeout(() => openDates.warm(3), 5000).unref();
+  setInterval(() => openDates.warm(3), OPEN_DATES_CACHE_MS - 60 * 1000).unref();
+}
 
 // ---- ORDER #2332: the 2026 revenue-goal figure, summed here, not in the browser ----
 // Warmed at boot and every 15 minutes so the home tile reads a cached answer.

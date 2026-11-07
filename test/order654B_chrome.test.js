@@ -11,7 +11,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
-const PAGES = ['index.html', 'api-tokens.html'];
+const PAGES = ['index.html', 'numbers.html', 'api-tokens.html']; // numbers.html: ORDER #3116
 const read = (f) => fs.readFileSync(path.join(__dirname, '..', 'public', f), 'utf8');
 
 for (const f of PAGES) {
@@ -34,7 +34,7 @@ for (const f of PAGES) {
 }
 
 test('KNOWN-BAD: no chart, number or content rule was touched -- chrome only', () => {
-  const s = read('index.html');
+  const s = read('numbers.html'); // ORDER #3116: the charts, numbers and Elle tab moved here, unchanged
   // The amendment's rule 5: the Elle GA4 tab and all live numbers stay untouched.
   for (const marker of ['chart.js', 'Elle', '/api/ga4/']) {
     assert.ok(s.includes(marker), marker + ' must survive this change untouched');
