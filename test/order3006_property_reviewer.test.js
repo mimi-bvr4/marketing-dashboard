@@ -104,7 +104,7 @@ test('scorecards(): marketing from its database, Baylee from the bridge; a bridg
   let localReads = 0;
   const read = async () => { localReads++; return { cards: [], runs: [], asks: [], settings: [], visits: [] }; };
   const ok = await W.scorecards({ pool: {}, since: new Date('2026-10-26T05:00:00Z'), now: NOW, read, deps: { fetchImpl: fakeFetch([]), env: ENV } });
-  assert.deepStrictEqual(ok.map((c) => c.department), ['marketing', 'properties']);
+  assert.deepStrictEqual(ok.map((c) => c.department), ['marketing', 'properties', 'hr']);
   assert.equal(localReads, 1);
   assert.equal(ok[1].week.approved, 1);
   const bad = await W.scorecards({ pool: {}, since: new Date('2026-10-26T05:00:00Z'), now: NOW, read, deps: { fetchImpl: fakeFetch([]), env: {} } });
