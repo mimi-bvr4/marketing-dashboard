@@ -85,7 +85,7 @@ const SIGN_IN_PAGE = `<!doctype html><meta charset="utf-8"><title>Marketing Dash
 //                       would be dropped silently.
 const { ssoBounceUrl, hasBounceMarker, BOUNCE_MARKER } = require('../lib/sso');
 const { renewIfDue } = require('../lib/session_life');
-const { DENIED_MESSAGE, DENIED_PAGE } = require('../lib/access');
+const { DENIED_MESSAGE, DENIED_PAGE, HANDOFF_SEAT, handoffSeatMay } = require('../lib/access');
 
 // ORDER #1318: an SSO session in the mkt_session cookie lasts 30 days and is
 // renewed after a Dispatch staff check (lib/session_life.js).
@@ -124,6 +124,17 @@ function pageGate(req, res, next) {
   }
   const who = sessionUser(req);
   if (who && who.role === 'sso' && who.mkt_access === true) {
+    return renewIfDue(res, who).then(outcome => {
+      if (outcome === 'ended') return refuse(req, res);
+      if (outcome === 'denied') return deny(req, res);
+      req.mktUser = who;
+      return next();
+    });
+  }
+  // ORDER #3165: Mary's hand-off seat. Only the desk and a read-only Review;
+  // anything else is the leadership 403, never a redirect loop.
+  if (who && who.role === 'sso' && who.mkt_seat === HANDOFF_SEAT) {
+    if (!handoffSeatMay(req.method, req.path)) return deny(req, res);
     return renewIfDue(res, who).then(outcome => {
       if (outcome === 'ended') return refuse(req, res);
       if (outcome === 'denied') return deny(req, res);

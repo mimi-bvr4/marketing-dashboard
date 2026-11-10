@@ -37,7 +37,8 @@ function fakeHubSpot({ portalId = 51163869, owners = [] } = {}) {
   return { fetchImpl, writes, calls };
 }
 
-const SANDBOX = { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 'ZZ_TEST_TOKEN' };
+// #3165: the per-agent owner path is the HANDOFF_VIA_MARY=off path now.
+const SANDBOX = { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 'ZZ_TEST_TOKEN', HANDOFF_VIA_MARY: 'off' };
 
 async function approvedScoutCards(store) {
   for (const agent of ['planner-scout', 'gala-scout']) {

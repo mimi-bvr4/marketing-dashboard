@@ -94,7 +94,7 @@ test('approved Scout and Gala cards wait for a named salesperson; they never fal
     assert.ok(!out.error, out.error);
   }
   const logs = [];
-  await handoff({ store, fetchImpl, secrets: () => null, env: { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 't' }, log: (l) => logs.push(l) });
+  await handoff({ store, fetchImpl, secrets: () => null, env: { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 't', HANDOFF_VIA_MARY: 'off' }, log: (l) => logs.push(l) });
   assert.strictEqual(calls.length, 0);
   assert.strictEqual(logs.filter((l) => /No salesperson set yet/.test(l)).length, 2);
   for (const c of await store.list({ status: 'ready' })) assert.ok(!c.handoff, 'left as is, so it hands off once a salesperson is named');

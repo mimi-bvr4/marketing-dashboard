@@ -19,7 +19,8 @@ const SANDBOX_ON = { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 'sandbo
 const silentLog = () => {};
 // Every hand-off below gets a fake Keychain, so no test reads the real one.
 const silent = silentLog;
-const run = (o) => handoff({ ...o, secrets: () => null });
+// #3165: these prove the direct path, which is HANDOFF_VIA_MARY=off now.
+const run = (o) => handoff({ ...o, env: { HANDOFF_VIA_MARY: 'off', ...(o.env || {}) }, secrets: () => null });
 
 // A fake HubSpot that records every write.
 function fakeHubSpot({ portalId = 51163869, owners, companies = [], taskStatus = 201 } = {}) {

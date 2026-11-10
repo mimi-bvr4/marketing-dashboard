@@ -107,6 +107,8 @@ app.use(pageGate);
     app.use(createReviewRouter({ store: agentStore }));
     // ORDER #1658: the Agents page (Katherine edits her bots; same gate, same store).
     app.use(require('./routes/agents').createAgentsRouter({ store: agentStore, identity: require('./lib/staff-identity').createIdentityClient() }));
+    // ORDER #3165: the Sales Hand-off desk (Mary Topp picks the salesperson per batch; same gate, same store).
+    app.use(require('./routes/handoff').createHandoffRouter({ store: agentStore, identity: require('./lib/staff-identity').createIdentityClient() }));
     // ORDER #1668: the Competitors page (sheet + Scout + weekly profiles; same gate, same store).
     app.use(require('./routes/competitors').createCompetitorsRouter({ store: agentStore }));
     // ORDER #1688: the Collateral Cadet (searches queued here, run on the Box; same gate).
@@ -124,7 +126,7 @@ app.use(pageGate);
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
       '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*',
-      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch'],
+      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch', '/handoff', '/handoff.html', '/api/handoff'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }

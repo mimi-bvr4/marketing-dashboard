@@ -14,25 +14,38 @@ const { createPin } = require('../lib/pinterest');
 const { lint } = require('../lib/ai-tells');
 const { sendToSales, target: salesTarget } = require('../lib/hubspot-sales-task');
 const { salesOwner, NO_OWNER } = require('../lib/outreach');
+const maryDesk = require('../lib/mary-desk');
 
 async function handoff({ store, fetchImpl, login, secrets, env = process.env, log = console.log, now = () => new Date() }) {
-  const cards = await store.readyForHandoff(20);
+  const viaMary = maryDesk.on(env);
+  const cards = await store.readyForHandoff(20, { viaMary });
   let done = 0;
   for (const c of cards) {
     // #2940: an approved Convention Connector card becomes one HubSpot task for
     // Cameron Creasy. The card is claimed first, so it can never make two.
     if (c.payload.sales) {
-      // #3000/#3003/#3012: only an agent whose salesperson is set hands off. A
-      // Scout's card with no owner id waits, untouched and UNCLAIMED, so setting
-      // the owner later sends it as exactly one task; it never falls through to Cameron.
-      const owner = await salesOwner(c.agent, { store });
-      if (!owner) { log(`card ${c.id}: ${NO_OWNER} for ${c.agent} (ORDER #3003), left as is`); continue; }
+      // #3165 (HANDOFF_VIA_MARY, on): every sales card waits for Mary Topp's
+      // pick on /handoff. The owner is the id she picked, nothing else: not the
+      // agent's saved owner, not Cameron by name. Unpicked = untouched, UNCLAIMED.
+      // #3000/#3003/#3012 (switch off): only an agent whose salesperson is set
+      // hands off; a Scout's card with no owner id waits the same way.
+      let owner, picked = null;
+      if (viaMary) {
+        picked = maryDesk.assigned(c);
+        if (!picked) { log(`card ${c.id}: ${maryDesk.WAITING} (ORDER #3165), left as is`); continue; }
+        owner = { id: picked.owner_id };
+      } else {
+        owner = await salesOwner(c.agent, { store });
+        if (!owner) { log(`card ${c.id}: ${NO_OWNER} for ${c.agent} (ORDER #3003), left as is`); continue; }
+      }
       if (!salesTarget(env, null)) { log(`card ${c.id}: Sales hand-off is off (CONVENTION_TO_HUBSPOT), left as is`); continue; }
       if (!(await store.claimHandoff(c.id, { at: now().toISOString(), pending: true, to: 'hubspot-sales' }))) { log(`card ${c.id}: already taken`); continue; }
       const r = await sendToSales({ card: c, env, fetchImpl, now, ...(owner.id ? { ownerId: owner.id } : {}), ...(secrets ? { secrets } : {}) });
       const at = now().toISOString();
-      if (r.ok) { await store.finishHandoff(c.id, { at, ...r }); log(`card ${c.id}: HubSpot task ${r.task_id} for ${r.owner_name} in ${r.where} ${r.portal}${r.company_created ? `, company ${r.company_id} created` : ''}`); done++; }
-      else if (r.skip || r.alarm) { await store.finishHandoff(c.id, { at, ok: false, alarm: !!r.alarm, why: r.why, to: 'hubspot-sales', company_id: r.company_id || null }); log(`card ${c.id}: ${r.alarm ? 'ALARM ' : 'not sent to Sales: '}${r.why}`); }
+      // #3165: the card records who picked the salesperson, and when.
+      const by = picked ? { assigned_by: picked.by_name || picked.by, assigned_at: picked.at } : {};
+      if (r.ok) { await store.finishHandoff(c.id, { at, ...r, ...by }); log(`card ${c.id}: HubSpot task ${r.task_id} for ${r.owner_name} in ${r.where} ${r.portal}${r.company_created ? `, company ${r.company_id} created` : ''}`); done++; }
+      else if (r.skip || r.alarm) { await store.finishHandoff(c.id, { at, ok: false, alarm: !!r.alarm, why: r.why, to: 'hubspot-sales', company_id: r.company_id || null, ...by }); log(`card ${c.id}: ${r.alarm ? 'ALARM ' : 'not sent to Sales: '}${r.why}`); }
       else { await store.finishHandoff(c.id, null); log(`card ${c.id}: will retry, ${r.why}`); }
       continue;
     }

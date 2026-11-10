@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Hand-off · Marketing</title>
+<!-- ORDER #3165: Mary Topp's Sales Hand-off desk. Every batch Katherine
+     approves that carries leads for Sales lands here. Mary reads it and picks
+     the salesperson from the live list (HubSpot owner ids, never free text),
+     splits it by lead, or sends it back to Katherine. Picking writes only her
+     pick; the Box sends the HubSpot task afterwards, once. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  .wrap { display: grid; gap: 24px; padding-block: 24px 48px; max-width: 980px; margin: 0 auto; padding-inline: 16px; }
+  .card { border: 1px solid #d9dbe0; border-radius: 6px; background: #fff; padding: 16px; display: grid; gap: 12px; }
+  .meta { font-size: 12px; color: #6d6e71; display: flex; flex-wrap: wrap; gap: 12px; }
+  .badge { font-size: 12px; padding: 0 8px; border-radius: 6px; background: #f4f5f7; }
+  .badge.bad { background: #fdecea; color: #b42318; }
+  .badge.good { background: #e8f5ee; color: #1d6b42; }
+  .kw { font-size: 12px; padding: 0 8px; border-radius: 12px; background: #eef2fb; }
+  .lead { border-top: 1px solid #eceef2; padding-top: 8px; display: grid; gap: 4px; }
+  .email { white-space: pre-wrap; font-size: 14px; line-height: 1.5; background: #fafafa; padding: 8px; border-radius: 6px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select, input[type=text] { min-height: 36px; font: inherit; }
+  .err { color: #b42318; font-size: 14px; }
+  .empty { color: #6d6e71; }
+  details summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Sales Hand-off</h1>
+    <p class="meta" id="line">Loading…</p>
+    <p class="meta" id="rosterNote"></p>
+    <p class="meta"><a href="/review">Review (read only for the desk)</a></p>
+  </header>
+  <p class="err" id="err"></p>
+  <section id="list"></section>
+</main>
+<script>
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (iso) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit' }) : '');
+  let state = { batches: [], roster: [], can_pick: false };
+  async function api(url, opts) {
+    const r = await fetch(url, opts);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok && !j.results) throw new Error(j.error || ('error ' + r.status));
+    return j;
+  }
+  // The dropdown: every person on the live list. One with no HubSpot owner id,
+  // or marked unavailable, is shown but cannot be picked, and says why.
+  function rosterSelect(id) {
+    const opts = state.roster.map((p) => p.pickable
+      ? `<option value="${esc(p.owner_id)}">${esc(p.name)}${p.title ? ` (${esc(p.title)})` : ''}</option>`
+      : `<option disabled>${esc(p.name)}${p.title ? ` (${esc(p.title)})` : ''}: cannot be picked, ${esc(p.why)}</option>`).join('');
+    return `<select id="${id}"><option value="">Pick a salesperson…</option>${opts}</select>`;
+  }
+  function leadHtml(b, l) {
+    const src = (l.sources || []).map((s) => s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label || s.url)}</a>` : esc(s.label)).join(', ');
+    const can = state.can_pick && l.state === 'waiting';
+    return `<div class="lead">
+      <p><label>${can ? `<input type="checkbox" data-b="${esc(b.key)}" value="${l.card_id}" checked> ` : ''}<strong>${esc(l.company || l.title)}</strong></label>
+        ${l.website ? ` <a href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.website)}</a>` : ''}
+        <span class="badge ${l.state === 'assigned' ? 'good' : l.state === 'waiting' ? 'bad' : ''}">${esc(l.line)}</span> <span class="meta">card #${l.card_id}</span></p>
+      ${l.target ? `<p class="meta">Target: ${esc(l.target)}</p>` : ''}
+      ${src ? `<p class="meta">Sources: ${src}</p>` : ''}
+      <details><summary>Read the blast${l.subject ? `: ${esc(l.subject)}` : ''}</summary>
+        ${l.body ? `<p class="meta">Why this lead: ${esc(l.body).slice(0, 2000)}</p>` : ''}
+        <div class="email">${esc(l.email)}</div></details>
+      ${l.handoff && l.handoff.ok ? `<p class="meta"><span class="badge good">Sent to ${esc(l.handoff.owner_name)} in HubSpot</span></p>` : ''}
+      ${l.handoff && !l.handoff.ok && !l.handoff.pending ? `<p class="meta"><span class="badge bad">Not sent to Sales</span> ${esc(l.handoff.why)}</p>` : ''}
+    </div>`;
+  }
+  function batchHtml(b) {
+    const waiting = b.leads.filter((l) => l.state === 'waiting').length;
+    const act = state.can_pick && waiting ? `<div class="actions">
+        ${rosterSelect('sel-' + b.key)}
+        <button data-a="assign" data-b="${esc(b.key)}">Assign the ticked leads</button>
+        <input type="text" id="note-${esc(b.key)}" placeholder="Why it goes back to Katherine">
+        <button data-a="back" data-b="${esc(b.key)}">Send the ticked leads back</button>
+      </div><p class="meta">To split a batch, untick the leads for the second person, assign, then tick the rest and assign again.</p>` : '';
+    return `<article class="card">
+      <h2 style="margin:0">${esc(b.agent_name)} <span class="badge ${b.state === 'waiting' ? 'bad' : b.state === 'assigned' ? 'good' : ''}">${esc(b.line)}</span></h2>
+      <p class="meta">${b.leads.length} lead${b.leads.length === 1 ? '' : 's'}${b.run_id ? ` · run ${b.run_id}` : ''}${b.job ? ` · ${esc(b.job)}` : ''}${b.target ? ` · target: ${esc(b.target)}` : ''}</p>
+      ${b.keywords.length ? `<p class="meta">Main keywords: ${b.keywords.map((k) => `<span class="kw">${esc(k)}</span>`).join(' ')}</p>` : ''}
+      <p class="meta">Approved by ${esc(b.approved_by.join(', ') || 'unknown')}${b.approve_notes.length ? `. Katherine's note: ${esc(b.approve_notes.join(' / '))}` : ''}</p>
+      ${b.leads.map((l) => leadHtml(b, l)).join('')}
+      ${act}
+    </article>`;
+  }
+  async function load() {
+    $('#err').textContent = '';
+    try {
+      state = await api('/api/handoff');
+      $('#line').textContent = state.on ? state.waiting_line : `The desk is off (${state.flag}=off): sales cards go straight to the salesperson set on each agent.`;
+      $('#rosterNote').textContent = state.roster_note ? `Salesperson list: ${state.roster_note}.` : (state.can_pick ? '' : 'You can look here; only Mary Topp or an exec picks the salesperson.');
+      $('#list').innerHTML = state.batches.length ? state.batches.map(batchHtml).join('') : '<p class="empty">No approved sales batches yet.</p>';
+    } catch (e) { $('#err').textContent = e.message; }
+  }
+  const ticked = (key) => [...document.querySelectorAll(`input[type=checkbox][data-b="${CSS.escape(key)}"]:checked`)].map((x) => Number(x.value));
+  document.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('button[data-a]'); if (!btn) return;
+    const key = btn.dataset.b; const ids = ticked(key);
+    if (!ids.length) { $('#err').textContent = 'Tick at least one lead.'; return; }
+    btn.disabled = true;
+    try {
+      let j;
+      if (btn.dataset.a === 'assign') {
+        const owner = document.getElementById('sel-' + key).value;
+        if (!owner) throw new Error('Pick a salesperson first.');
+        j = await api('/api/handoff/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_ids: ids, owner_id: owner }) });
+      } else {
+        const note = document.getElementById('note-' + key).value;
+        j = await api('/api/handoff/send-back', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_ids: ids, note }) });
+      }
+      const bad = (j.results || []).filter((x) => !x.ok);
+      if (bad.length) $('#err').textContent = bad.map((x) => `card #${x.card_id}: ${x.why}`).join(' ');
+      await load();
+      if (bad.length) $('#err').textContent = bad.map((x) => `card #${x.card_id}: ${x.why}`).join(' ');
+    } catch (e) { $('#err').textContent = e.message; btn.disabled = false; }
+  });
+  load();
+</script>
+<script src="https://dispatch.infinityhospitalitygroup.com/ihg-nav.js" defer></script>
+</body>
+</html>
