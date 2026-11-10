@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pinterest accounts · Settings · Marketing</title>
+<!-- ORDER #3164: one row per venue, Connected or Not connected, and a Connect
+     button that runs Pinterest's login approval for that venue's account. The
+     person who presses Connect must be signed in to THAT venue's Pinterest in
+     this browser. The Box finishes the connection within about 15 minutes; no
+     token ever reaches this page or this server. Behind PINTEREST_PER_VENUE. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-components.css">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  .wrap { display: grid; gap: var(--ihg-space-6, 24px); padding-block: var(--ihg-space-6, 24px) var(--ihg-space-12, 48px); }
+  table { border-collapse: collapse; width: 100%; font-size: var(--ihg-text-sm, 14px); }
+  td, th { border-bottom: var(--ihg-border-width, 1px) solid var(--ihg-color-border, #d9dbe0); padding: var(--ihg-space-2, 8px); text-align: left; vertical-align: top; }
+  .meta { font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); }
+  .badge { font-size: var(--ihg-text-xs, 12px); padding: 0 var(--ihg-space-2, 8px); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface-muted, #f4f5f7); }
+  .badge.good { background: #e8f5ee; color: #1d6b42; }
+  .err { color: #b42318; font-size: var(--ihg-text-sm, 14px); }
+</style>
+</head>
+<body>
+<main class="container wrap">
+  <header>
+    <p class="meta"><a href="/agents">Agents</a> · Settings</p>
+    <h1>Pinterest accounts</h1>
+    <p>Pinterest Paul pins each approved card to the Pinterest account of the venue the blog post belongs to. Each venue's account is connected once: sign in to that venue's Pinterest in this browser, then press <strong>Connect</strong> on its row and approve our app. Nothing pins until Katherine approves a card.</p>
+    <p id="line" class="meta"></p>
+    <p id="result" class="meta" hidden></p>
+  </header>
+  <table><thead><tr><th>Venue</th><th>Site</th><th>Status</th><th>Boards</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="5">Loading...</td></tr></tbody></table>
+  <section><h2>Recent connects</h2><ul id="recent" class="meta"></ul></section>
+  <p class="err" id="err" hidden></p>
+</main>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const RESULT = { waiting: 'Pinterest sent you back. The Box finishes the connection within about 15 minutes; this row turns Connected then.',
+    declined: 'The approval was not given on Pinterest. Nothing changed.', expired: 'That approval link was too old or already used. Press Connect again.',
+    bad: 'That approval did not come from this page. Press Connect again.' };
+  const q = new URLSearchParams(location.search);
+  if (q.get('result') && RESULT[q.get('result')]) { $('#result').textContent = RESULT[q.get('result')]; $('#result').hidden = false; }
+  async function load() {
+    const r = await fetch('/api/pinterest/accounts', { credentials: 'same-origin' });
+    const j = await r.json();
+    if (!r.ok) { $('#err').textContent = j.error || ('error ' + r.status); $('#err').hidden = false; return; }
+    $('#line').textContent = !j.on ? 'Per-venue Pinterest is switched off (PINTEREST_PER_VENUE). Paul uses the one shared account until it is on.'
+      : (j.app_ready ? j.line : j.line + '. The Pinterest app id is not set on the dashboard yet, so Connect is not available.');
+    $('#rows').innerHTML = j.venues.map((v) => `<tr data-v="${esc(v.code)}"><td>${esc(v.name)}</td><td>${esc(v.site)}</td>
+      <td>${v.connected ? '<span class="badge good">Connected</span>' : '<span class="badge">Not connected</span>'}${v.why ? `<br><span class="meta">${esc(v.why)}</span>` : ''}</td>
+      <td class="meta">${v.boards.length ? esc(v.boards.join(', ')) : ''}</td>
+      <td>${j.on && j.app_ready ? `<button data-a="connect">${v.connected ? 'Connect again' : 'Connect'}</button>` : ''}</td></tr>`).join('');
+    $('#recent').innerHTML = (j.recent || []).map((c) => `<li>${esc(c.venue)}: asked by ${esc(c.asked_by)} ${esc(new Date(c.created_at).toLocaleString('en-US', { timeZone: 'America/Chicago' }))}, ${esc(c.outcome || (c.came_back ? 'waiting for the Box' : 'not finished on Pinterest'))}</li>`).join('') || '<li>None in the last 7 days.</li>';
+  }
+  $('#rows').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-a=connect]'); if (!b) return;
+    const v = b.closest('tr').dataset.v; b.disabled = true;
+    try {
+      const r = await fetch('/api/pinterest/connect/' + encodeURIComponent(v), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || ('error ' + r.status));
+      location.href = j.url;
+    } catch (x) { $('#err').textContent = x.message; $('#err').hidden = false; b.disabled = false; }
+  });
+  load().catch((x) => { $('#err').textContent = x.message; $('#err').hidden = false; });
+})();
+</script>
+</body>
+</html>

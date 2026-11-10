@@ -117,7 +117,21 @@ function watchNeed(c, list, fromSheet = 0) {
   return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites (Katherine listed|\(IHG Competitors sheet)/.test(x))] };
 }
 
-function createAgentsRouter({ store, identity, clock = () => new Date() }) {
+// #3164: Paul's card says "Connected: X of N venues" and, until every venue is
+// connected, puts the Settings, Pinterest accounts link in its Waiting box.
+// Only while PINTEREST_PER_VENUE is on; off, his card is exactly as before.
+function pinterestNeed(c, slug, rows, env = process.env) {
+  const PV = require('../lib/pinterest-venues');
+  if (slug !== 'pinterest-paul') return { character: c, pinterest: null };
+  const perVenueLine = /^Katherine to connect each venue's Pinterest once/;
+  if (!PV.perVenueOn(env) || !rows) return { character: { ...c, needs: c.needs.filter((x) => !perVenueLine.test(x)) }, pinterest: null };
+  const p = PV.connectedLine(rows);
+  const needs = c.needs.filter((x) => !/^Katherine to connect our Pinterest business account/.test(x) && !perVenueLine.test(x));
+  if (p.connected < p.total) needs.unshift(`${p.line}: connect the rest on Settings, Pinterest accounts (${p.page})`);
+  return { character: { ...c, needs }, pinterest: p };
+}
+
+function createAgentsRouter({ store, identity, clock = () => new Date(), pinterestAccounts = null }) {
   const r = express.Router();
   const need = (req, res, next) => (personOf(req) ? next() : res.status(403).json({ error: 'Signed-in leadership only.' }));
   const known = (req, res, next) => (listAgents().includes(req.params.slug) ? next() : res.status(404).json({ error: 'no such agent' }));
@@ -150,11 +164,14 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
         try { sheetWatch[slug] = (await scoutWatchList(store, slug)).fromSheet; } catch (e) { sheetWatch[slug] = 0; }
       }
     }
+    let pinRows = null;
+    if (pinterestAccounts && require('../lib/pinterest-venues').perVenueOn()) { try { pinRows = await pinterestAccounts.list(); } catch (e) { pinRows = null; } }
     res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
       const asks = allAsks.filter((a) => a.agent === slug);
       const p = profiles.get(slug);
+      const pin = pinterestNeed(watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug], sheetWatch[slug] || 0), slug, pinRows);
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
         named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, ask_note: d.ask_note || null, sources: (d.sources || []).map(sourceView),
@@ -166,7 +183,8 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
-        character: watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug], sheetWatch[slug] || 0),
+        character: pin.character,
+        pinterest: pin.pinterest,
         watch: watchers[slug] || null,
         watch_sheet: watchers[slug] ? (sheetWatch[slug] || 0) : null,
         asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
@@ -367,4 +385,4 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
   return r;
 }
 
-module.exports = { createAgentsRouter, sourceView, characterOf, liveMissing, STALE_RUN_DAYS, isExec, watchNeed, REDO_MESSAGE };
+module.exports = { createAgentsRouter, sourceView, characterOf, liveMissing, STALE_RUN_DAYS, isExec, watchNeed, pinterestNeed, REDO_MESSAGE };

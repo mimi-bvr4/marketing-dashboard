@@ -105,8 +105,14 @@ app.use(pageGate);
     app.use(require('./routes/reviewer-watch').visitRecorder({ pool: reviewPool }));
     app.use(require('./routes/reviewer-watch').createReviewerWatchRouter({ pool: reviewPool, identity: require('./lib/staff-identity').createIdentityClient() }));
     app.use(createReviewRouter({ store: agentStore }));
+    // ORDER #3164: Settings, Pinterest accounts (one Pinterest login approval per venue).
+    // Behind PINTEREST_PER_VENUE (default OFF). Rollback: unset the switch.
+    const PV = require('./lib/pinterest-venues');
+    PV.ensurePinterestTables(reviewPool).catch(e => console.error('[pinterest] ensurePinterestTables:', e.message));
+    const pinterestAccounts = PV.createPgAccounts(reviewPool);
+    app.use(require('./routes/pinterest').createPinterestRouter({ accounts: pinterestAccounts, store: agentStore }));
     // ORDER #1658: the Agents page (Katherine edits her bots; same gate, same store).
-    app.use(require('./routes/agents').createAgentsRouter({ store: agentStore, identity: require('./lib/staff-identity').createIdentityClient() }));
+    app.use(require('./routes/agents').createAgentsRouter({ store: agentStore, identity: require('./lib/staff-identity').createIdentityClient(), pinterestAccounts }));
     // ORDER #1668: the Competitors page (sheet + Scout + weekly profiles; same gate, same store).
     app.use(require('./routes/competitors').createCompetitorsRouter({ store: agentStore }));
     // ORDER #1688: the Collateral Cadet (searches queued here, run on the Box; same gate).
@@ -124,7 +130,7 @@ app.use(pageGate);
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
       '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*',
-      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch'],
+      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch', '/settings/pinterest', '/api/pinterest/*'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }
