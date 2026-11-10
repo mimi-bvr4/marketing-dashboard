@@ -277,7 +277,7 @@ test('dashboard source: no fleet key is "unavailable"; with one it sends the key
 
 test('every agent folder loads, has a SKILL.md with a name and description, and no em dash', () => {
   const slugs = listAgents();
-  assert.deepStrictEqual(slugs, ['ai-tell-detective', 'bloggy-bob', 'citations', 'collateral-cadet', 'convention-connector', 'copywriter', 'email', 'engagement-sleuth', 'gala-scout', 'gbp', 'monthly-report', 'paid-ads', 'pinterest-paul', 'planner-scout', 'pr-patty', 'scout', 'seo', 'site-guardian', 'site-health', 'web']); // #1688 adds the Cadet; #1704 SEO; #1705 PR Patty; #1724 Email; #2903 the Site Guardian and Web Agent cards; #3000 the three new agents; #3045 the AI Slop Stopper
+  assert.deepStrictEqual(slugs, ['ai-tell-detective', 'bloggy-bob', 'citations', 'collateral-cadet', 'convention-connector', 'copywriter', 'email', 'engagement-sleuth', 'gala-scout', 'gbp', 'keyword-queen', 'monthly-report', 'paid-ads', 'pinterest-paul', 'planner-scout', 'pr-patty', 'scout', 'seo', 'site-guardian', 'site-health', 'web']); // #1688 adds the Cadet; #1704 SEO; #1705 PR Patty; #1724 Email; #2903 the Site Guardian and Web Agent cards; #3000 the three new agents; #3045 the AI Slop Stopper
   for (const s of slugs) {
     const a = loadAgent(s);
     assert.match(a.skill, new RegExp(`^---\\nname: ${s}\\ndescription: .+\\n---`), s);

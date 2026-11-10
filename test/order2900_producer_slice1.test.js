@@ -170,7 +170,8 @@ test('the calendar: Katherine moves a weekly day (logged); daily and monthly do 
 test('the default week: exempt agents first; monthly on the 3rd and the 15th', () => {
   assert.deepStrictEqual(P.dueOn('2026-11-02'), ['pr-patty', 'gbp', 'seo', 'site-health', 'scout']);
   // #2903: the email scorecard is in the Monthly Report, so Email has no run on the 3rd.
-  assert.deepStrictEqual(P.dueOn('2026-11-03'), ['pr-patty', 'gbp', 'convention-connector', 'monthly-report']);
+  // #3163: the Keyword Queen is on Tuesdays (the runner and the board keep her OFF until her switch).
+  assert.deepStrictEqual(P.dueOn('2026-11-03'), ['pr-patty', 'gbp', 'convention-connector', 'keyword-queen', 'monthly-report']);
   assert.ok(P.dueOn('2026-11-15').includes('citations'));
   assert.strictEqual(P.weekStart('2026-11-03'), '2026-11-02');
   assert.strictEqual(P.weekStart('2026-11-08'), '2026-11-02');
