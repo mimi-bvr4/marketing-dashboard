@@ -37,9 +37,11 @@ async function handoff({ store, fetchImpl, login, secrets, env = process.env, lo
     }
     // #1710: an approved Pinterest Paul card is pinned live (Mimi 10.13.2026, "Post live on approve").
     if (c.payload.pin) {
-      const r = await createPin({ pin: c.payload.pin, evidence: c.payload.evidence, fetchImpl, ...(secrets ? { secrets } : {}) });
+      // #3164: with PINTEREST_PER_VENUE on, to the pin's venue's own account; an
+      // unconnected venue or an unpicked venue waits here (retry), never fails.
+      const r = await createPin({ pin: c.payload.pin, evidence: c.payload.evidence, fetchImpl, env, ...(secrets ? { secrets } : {}) });
       const at = now().toISOString();
-      if (r.ok) { await store.setHandoff(c.id, { at, ok: true, pin_id: r.id, pin_url: r.url, board: r.board }); log(`card ${c.id}: pinned to ${r.board} ${r.url}`); done++; }
+      if (r.ok) { await store.setHandoff(c.id, { at, ok: true, pin_id: r.id, pin_url: r.url, board: r.board, ...(r.venue ? { venue: r.venue } : {}) }); log(`card ${c.id}: pinned to ${r.venue ? `${r.venue} ` : ''}${r.board} ${r.url}`); done++; }
       else if (r.skip) { await store.setHandoff(c.id, { at, ok: false, why: r.why }); log(`card ${c.id}: not pinned: ${r.why}`); }
       else log(`card ${c.id}: will retry, ${r.why}`);
       continue;
@@ -68,6 +70,14 @@ async function main({ env = process.env, log = console.log } = {}) {
   const pool = new Pool({ connectionString: env.MARKETING_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   try {
     await ensureAgentTables(pool);
+    // #3164: finish any Pinterest venue connects and refresh Connected and boards first.
+    const PV = require('../lib/pinterest-venues');
+    if (PV.perVenueOn(env)) {
+      try {
+        await PV.ensurePinterestTables(pool);
+        await require('../lib/pinterest-connect').syncAccounts({ accounts: PV.createPgAccounts(pool), log });
+      } catch (e) { log(`pinterest accounts: not checked this run (${e.message})`); }
+    }
     await handoff({ store: createPgStore(pool, { lint }), fetchImpl: globalThis.fetch, env, log });
     return 0;
   } finally { await pool.end(); }

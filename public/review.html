@@ -108,11 +108,31 @@
     } catch (e) { $('#runs').textContent = 'Runs: ' + e.message; }
   }
   // #1710: a Pinterest Paul card shows the pin exactly as it will go up.
+  // #3164: a per-venue pin (it carries "venue") shows WHICH account and WHICH
+  // board before Approve. A post on a shared site asks Katherine to pick the
+  // venue; boards come only from that venue's own account.
+  let pinAccounts = null;
+  async function loadPinAccounts(cards) {
+    if (pinAccounts || !cards.some((c) => c.payload && c.payload.pin && 'venue' in c.payload.pin)) return;
+    try { pinAccounts = await api('/api/pinterest/accounts'); } catch (e) { pinAccounts = { venues: [] }; }
+  }
+  function pinAccountHtml(c, p) {
+    if (!('venue' in p)) return `Board: <strong>${esc(p.board)}</strong>`;
+    const vs = (pinAccounts && pinAccounts.venues) || [];
+    const v = vs.find((x) => x.code === p.venue);
+    const acct = v ? `Account: <strong>${esc(v.name)}</strong>${v.connected ? '' : ` (not connected: <a href="/settings/pinterest">connect ${esc(v.name)} first</a>)`}` : 'Account: <strong>pick the venue</strong>';
+    const board = `Board: <strong>${esc(p.board || 'pick a board')}</strong>`;
+    if (c.status !== 'draft') return `${acct}. ${board}`;
+    const venueSel = p.pick ? `<select data-f="pin-venue" aria-label="Venue"><option value="">Pick the venue</option>${vs.map((x) => `<option value="${esc(x.code)}" ${x.code === p.venue ? 'selected' : ''} ${x.connected ? '' : 'disabled'}>${esc(x.name)}${x.connected ? '' : ' (not connected)'}</option>`).join('')}</select>` : '';
+    const boards = v && v.connected ? v.boards : [];
+    const boardSel = `<select data-f="pin-board" aria-label="Board"><option value="">Pick a board</option>${boards.map((b) => `<option ${b === p.board ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>`;
+    return `${acct}. ${board}<br>${venueSel} ${boardSel} <button data-a="pin-choose">Save venue and board</button>`;
+  }
   function pinHtml(c) {
     const p = c.payload && c.payload.pin; if (!p) return '';
     return `<div class="pin" style="display:flex;gap:1rem;align-items:flex-start;border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
       <img src="${esc(p.image_url)}" alt="${esc(p.alt_text || '')}" style="width:140px;max-width:40%;border-radius:8px;object-fit:cover">
-      <div><p class="meta">The pin${c.status === 'draft' ? ' (Approve pins it live on Pinterest)' : ''}. Board: <strong>${esc(p.board)}</strong></p>
+      <div><p class="meta">The pin${c.status === 'draft' ? ' (Approve pins it live on Pinterest)' : ''}. ${pinAccountHtml(c, p)}</p>
       <p style="margin:.25rem 0"><strong>${esc(p.title)}</strong></p><p style="margin:.25rem 0">${esc(p.description || '')}</p>
       <p class="meta">Links to <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link)}</a></p></div></div>`;
   }
@@ -144,7 +164,7 @@
       return `<p class="meta"><span class="badge bad">${h.alarm ? 'ALARM' : 'Not sent to Sales'}</span> ${esc(h.why)}</p>`;
     }
     if (pin) {
-      if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to pin this on Pinterest (it checks every 15 minutes).</p>' : '';
+      if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to pin this on Pinterest (it checks every 15 minutes; a venue that is not connected yet waits until it is).</p>' : '';
       if (h.ok) return `<p class="meta"><span class="badge good">Pinned to ${esc(h.board)}</span> <a href="${esc(h.pin_url)}" target="_blank" rel="noopener">Open the pin</a></p>`;
       return `<p class="meta"><span class="badge bad">Not pinned</span> ${esc(h.why)}</p>`;
     }
@@ -214,6 +234,7 @@
       const j = await api('/api/review/cards?status=' + status);
       const cards = j.cards;
       cache = cards;
+      await loadPinAccounts(cards);
       if (j.reference) {
         // #2993: every card made before the handover, grouped by agent, newest first. None of them counts.
         const byId = new Map(cards.map((c) => [c.id, c]));
@@ -252,6 +273,14 @@
       try {
         const j = await api('/api/agents/keyword-queen/cards/' + id + '/topics/' + Number(b.dataset.n) + '/approve', { method: 'POST', body: '{}' });
         b.textContent = j.already ? 'Already sent' : 'Sent to Bloggy Bob'; b.disabled = true;
+      } catch (x) { err.textContent = x.message; err.hidden = false; }
+    }
+    // #3164: save Katherine's venue (shared site) and board pick on a draft pin.
+    if (b.dataset.a === 'pin-choose') {
+      const sv = el.querySelector('[data-f=pin-venue]'); const sb = el.querySelector('[data-f=pin-board]');
+      try {
+        await api('/api/pinterest/cards/' + id + '/choose', { method: 'POST', body: JSON.stringify({ venue: sv ? sv.value : undefined, board: sb ? sb.value : undefined }) });
+        await load();
       } catch (x) { err.textContent = x.message; err.hidden = false; }
     }
     if (b.dataset.a === 'edit') el.querySelector('.edit').hidden = false;

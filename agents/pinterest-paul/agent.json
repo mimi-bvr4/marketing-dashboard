@@ -53,7 +53,8 @@
       }
     ],
     "needs": [
-      "Katherine to connect our Pinterest business account to the Box once (a Pinterest app and a login approval)"
+      "Katherine to connect our Pinterest business account to the Box once (a Pinterest app and a login approval)",
+      "Katherine to connect each venue's Pinterest once on Settings, Pinterest accounts (/settings/pinterest), when per-venue Pinterest is on (#3164)"
     ]
   }
 }
