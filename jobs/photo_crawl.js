@@ -27,6 +27,7 @@
 'use strict';
 
 const A = require('../lib/photo-archive');
+const F = require('../lib/photo-facts');
 const { ensurePhotoTables } = require('../lib/photo-schema');
 const { allChanges } = require('../lib/drive-client');
 const { VENUES_DEFAULT } = require('../lib/photo-config');   // ORDER #1241: 'unknown' at launch
@@ -118,6 +119,8 @@ function rowFor(file) {
     size: file.size ? Number(file.size) : null, width: w, height: h, orientation: A.orientation(w, h),
     md5: file.md5Checksum || null, created_time: file.createdTime || null,
     ...A.dateFacets(img.time, file.createdTime),
+    // ORDER #3085: the time of day and the day part, from the same EXIF clock.
+    taken_time: F.takenTime(img.time), day_part: F.dayPart(img.time),
     folder_path: file.path.join(' / '), brand: p.brand, venue: p.venue, space: p.space,
     event_type: p.event_type, event_class: p.event_class, setup: p.setup, guest_band: p.guest_band,
     deal_id: dealId, rights_state: rights.state, rights_reason: rights.reason, path_tags: p.path_tags,
@@ -126,7 +129,8 @@ function rowFor(file) {
 
 const COLS = ['drive_id', 'name', 'mime_type', 'kind', 'size', 'width', 'height', 'orientation', 'md5',
   'created_time', 'taken_date', 'taken_source', 'month', 'season', 'year', 'folder_path', 'brand', 'venue',
-  'space', 'event_type', 'event_class', 'setup', 'guest_band', 'deal_id', 'rights_state', 'rights_reason'];
+  'space', 'event_type', 'event_class', 'setup', 'guest_band', 'deal_id', 'rights_state', 'rights_reason',
+  'taken_time', 'day_part'];   // ORDER #3085: appended, so every earlier column keeps its place
 
 const UPSERT_SQL = `INSERT INTO photos (${COLS.join(', ')}, thumb, thumb_w, thumb_h, indexed_at, removed_at)
   VALUES (${COLS.map((_, i) => `$${i + 1}`).join(', ')}, $${COLS.length + 1}, $${COLS.length + 2}, $${COLS.length + 3}, now(), NULL)

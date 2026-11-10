@@ -1,0 +1,42 @@
+{
+  "name": "AI Slop Stopper",
+  "job": "Checks any text for AI tells; every Monday hunts new AI-slop patterns (proposals need approval)",
+  "cadence": "Any time from the Check text box on Review; Mondays, a hunt for new AI-slop patterns",
+  "switch": "AI_TELL_DETECTIVE",
+  "card_only": "Paste text into the Check text box on the Review page",
+  "ask_page": "/review",
+  "ask_note": "Paste text into the Check text box on the Review page. He answers right away, with no model and nothing stored.",
+  "max_cards": 1,
+  "sources": [
+    {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/AI_TELLS_BAN_LIST.md",
+      "label": "IHG's AI-tell list"
+    }
+  ],
+  "character": {
+    "role": "The janitor",
+    "does": [
+      "Checks any text for AI tells: flags each one with its rule from IHG's AI-tell list and gives a clean rewrite that only removes the tells",
+      "Every Monday, hunts for new kinds of AI slop going around and proposes each one as a card",
+      "Says plainly when a paragraph already reads like a person wrote it"
+    ],
+    "traits": [
+      {
+        "cant": "Add a new tell to the list on his own",
+        "instead": "Proposes it as a card; Katherine approves or rejects it, and a rejected tell is never proposed again"
+      },
+      {
+        "cant": "Change the facts, the meaning or anything in quotes",
+        "instead": "Only removes the tells, and lists what still needs a person"
+      },
+      {
+        "cant": "Publish, send or store what you paste",
+        "instead": "Checks it on the spot and hands the result back to you"
+      }
+    ],
+    "needs": [
+      "Mimi: switch it on (AI_TELL_DETECTIVE)"
+    ]
+  }
+}

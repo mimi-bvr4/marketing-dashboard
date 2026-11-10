@@ -192,6 +192,12 @@
       return chip;
     }));
     if (p.pick && p.pick.model) $('v-tags').append(el('span', { className: 'small muted', textContent: 'Tagged by ' + p.pick.model }));
+    // ORDER #3085: tags shared from a near-identical shot say so; "Tag this photo" re-tags this one on its own.
+    if (p.shared_from && !(p.pick && p.pick.tagged)) {
+      const from = el('button', { type: 'button', className: 'button quiet small', textContent: 'shared from a near-identical photo' });
+      from.addEventListener('click', () => open(p.shared_from));
+      $('v-tags').append(el('span', { className: 'small muted' }, ['Tags ', from]));
+    }
     $('v-edit').hidden = !p.can_edit;
     const actions = [el('a', { className: 'button secondary', href: p.drive_url, target: '_blank', rel: 'noopener', textContent: 'Open in Drive' })];
     if (p.download_url) actions.push(el('a', { className: 'button', href: p.download_url, textContent: 'Download' }));

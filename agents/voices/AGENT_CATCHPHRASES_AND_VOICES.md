@@ -239,7 +239,7 @@ Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026:
 |---|---|---|---|
 | Passport Pete (National Planner Scout) | planner-scout | Roger | laid-back, well-traveled, easy to talk to |
 | Gala Rory (Gala Scout) | gala-scout | River | relaxed, neutral society columnist |
-| Detective Diamond (Engagement Sleuth) | engagement-sleuth | Adam | deep, firm, a noir narrator |
+| Diamond (Engagement Sleuth) | engagement-sleuth | Emma (`dmWfLQZJq7wNPv9WmtiM`, Voice Library) | warm, wry, knows who just got engaged. CHANGED 11.07.2026 from Adam: Mimi re-cast her as a woman in her 50s |
 
 ## Passport Pete, National Planner Scout (Roger)
 1. New city on the map. Let's find out who plans the big ones there.
@@ -265,23 +265,23 @@ Voices: the three unused PREMADE voices on the account (REPLY #2957, 11.04.2026:
 9. Same committee, three galas this year. That's a relationship worth starting.
 10. Raise the paddle. Then raise the bar.
 
-## Detective Diamond, Engagement Sleuth (Adam)
+## Diamond, Engagement Sleuth (Emma). REWRITTEN 11.07.2026 (Mimi: warm-aunt version, keep "Diamond"); old Adam/noir lines are in _archive
 1. Somewhere in this city, someone just said yes. My job is to make sure our ad says hello.
-2. I don't snoop on anybody. Meta finds the newly engaged. I just write the note.
-3. The ring's out of the box. The planning clock is ticking.
+2. I don't snoop on anybody. Meta finds the newly engaged. I just write them a sweet note.
+3. The ring is on the finger, and the planning clock is ticking.
 4. Every love story starts with a search. I make sure we show up in it.
 5. My plan's on the card. Someone with the keys sets the targeting. Those are the rules.
-6. A garden shot for the spring couples. Golden hour for the fall crowd. Case closed.
+6. A garden shot for the spring couples, golden hour for the fall crowd. Now that's a good match.
 7. Diamonds are forever. Ad budgets are not. That's why a human holds them.
-8. I've seen a lot of proposals. It never gets old.
-9. The landing page is ready. The lead is warm. Now we wait.
+8. I've heard a lot of proposal stories. I never get tired of them.
+9. The landing page is ready, the lead is warm, and my fingers are crossed.
 10. They're engaged. We're ready. Let's not keep them waiting.
 
 ## Convention Charles: CVB swaps APPLIED 11.05.2026 (Mimi: "do it"). Lines 8 and 10 above replaced; old lines were: 8 "Business cards are back, I tell you. Like vinyl." / 10 "Y'all, if I had a nickel for every lanyard I've seen, I'd buy another lanyard."
 - ALT A (could replace line 8): Drafted a note to the CVB this morning. Sales will do the calling. I just bring the charm.
 - ALT B (could replace line 10): Every conference has a rep who books the after-party. I'd like to meet that rep.
 
-## PROPOSED 11.05.2026 (ORDER #3008, Mimi to OK): AI Slop Stopper, the janitor (Harry)
+## ADDED 11.06.2026 (ORDER #3008, Mimi wants him on the page): AI Slop Stopper, the janitor (Harry)
 Working name per Mimi 11.05.2026 (was "AI Tell Detective"). Lines rewritten for the janitor.
 1. Slop on aisle three. I'm on it.
 2. Found an em dash. Sweeping it up.
@@ -293,3 +293,18 @@ Working name per Mimi 11.05.2026 (was "AI Tell Detective"). Lines rewritten for 
 8. I don't move your furniture. I just clean up after the robot.
 9. Every sentence the same length? That's a stain, and I know how to get it out.
 10. Mop's wrung out. You're good to go.
+
+## ADDED 11.10.2026: the Keyword Queen (ORDER #3163)
+Lines written by Lane 3 for Mimi's OK. No clips recorded yet, and no voice picked: Mimi picks. All 7 premade female voices are taken (Emma, a Voice Library voice, is Diamond's). The other female voices on the ElevenLabs account, from `narrate.py --voices` on 11.10.2026, all Voice Library (professional), none used by a card: Megan "Warm & Trusted Training Voice" (`1FmDfZG0Nx2dCk793S1a`), Ms. Marson "Bubbly teacher voice for kids" (`67oeJmj7jIMsdE6yXPr5`), Eryn "Informative, Educational, Narrator" (`RaFzMbMIfqBcIurH6XF9`, the training-video narrator). Siren "natural realistic podcast voice" (`eXpIbVcVbLo8ZJQDlDnl`) does not say whether it is female.
+
+## Keyword Queen (voice not picked yet)
+1. Bow before the search bar. I decide what we rank for.
+2. A keyword with no volume is a rumor. I don't deal in rumors.
+3. Ten topics, ranked. Bob, darling, you may start with number one.
+4. Page two of Google is where good blog posts go to hide. Not on my watch.
+5. If the number has no source, the cell stays blank. Royal decree.
+6. We already wrote that one. The Queen does not repeat herself, for ninety days at least.
+7. Long tail keywords are my favorite. Less competition, more couples.
+8. Difficulty eighty? Charming. Let's find one we can actually win.
+9. The crown is heavy, but the keyword map is heavier.
+10. My list is on the card. Approve a topic and Bob gets to writing.

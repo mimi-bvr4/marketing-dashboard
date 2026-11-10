@@ -32,9 +32,14 @@
   .pills { display: flex; gap: 8px; flex-wrap: wrap; }
   .pill { border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 13px; white-space: nowrap; }
   .s-ok { background: #E3EFE8; color: #1F5A3F; } .s-part { background: #F7EBD3; color: #7A4E0E; } .s-wait { background: #F5E1DE; color: #8A2B22; } .s-off { background: #E7E3DD; color: #4D453D; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 20px; }
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-  .who { display: flex; gap: 14px; align-items: center; }
+  /* #3128 tight cards: each card is as tall as its own content (align-items: start),
+     half the gaps, about 25% less padding and portrait gap. */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 7px; }
+  .card .acts { margin-top: 4px; }
+  .who { display: flex; gap: 10px; align-items: center; }
+  .card .who.stack { flex-direction: column; align-items: flex-start; }
+  .card .who .txt { width: 100%; }
   .face { flex: 0 0 auto; border-radius: 50%; overflow: hidden; display: block; }
   .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .who .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
@@ -44,8 +49,13 @@
   .name:focus { outline: 2px solid var(--terra); outline-offset: 2px; }
   .job { font-size: 14px; color: var(--muted); }
   .line { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  /* #3128 the status pill and the schedule on ONE line; a long schedule wraps inside its own column. */
+  .card .line { flex-wrap: nowrap; justify-content: flex-start; align-items: baseline; gap: 10px; }
+  .card .line .pill { flex: 0 0 auto; }
+  .card .line .sched { flex: 1 1 auto; min-width: 0; line-height: 1.35; }
   .does { margin: 0; font-size: 15px; line-height: 1.5; }
   .need { background: #FBF7F1; border: 1px solid #EFE6D8; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.45; }
+  .card .need { padding: 7px 10px; font-size: 13px; line-height: 1.4; }
   .need .more { display: inline; } .need .more summary { display: inline; cursor: pointer; text-decoration: underline; }
   .need .more[open] summary { display: block; } .need .more ul { margin: 6px 0 0; padding-left: 18px; }
   .acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
@@ -178,13 +188,15 @@
 
   function cardHtml(a) {
     const st = status(a);
-    const need = a.character.needs[0];
+    // #3128: a paused member's "switch it on" need and its Paused line say the same thing; one box.
+    const boxes = V.cardBoxes(a.character.needs, a.paused);
+    const need = boxes.needs[0];
     return `<article class="card" data-slug="${a.slug}">
       <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name)}${nameInput(a)}<span class="job">${esc(a.job)}</span>${V.speakerHtml(voices, a.slug, a.name, esc)}</div></div>
-      <div class="line"><span class="pill ${st.cls}">${st.label}</span><span>${esc(a.cadence)}</span></div>
+      <div class="line"><span class="pill ${st.cls}">${st.label}</span><span class="sched">${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
-      ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${a.character.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${a.character.needs.length - 1} more)</summary><ul>${a.character.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
-      ${a.paused ? `<div class="need"><strong>Paused:</strong> ${esc(a.paused)}</div>` : ''}
+      ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${boxes.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${boxes.needs.length - 1} more)</summary><ul>${boxes.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
+      ${boxes.paused ? `<div class="need"><strong>Paused:</strong> ${esc(boxes.paused)}</div>` : ''}
       <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(a.card_only)}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
@@ -340,7 +352,7 @@
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
           <span class="meta">${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}` : 'Has not run yet'}</span></div>
         ${a.ask_page ? `<div class="row"><a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a></div>
-        <p class="meta" style="margin:0">Asked on his own page; the Box answers there within 15 minutes.</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
+        <p class="meta" style="margin:0">${esc(a.ask_note || 'Asked on his own page; the Box answers there within 15 minutes.')}</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
           <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
         <p class="meta" style="margin:0" data-runonce>This applies to this run only. To change it for good, use Ask for a new ability.
           <button class="btn ghost" data-a="permanent" style="min-height:32px;font-size:13px">Make this permanent</button></p>
@@ -354,8 +366,9 @@
         <p class="meta">Adding a source is a code change; ask Mimi.</p></details></section>
       <section class="panel"><h2 class="serif">Rules</h2>${c.traits.length ? c.traits.map((t) => `<div class="rule"><strong>Can't:</strong> ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</div>`).join('') : '<p class="meta">Nothing listed.</p>'}</section>
       ${a.watch ? `<section class="panel" data-watch><h2 class="serif">Competitors to watch</h2>
-        <p class="meta" style="margin:0">${esc(a.name)} reads up to a dozen public pages on each site every Monday and reports only what changed. The first week on a new site is a baseline. Up to 15 sites.</p>
-        ${a.watch.length ? `<ul class="asks">${a.watch.map((w) => `<li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><strong>${esc(w.label || w.site)}</strong>${w.label ? ` <span class="meta">${esc(w.site)}</span>` : ''}</span><button class="btn ghost" style="min-height:32px;font-size:13px" data-a="unwatch" data-id="${w.id}" aria-label="Stop watching ${esc(w.site)}">Remove</button></li>`).join('')}</ul>` : '<p class="meta">No competitors yet. Add the first one below.</p>'}
+        <p style="margin:0 0 6px">Watches the competitors on your IHG Competitors sheet. Add others here.</p>
+        <p class="meta" style="margin:0">${a.watch_sheet ? `${a.watch_sheet} top competitor${a.watch_sheet === 1 ? '' : 's'} from the sheet this week (on 3 or more tabs, or marked Top). ` : ''}${esc(a.name)} reads up to a dozen public pages on each site every Monday and reports only what changed. The first week on a new site is a baseline. A site added here wins over the same site on the sheet. Up to 15 added here.</p>
+        ${a.watch.length ? `<ul class="asks">${a.watch.map((w) => `<li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><strong>${esc(w.label || w.site)}</strong>${w.label ? ` <span class="meta">${esc(w.site)}</span>` : ''}</span><button class="btn ghost" style="min-height:32px;font-size:13px" data-a="unwatch" data-id="${w.id}" aria-label="Stop watching ${esc(w.site)}">Remove</button></li>`).join('')}</ul>` : (a.watch_sheet ? '<p class="meta">None added here yet. The sheet\'s top competitors are watched either way.</p>' : '<p class="meta">No competitors yet. Add the first one below.</p>')}
         <div class="row"><input type="text" data-f="wsite" placeholder="Website, e.g. example.com" aria-label="Competitor website">
           <input type="text" data-f="wlabel" placeholder="Name (optional)" aria-label="Competitor name"><button class="btn ghost" data-a="watch">Add</button></div></section>` : ''}
       <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}</section>
@@ -379,11 +392,32 @@
       <p class="msg" hidden></p></section>`;
   }
 
+  // #3128 a name is never clipped: it shrinks a step at a time to fit its column,
+  // and if even the smallest step is too wide the portrait moves above the name.
+  let measureCtx = null;
+  function fitName(i) {
+    const who = i.closest('.who'); if (!who) return;
+    who.classList.remove('stack'); i.style.fontSize = '';
+    const cs = getComputedStyle(i);
+    const start = parseFloat(cs.fontSize);
+    const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + 2;
+    measureCtx = measureCtx || document.createElement('canvas').getContext('2d');
+    const measure = (px) => { measureCtx.font = `${cs.fontWeight} ${px}px ${cs.fontFamily}`; return measureCtx.measureText(i.value).width + pad; };
+    let px = V.fitFontPx(measure, i.clientWidth, start);
+    if (px == null) { who.classList.add('stack'); px = V.fitFontPx(measure, i.clientWidth, start) || V.NAME_STEPS[V.NAME_STEPS.length - 1]; }
+    if (px !== start) i.style.fontSize = px + 'px';
+  }
+  const fitNames = () => main.querySelectorAll('.card input.name').forEach(fitName);
+  let fitTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitNames, 100); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
+
   function render() {
     const slug = decodeURIComponent(location.hash.slice(1));
     const a = agents.find((x) => x.slug === slug);
     main.innerHTML = a ? characterHtml(a) : rosterHtml();
     document.title = a ? `${a.name} · Katherine's Team` : "Katherine's Team · Marketing";
+    if (!a) fitNames();
   }
   async function load() {
     try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec;
@@ -429,7 +463,7 @@
     if (i) {
       const a = agents.find((x) => x.slug === i.dataset.name);
       try { const r = await api(`/api/agents/${a.slug}/name`, { method: 'POST', body: JSON.stringify({ name: i.value }) });
-        a.name = r.name; a.named_by = r.profile && r.profile.display_name ? r.profile.updated_by : null; i.value = r.name; syncEyebrow(a.slug, r.name); say(i, `Saved. Now "${r.name}" everywhere.`, true); }
+        a.name = r.name; a.named_by = r.profile && r.profile.display_name ? r.profile.updated_by : null; i.value = r.name; syncEyebrow(a.slug, r.name); if (i.closest('.card')) fitName(i); say(i, `Saved. Now "${r.name}" everywhere.`, true); }
       catch (x) { i.value = a.name; say(i, x.message); }
       return;
     }

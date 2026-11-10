@@ -9,6 +9,7 @@
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
 //                                       (409 for an agent with an ask_page, #1688: asked on that page)
 //   POST /api/agents/:slug/cards/:id/redo { words } -> #2914 one revised draft of that card, queued
+//   POST /api/agents/keyword-queen/cards/:id/topics/:n/approve -> #3163 one Bloggy Bob request for that topic
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
 //   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
 //   POST /api/agents/:slug/name         { name }  -> #1664, '' puts the default back
@@ -47,7 +48,7 @@
 const express = require('express');
 const path = require('path');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
-const { sourceLabel } = require('../lib/agent-sources');
+const { sourceLabel, scoutWatchList } = require('../lib/agent-sources');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
@@ -108,10 +109,12 @@ function characterOf(d, asks, run, now = new Date()) {
 }
 
 // #1666: a watcher with an empty list says so under Waiting on.
-function watchNeed(c, list) {
-  if (!list || list.length) return c;
-  const n = "Katherine's list of competitor websites to watch (add them on this page)";
-  return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites Katherine listed:/.test(x))] };
+// #3047: the IHG Competitors sheet's top competitors count, so a Scout that
+// watches the sheet is never shown as waiting on a list.
+function watchNeed(c, list, fromSheet = 0) {
+  if (!list || list.length || fromSheet > 0) return c;
+  const n = 'competitor websites to watch: none read from the IHG Competitors sheet yet, and none added on this page';
+  return { ...c, needs: [n, ...c.needs.filter((x) => !/^competitor websites (Katherine listed|\(IHG Competitors sheet)/.test(x))] };
 }
 
 function createAgentsRouter({ store, identity, clock = () => new Date() }) {
@@ -139,8 +142,13 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     const exec = await isExec(req, identity);
     const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
     const watchers = {};
+    const sheetWatch = {};
     for (const slug of listAgents()) {
-      if ((loadAgent(slug).sources || []).some((x) => x.type === 'competitor_watch')) watchers[slug] = store.watchlist ? await store.watchlist(slug) : [];
+      if ((loadAgent(slug).sources || []).some((x) => x.type === 'competitor_watch')) {
+        watchers[slug] = store.watchlist ? await store.watchlist(slug) : [];
+        // #3047: how many sheet competitors the Scout adds on top of this page's list.
+        try { sheetWatch[slug] = (await scoutWatchList(store, slug)).fromSheet; } catch (e) { sheetWatch[slug] = 0; }
+      }
     }
     res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
@@ -149,7 +157,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
       const p = profiles.get(slug);
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
-        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, sources: (d.sources || []).map(sourceView),
+        named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, ask_note: d.ask_note || null, sources: (d.sources || []).map(sourceView),
         // #2903: paused until a source exists (Paid Ads), or a card only (Web Agent, Site Guardian).
         // #3000: a new member that ships OFF shows the same "Paused:" line, naming its switch.
         paused: switchOff(d) || pausedFor(d), card_only: cardOnly(d),
@@ -158,8 +166,9 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
-        character: watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug]),
+        character: watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug], sheetWatch[slug] || 0),
         watch: watchers[slug] || null,
+        watch_sheet: watchers[slug] ? (sheetWatch[slug] || 0) : null,
         asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
           reason: a.triage ? a.triage.reason : null, instead: a.triage ? a.triage.instead : null,
           proposed: a.status === 'awaiting_exec' && a.triage ? a.triage.proposed_skill_md : null,
@@ -263,6 +272,19 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     res.json({ request: out.request, card: out.card, message: REDO_MESSAGE });
   });
 
+  // #3163: approve ONE topic on a Keyword Queen card: one queued Bloggy Bob
+  // request for it, ever. Off (AGENT_KEYWORD_QUEEN unset) this answers 404.
+  r.post('/api/agents/keyword-queen/cards/:id/topics/:n/approve', need, async (req, res) => {
+    const kq = require('../lib/keyword-queen');
+    const id = Number(req.params.id);
+    const n = Number(req.params.n);
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(n) || n < 1) return res.status(400).json({ error: 'bad id' });
+    const out = await kq.approveTopic({ card: await store.get(id), n, who: personOf(req), store, env: process.env });
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json(out.request ? { request: out.request, message: 'Queued for Bloggy Bob. His draft lands on the Review tab within about 15 minutes.' }
+      : { already: true, message: 'Already queued for Bloggy Bob.' });
+  });
+
   r.post('/api/agents/:slug/asks', need, known, async (req, res) => {
     // #2961: "Make this permanent" under the Run-now box files the request as a
     // standing-change Ask; the Box sorts it and an instruction change waits for Mimi.
@@ -297,7 +319,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
       health,
       on: P.producerOn(), name: me && me.display_name ? me.display_name : 'The Producer', named_by: me && me.display_name ? me.updated_by : null,
       portrait: me && me.portrait_at ? `/api/agents/${PRODUCER}/portrait?v=${new Date(me.portrait_at).getTime()}` : null,
-      waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.WAITING_HOLD,
+      waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.holdOn(ymd),
       week_cards: store.producerWeekCards ? await store.producerWeekCards(P.weekStart(ymd)) : 0, cap: P.WEEKLY_CAP,
       exempt: Object.keys(P.EXEMPT),
       calendar: cal.map((e) => ({ ...e, name: (defs.find((d) => d.slug === e.agent) || {}).name || e.agent, movable: P.movable(e) })),

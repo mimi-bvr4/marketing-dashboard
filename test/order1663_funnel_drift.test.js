@@ -12,7 +12,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const F = require('../lib/funnel-defs');
 
-const PAGE = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const PAGE = fs.readFileSync(path.join(__dirname, '..', 'public', 'numbers.html'), 'utf8'); // ORDER #3116: the report moved off home
 const squash = (s) => s.replace(/\s+/g, ' ').trim();
 
 function constant(name) {

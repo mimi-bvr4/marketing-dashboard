@@ -73,7 +73,7 @@ test('route: cached, months clamped, HubSpot failure is a 502 sentence', async (
 test('fleet keys may read open dates (sales boards), GET only, nothing else new', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'middleware', 'page-gate.js'), 'utf8');
   assert.match(src, /FLEET_READ_PREFIXES = \['\/api\/ga4\/', '\/api\/funnel\/', '\/api\/open-dates'\]/);
-  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'numbers.html'), 'utf8'); // ORDER #3116: the report moved off home
   assert.match(html, /id="open-dates-body"/);
   assert.match(html, /fetch\('\/api\/open-dates\?months=6'/);
 });

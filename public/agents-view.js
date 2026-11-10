@@ -48,5 +48,28 @@
       + '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z M16 9a4 4 0 0 1 0 6 M18.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
       + `</button><span class="speakcap" data-speakcap="${e(slug)}" aria-live="polite" hidden></span>`;
   }
-  return { sameWords, showEyebrow, stuckCount, STUCK, pickClip, speakerFor, speakerHtml };
+  // ORDER #3128 the name is never clipped. The card's name shrinks one step at a
+  // time until it fits its column; measure(px) is the name's width at that size.
+  // Null means no step fits, and the page stacks the portrait above the name.
+  const NAME_STEPS = [24, 22, 20, 18, 16, 15];
+  function fitFontPx(measure, avail, startPx) {
+    const start = startPx || NAME_STEPS[0];
+    const steps = [start, ...NAME_STEPS.filter((px) => px < start)];
+    for (const px of steps) if (measure(px) <= avail) return px;
+    return null;
+  }
+  // ORDER #3128 one box, not two. A member that ships OFF carries the need
+  // "Mimi: switch it on (AGENT_X)" and the paused line "off until Mimi switches
+  // it on (AGENT_X)". Same switch, same words: the Paused box stays and that
+  // need drops out of Waiting on. Any other need is kept.
+  function switchOf(s) {
+    const m = /switch(?:es)? it on \(([A-Z0-9_]+)\)/.exec(String(s || ''));
+    return m ? m[1] : null;
+  }
+  function cardBoxes(needs, paused) {
+    const list = Array.isArray(needs) ? needs : [];
+    const sw = switchOf(paused);
+    return { needs: sw ? list.filter((n) => switchOf(n) !== sw) : list.slice(), paused: paused || null };
+  }
+  return { sameWords, showEyebrow, stuckCount, STUCK, pickClip, speakerFor, speakerHtml, NAME_STEPS, fitFontPx, switchOf, cardBoxes };
 }));

@@ -131,6 +131,15 @@
       <p style="margin:.25rem 0"><strong>Subject:</strong> ${esc(s.subject || '(none)')}</p>
       <p style="margin:.25rem 0;white-space:pre-wrap">${esc(s.email)}</p></div>`;
   }
+  // #3163: a Keyword Queen card. Each topic has its own button: it queues that
+  // topic for Bloggy Bob (one request per topic, ever). Approve on the card
+  // still only marks the card ready.
+  function topicsHtml(c) {
+    const t = c.payload && c.payload.topics; if (!t || !t.length || !['draft', 'ready'].includes(c.status)) return '';
+    return `<div class="topics" style="border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
+      <p class="meta">Send a topic to Bloggy Bob as his next request. His draft still waits here for review; nothing publishes.</p>
+      ${t.map((x) => `<p style="margin:.25rem 0"><button data-a="topic" data-n="${esc(x.n)}">Send ${esc(x.n)} to Bloggy Bob</button> ${esc(x.topic || x.keyword)} <span class="meta">(${esc(x.keyword)}, ${esc(x.venue)})</span></p>`).join('')}</div>`;
+  }
   function handoffHtml(c) {
     const h = c.handoff; const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
     const sales = c.payload && c.payload.sales;
@@ -189,6 +198,7 @@
       ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}
       ${pinHtml(c)}
       ${salesHtml(c)}
+      ${topicsHtml(c)}
       ${handoffHtml(c)}
       ${nextHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
@@ -246,6 +256,12 @@
       try {
         await api('/api/agents/' + encodeURIComponent(c.agent) + '/cards/' + id + '/redo', { method: 'POST', body: JSON.stringify({ words: el.querySelector('[data-f=redo]').value }) });
         await load();
+      } catch (x) { err.textContent = x.message; err.hidden = false; }
+    }
+    if (b.dataset.a === 'topic') {
+      try {
+        const j = await api('/api/agents/keyword-queen/cards/' + id + '/topics/' + Number(b.dataset.n) + '/approve', { method: 'POST', body: '{}' });
+        b.textContent = j.already ? 'Already sent' : 'Sent to Bloggy Bob'; b.disabled = true;
       } catch (x) { err.textContent = x.message; err.hidden = false; }
     }
     if (b.dataset.a === 'edit') el.querySelector('.edit').hidden = false;

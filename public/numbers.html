@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ORDER #714: the estate icon, derived from 05_AI_and_Brain/IH_brain_static_512.png -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Katherine's Numbers &middot; Marketing</title>
+<!-- ORDER #654 Amendment B: the estate's design system (#286), loaded BEFORE
+     this page's own styles so its tokens are available and the chrome reads as
+     one system, while every existing rule below still wins. This is chrome
+     consistency, NOT a redesign -- the dashboard's content, charts, the Elle
+     GA4 tab and every live number are untouched, per the amendment's rule 5.
+     The shared nav (ihg-nav.js) was ALREADY present on this page; measured, not
+     assumed, so it is not re-applied. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg.css">
+<!-- ORDER #1675: the approved round-1 tokens (#1210) and Inter, the same as dispatch and planning. -->
+<link rel="stylesheet" href="https://dispatch.infinityhospitalitygroup.com/ihg-tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* ORDER #1676 (10.12.2026): Codex design pass, round 2, applied verbatim from
+   05_AI_and_Brain/design_inbox/round2_marketing/index.style.css (sha256 6b6a75f0...). */
+/* Replace only the first page style block. Load approved ihg-tokens.css first.
+   No DOM changes or script changes. Elle's existing palette is the sole
+   named brand exception to the house tokens. Never reuse it for Infinity. */
+:root {
+  color-scheme: var(--ihg-color-scheme);
+  --mkt-elle-mark: #8b2f5f;
+  --mkt-elle-text: #6b2148;
+  --mkt-elle-bg: #fbf0f6;
+  --mkt-elle-border: #e6b9d2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--ihg-font-ui);
+  background: var(--ihg-color-bg);
+  color: var(--ihg-color-text);
+  line-height: var(--ihg-line-height-ui);
+  padding: var(--ihg-space-6) var(--ihg-space-8) var(--ihg-space-16);
+  max-width: calc(var(--ihg-page-max) + var(--ihg-space-16));
+  margin: 0 auto;
+  -webkit-font-smoothing: antialiased;
+}
+code { font-family: var(--ihg-font-mono); font-size: .85em; color: var(--ihg-color-text-secondary); background: var(--ihg-color-surface-muted); padding: var(--ihg-space-0) var(--ihg-space-1); border-radius: var(--ihg-radius-sm); overflow-wrap: anywhere; }
+:focus-visible { outline: var(--ihg-focus-width) solid var(--ihg-color-focus); outline-offset: var(--ihg-focus-offset); }
+header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--ihg-space-5); margin: var(--ihg-space-5) 0 var(--ihg-space-8); }
+h1 { font-size: var(--ihg-text-2xl); font-weight: var(--ihg-weight-semibold); letter-spacing: var(--ihg-tracking-heading); line-height: var(--ihg-line-height-heading); }
+h1 .sub { display: block; font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-regular); color: var(--ihg-color-text-secondary); margin-top: var(--ihg-space-3); letter-spacing: var(--ihg-tracking-body); }
+.controls, .funnel-controls, .elle-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ihg-space-3); }
+.controls label, .funnel-controls label, .elle-controls label { font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-medium); color: var(--ihg-color-text-secondary); }
+select { min-height: var(--ihg-target-min); max-width: 100%; padding: var(--ihg-space-2) var(--ihg-space-8) var(--ihg-space-2) var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); border-radius: var(--ihg-radius); background: var(--ihg-color-surface); color: var(--ihg-color-text); font: inherit; font-size: var(--ihg-text-sm); cursor: pointer; }
+select:hover { border-color: var(--ihg-color-text-secondary); }
+.status { min-height: var(--ihg-space-5); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); margin-bottom: var(--ihg-space-4); }
+.status.error { color: var(--ihg-status-late-fg); font-weight: var(--ihg-weight-semibold); }
+.tab-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ihg-space-2); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); padding-bottom: var(--ihg-space-3); margin-bottom: var(--ihg-space-5); }
+.tab-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--ihg-space-1); min-height: var(--ihg-target-min); padding: var(--ihg-space-2) var(--ihg-space-4); border: var(--ihg-border-width) solid transparent; border-radius: var(--ihg-radius); background: transparent; color: var(--ihg-color-text-secondary); font: inherit; font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-medium); cursor: pointer; text-decoration: none; transition: background var(--ihg-motion-fast) var(--ihg-ease-standard); }
+.tab-btn:hover { background: var(--ihg-color-surface-muted); color: var(--ihg-color-text); }
+.tab-btn.active { background: var(--ihg-color-accent-subtle); color: var(--ihg-color-accent-text); border-bottom: var(--ihg-border-width-emphasis) solid var(--lens-accent); font-weight: var(--ihg-weight-semibold); }
+.tab-btn.elle.active { background: var(--mkt-elle-bg); color: var(--mkt-elle-text); border-color: var(--mkt-elle-border); border-bottom-color: var(--mkt-elle-mark); }
+.tab-btn.tab-link.first { margin-left: auto; }
+.tab-btn .tab-note { font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-regular); color: var(--ihg-color-text-muted); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.goal-section, .section, .ai-narrative { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius-lg); }
+.goal-section { padding: var(--ihg-space-5) var(--ihg-space-6); margin-bottom: var(--ihg-space-5); }
+.goal-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--ihg-space-3); margin-bottom: var(--ihg-space-5); }
+.goal-label { font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text); }
+.goal-value { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-secondary); }
+.goal-value strong { font-size: var(--ihg-text-xl); color: var(--ihg-color-text); font-weight: var(--ihg-weight-semibold); font-variant-numeric: tabular-nums; }
+.progress-bar { height: var(--ihg-space-2); background: var(--ihg-color-surface-muted); border-radius: var(--ihg-radius-pill); position: relative; margin-top: var(--ihg-space-6); }
+.progress-fill { height: 100%; background: var(--ihg-color-inverse-bg); border-radius: inherit; transition: width var(--ihg-motion-slow) var(--ihg-ease-standard); }
+.progress-pace { position: absolute; top: calc(-1 * var(--ihg-space-1)); bottom: calc(-1 * var(--ihg-space-1)); width: var(--ihg-border-width-emphasis); background: var(--lens-accent); }
+.progress-pace::after { content: 'pace'; position: absolute; bottom: calc(100% + var(--ihg-space-1)); left: 50%; transform: translateX(-50%); font-size: var(--ihg-text-xs); color: var(--ihg-color-accent-text); }
+/* Eight columns at wide desktop widths, four at mid-size widths.
+   Tile order and all sixteen values remain exactly as the renderer expects. */
+.kpi-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--ihg-space-3); margin-bottom: var(--ihg-space-6); }
+.kpi-card { min-width: 0; padding: var(--ihg-space-3) var(--ihg-space-4); background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); position: relative; }
+.kpi-card::before { content: ''; position: absolute; left: var(--ihg-space-4); right: var(--ihg-space-4); top: 0; height: var(--ihg-border-width-emphasis); background: var(--ihg-color-border); }
+.kpi-card .label { min-height: calc(2 * var(--ihg-text-xs) * var(--ihg-line-height-ui)); font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-medium); color: var(--ihg-color-text-secondary); margin-bottom: var(--ihg-space-2); }
+.kpi-card .value { font-size: var(--ihg-text-xl); font-weight: var(--ihg-weight-semibold); font-variant-numeric: tabular-nums; letter-spacing: var(--ihg-tracking-heading); overflow-wrap: anywhere; }
+.kpi-card .sub { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); margin-top: var(--ihg-space-2); line-height: var(--ihg-line-height-ui); }
+.kpi-card.spend::before { background: var(--ihg-status-attention-mark); }
+.kpi-card.revenue::before { background: var(--ihg-status-done-mark); }
+.kpi-card.cost::before { background: var(--ihg-status-late-mark); }
+.kpi-card.rate::before { background: var(--ihg-status-on-track-mark); }
+.kpi-card.elle::before { background: var(--mkt-elle-mark); }
+.kpi-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: var(--ihg-space-5); }
+.kpi-grid.two .value { font-size: var(--ihg-text-2xl); }
+#panel-elle > .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.section { padding: var(--ihg-space-6); margin-bottom: var(--ihg-space-6); min-width: 0; overflow-x: auto; }
+.section h2, .ai-narrative h2 { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--ihg-space-3); font-size: var(--ihg-text-lg); font-weight: var(--ihg-weight-semibold); letter-spacing: var(--ihg-tracking-heading); margin-bottom: var(--ihg-space-5); color: var(--ihg-color-text); }
+.section h2 .hint, .ai-narrative h2 .hint { float: none; max-width: var(--ihg-content-reading-max); font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-regular); letter-spacing: var(--ihg-tracking-body); line-height: var(--ihg-line-height-body); color: var(--ihg-color-text-muted); }
+.section h3, .sub-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--ihg-space-2); font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text-secondary); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); margin: var(--ihg-space-8) 0 var(--ihg-space-3); padding-bottom: var(--ihg-space-3); }
+.sub-head.attention { color: var(--ihg-status-attention-fg); border-color: var(--ihg-status-attention-mark); }
+.sub-head .count { font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-regular); color: var(--ihg-color-text-muted); }
+table { width: 100%; border-collapse: collapse; font-size: var(--ihg-text-sm); }
+table.compact { font-size: var(--ihg-text-xs); }
+thead th { text-align: left; padding: var(--ihg-space-3); font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text-secondary); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); background: var(--ihg-color-bg); vertical-align: bottom; }
+thead th.group { text-align: center; background: var(--ihg-color-surface-muted); }
+thead th.group-wedding { background: var(--ihg-status-attention-bg); color: var(--ihg-status-attention-fg); }
+thead th.group-social { background: var(--ihg-status-on-track-bg); color: var(--ihg-status-on-track-fg); }
+thead th.group-corp { background: var(--ihg-status-done-bg); color: var(--ihg-status-done-fg); }
+tbody td { padding: var(--ihg-space-3); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); vertical-align: top; }
+tbody tr:nth-child(even) { background: var(--ihg-color-bg); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--ihg-color-surface-muted); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.venue-label { font-weight: var(--ihg-weight-semibold); }
+.total-row { font-weight: var(--ihg-weight-semibold); background: var(--ihg-color-surface-muted); }
+.total-row td { border-top: var(--ihg-border-width-emphasis) solid var(--ihg-color-border-control); }
+.dash, .skeleton, .muted { color: var(--ihg-color-text-muted); }
+.hs-link { display: inline-flex; align-items: center; min-height: var(--ihg-target-min); color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-medium); text-decoration: underline; text-underline-offset: var(--ihg-space-1); white-space: nowrap; }
+.warn-text { color: var(--ihg-status-attention-fg); }
+.err-text { color: var(--ihg-status-late-fg); }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ihg-space-5); }
+.three-col { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--ihg-space-5); }
+.chart-wrap { height: 280px; position: relative; min-width: 0; }
+.footnote { font-size: var(--ihg-text-xs); line-height: var(--ihg-line-height-body); color: var(--ihg-color-text-muted); margin-top: var(--ihg-space-4); overflow-wrap: anywhere; }
+.footnote strong { color: var(--ihg-color-text-secondary); font-weight: var(--ihg-weight-semibold); }
+.ai-narrative { padding: var(--ihg-space-6); margin-bottom: var(--ihg-space-6); border-left: var(--ihg-border-width-emphasis) solid var(--lens-accent); box-shadow: var(--ihg-shadow-card); }
+.ai-narrative h2 { font-size: var(--ihg-text-md); margin-bottom: var(--ihg-space-3); }
+.ai-narrative .body { font-size: var(--ihg-text-sm); line-height: var(--ihg-line-height-body); white-space: pre-wrap; max-width: var(--ihg-content-reading-max); }
+.ai-narrative .loading { color: var(--ihg-color-text-muted); font-size: var(--ihg-text-sm); }
+.banner-note { background: var(--ihg-status-on-track-bg); color: var(--ihg-status-on-track-fg); border: var(--ihg-border-width) solid var(--ihg-status-on-track-mark); border-radius: var(--ihg-radius); padding: var(--ihg-space-4); margin-bottom: var(--ihg-space-4); font-size: var(--ihg-text-sm); }
+.export-btns { display: inline-flex; flex-wrap: wrap; gap: var(--ihg-space-2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--ihg-space-2); min-height: var(--ihg-target-min); padding: var(--ihg-space-2) var(--ihg-space-3); border: var(--ihg-border-width) solid var(--ihg-color-border-control); border-radius: var(--ihg-radius); background: var(--ihg-color-surface); color: var(--ihg-color-text); font: inherit; font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-medium); cursor: pointer; }
+.btn:hover { background: var(--ihg-color-surface-muted); }
+.btn:disabled { background: var(--ihg-color-disabled-bg); color: var(--ihg-color-disabled-text); cursor: default; }
+.funnel-controls, .elle-controls { margin-bottom: var(--ihg-space-6); }
+.funnel-ga-status, .elle-status { margin-left: auto; font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+.funnel-ga-status.live, .elle-status.live { color: var(--ihg-status-done-fg); font-weight: var(--ihg-weight-medium); }
+.funnel-ga-status.offline, .elle-status.pending { color: var(--ihg-status-attention-fg); }
+.funnel-container { display: flex; flex-direction: column; gap: var(--ihg-space-4); }
+.funnel-stage { display: grid; grid-template-columns: 6rem minmax(0, 1fr) 8rem; align-items: center; gap: var(--ihg-space-5); padding-bottom: var(--ihg-space-4); border-bottom: var(--ihg-border-width) solid var(--ihg-color-border); }
+.funnel-stage:last-child { border-bottom: none; padding-bottom: 0; }
+.funnel-stage .stage-name { font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-medium); color: var(--ihg-color-text-secondary); }
+/* Keep inline percentage widths. Text is anchored to the track, not squeezed
+   inside a narrow bar. The scaled colored line still encodes the same count. */
+.funnel-bar-track { position: relative; min-width: 0; background: var(--ihg-color-bg); border-radius: var(--ihg-radius-sm); }
+.funnel-bar { height: var(--ihg-space-2); min-width: 0; margin-top: var(--ihg-space-8); border-radius: var(--ihg-radius-sm); color: var(--ihg-color-text); font-variant-numeric: tabular-nums; transition: width var(--ihg-motion-slow) var(--ihg-ease-standard); }
+.funnel-bar > span:first-child { position: absolute; top: var(--ihg-space-1); left: var(--ihg-space-2); font-size: var(--ihg-text-md); font-weight: var(--ihg-weight-semibold); }
+.funnel-bar .bar-sub { position: absolute; top: var(--ihg-space-2); right: var(--ihg-space-2); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-secondary); }
+.funnel-bar.empty { background: var(--ihg-color-surface-muted) !important; color: var(--ihg-color-text-muted); }
+.stage-sessions .funnel-bar { background: var(--ihg-status-on-track-fg); }
+.stage-leads .funnel-bar { background: var(--ihg-color-text-secondary); }
+.stage-tours .funnel-bar { background: var(--ihg-status-attention-fg); }
+.stage-bookings .funnel-bar { background: var(--ihg-color-action-bg); }
+.stage-cancelled .funnel-bar { background: var(--ihg-color-text-muted); }
+.stage-revenue .funnel-bar { background: var(--ihg-status-done-fg); }
+.funnel-stage .stage-conv { text-align: right; font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+.funnel-stage .stage-conv strong { display: block; color: var(--ihg-color-text); font-size: var(--ihg-text-md); font-weight: var(--ihg-weight-semibold); font-variant-numeric: tabular-nums; }
+.source-breakdown { margin-top: var(--ihg-space-6); padding-top: var(--ihg-space-5); border-top: var(--ihg-border-width) solid var(--ihg-color-border); }
+.source-breakdown-title { margin-bottom: var(--ihg-space-3); font-size: var(--ihg-text-sm); font-weight: var(--ihg-weight-medium); color: var(--ihg-color-text-secondary); }
+.source-pills { display: flex; flex-wrap: wrap; gap: var(--ihg-space-2); }
+.source-pill { background: var(--ihg-color-bg); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-2) var(--ihg-space-3); font-size: var(--ihg-text-xs); color: var(--ihg-color-text-secondary); }
+.source-pill strong { color: var(--ihg-color-text); font-weight: var(--ihg-weight-semibold); }
+.elle-banner { background: var(--mkt-elle-bg); color: var(--mkt-elle-text); border: var(--ihg-border-width) solid var(--mkt-elle-border); border-left: var(--ihg-border-width-emphasis) solid var(--mkt-elle-mark); padding: var(--ihg-space-5); border-radius: var(--ihg-radius); font-size: var(--ihg-text-sm); line-height: var(--ihg-line-height-body); margin-bottom: var(--ihg-space-6); }
+.elle-banner strong, .elle-venue-label { color: var(--mkt-elle-mark); font-weight: var(--ihg-weight-semibold); }
+@media (max-width: 72rem) {
+  .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .two-col, .three-col { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 48rem) {
+  body { padding: var(--ihg-space-4) var(--ihg-space-4) var(--ihg-space-12); }
+  header { align-items: flex-start; margin-top: var(--ihg-space-3); margin-bottom: var(--ihg-space-5); }
+  h1 { font-size: var(--ihg-text-xl); }
+  .controls { width: 100%; }
+  .controls select { flex: 1; min-width: 0; }
+  .tab-btn { padding-inline: var(--ihg-space-3); }
+  .tab-btn.tab-link.first { margin-left: 0; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ihg-space-2); }
+  #panel-elle > .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-grid.two { grid-template-columns: minmax(0, 1fr); }
+  .section, .goal-section, .ai-narrative { padding: var(--ihg-space-4); }
+  .section h2, .ai-narrative h2 { font-size: var(--ihg-text-md); }
+  .section h2 .hint, .ai-narrative h2 .hint { flex-basis: 100%; }
+  .funnel-stage { grid-template-columns: minmax(0, 1fr) auto; gap: var(--ihg-space-2) var(--ihg-space-4); }
+  .funnel-stage .stage-name { grid-column: 1; grid-row: 1; }
+  .funnel-stage .stage-conv { grid-column: 2; grid-row: 1; }
+  .funnel-bar-track { grid-column: 1 / -1; grid-row: 2; }
+  .funnel-ga-status, .elle-status { margin-left: 0; }
+  /* Wide data stays a real table; local horizontal scroll preserves columns. */
+  thead th, tbody td { padding: var(--ihg-space-3) var(--ihg-space-2); }
+  .chart-wrap { height: 240px; }
+}
+@media (max-width: 24rem) {
+  .kpi-grid, #panel-elle > .kpi-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-btn, .progress-fill, .funnel-bar { transition: none; }
+}
+
+/* ORDER #1678 (Mimi, 10.12.2026: "more of an actual dashboard instead of
+   straight to the numbers game"): a Home band first, the numbers below. */
+.home { display: grid; gap: var(--ihg-space-4); margin-bottom: var(--ihg-space-8); }
+.home-hello { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--ihg-space-2); }
+.home-hello h2 { font-size: var(--ihg-text-xl); font-weight: var(--ihg-weight-semibold); letter-spacing: var(--ihg-tracking-heading); color: var(--ihg-color-text); }
+.home-hello a { color: var(--ihg-color-accent-text); font-weight: var(--ihg-weight-semibold); text-decoration: none; min-height: var(--ihg-target-min); display: inline-flex; align-items: center; }
+.home-tiles { display: grid; gap: var(--ihg-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); }
+.home-tile { display: grid; gap: var(--ihg-space-1); align-content: start; background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-4) var(--ihg-space-5); color: var(--ihg-color-text); text-decoration: none; min-height: 6.5rem; }
+a.home-tile:hover { border-color: var(--ihg-color-border-control); }
+.home-tile .k { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-secondary); }
+.home-tile .v { font-size: var(--ihg-text-2xl); font-weight: var(--ihg-weight-bold); font-variant-numeric: tabular-nums; letter-spacing: var(--ihg-tracking-heading); }
+.home-tile .s { font-size: var(--ihg-text-xs); color: var(--ihg-color-text-muted); }
+.home-tile.attention { border-top: 3px solid var(--ihg-status-attention-mark); }
+.home-cols { display: grid; gap: var(--ihg-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); }
+.home-card { background: var(--ihg-color-surface); border: var(--ihg-border-width) solid var(--ihg-color-border); border-radius: var(--ihg-radius); padding: var(--ihg-space-5); display: grid; gap: var(--ihg-space-3); align-content: start; }
+.home-card h3 { font-size: var(--ihg-text-md); font-weight: var(--ihg-weight-semibold); display: flex; justify-content: space-between; align-items: baseline; gap: var(--ihg-space-2); }
+.home-card h3 a { font-size: var(--ihg-text-sm); color: var(--ihg-color-accent-text); text-decoration: none; font-weight: var(--ihg-weight-semibold); }
+.home-list { list-style: none; display: grid; gap: var(--ihg-space-2); }
+.home-list li { display: flex; gap: var(--ihg-space-3); align-items: center; font-size: var(--ihg-text-sm); min-height: 2.25rem; }
+.home-list .who { width: 2.25rem; height: 2.25rem; border-radius: 50%; flex: 0 0 auto; background: var(--ihg-color-surface-muted); color: var(--ihg-color-text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--ihg-text-xs); font-weight: var(--ihg-weight-semibold); overflow: hidden; }
+.home-list .who img { width: 100%; height: 100%; object-fit: cover; }
+.home-list .grow { flex: 1; min-width: 0; }
+.home-list .grow b { display: block; font-weight: var(--ihg-weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-list .grow span { color: var(--ihg-color-text-muted); font-size: var(--ihg-text-xs); }
+.home-pill { font-size: var(--ihg-text-xs); padding: 2px var(--ihg-space-2); border-radius: var(--ihg-radius-sm); white-space: nowrap; background: var(--ihg-status-neutral-bg); color: var(--ihg-status-neutral-fg); }
+.home-pill.done { background: var(--ihg-status-done-bg); color: var(--ihg-status-done-fg); }
+.home-pill.late { background: var(--ihg-status-late-bg); color: var(--ihg-status-late-fg); }
+.home-pill.attention { background: var(--ihg-status-attention-bg); color: var(--ihg-status-attention-fg); }
+.home-empty { font-size: var(--ihg-text-sm); color: var(--ihg-color-text-muted); }
+.numbers-head { font-size: var(--ihg-text-lg); font-weight: var(--ihg-weight-semibold); color: var(--ihg-color-text); margin: 0 0 var(--ihg-space-3); padding-top: var(--ihg-space-4); border-top: var(--ihg-border-width) solid var(--ihg-color-border); }
+</style>
+</head>
+<body>
+<!-- ORDER #3116 (Mimi, 11.07.2026): the full HubSpot numbers report moved here
+     from the home page, unchanged. Home is now the morning brief only. -->
+<header>
+  <h1>Katherine's Numbers <span class="sub">The full report &middot; HubSpot and GA4</span></h1>
+  <div class="controls">
+    <label for="period">Period</label>
+    <!-- ORDER #3116: the months are generated from today's date in Nashville (public/period-options.js). -->
+    <select id="period"></select>
+  </div>
+</header>
+<script src="/period-options.js"></script>
+<script>
+(function () {
+  var sel = document.getElementById('period');
+  window.PeriodOptions.periodOptions(new Date()).forEach(function (o) {
+    var opt = document.createElement('option');
+    opt.value = o.value; opt.textContent = o.label; if (o.selected) opt.selected = true;
+    sel.appendChild(opt);
+  });
+})();
+</script>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="ihg" id="tabbtn-ihg">Infinity Hospitality</button>
+  <button class="tab-btn elle" data-tab="elle" id="tabbtn-elle">Elle Venues <span class="tab-note">&middot; acquisition</span></button>
+  <a class="tab-btn tab-link first" href="/">Home</a>
+  <a class="tab-btn tab-link" href="/her-numbers">Her own files</a>
+  <a class="tab-btn tab-link" href="/agents">Katherine's Team</a>
+  <a class="tab-btn tab-link" href="/review">Review</a>
+</nav>
+<div id="panel-ihg" class="tab-panel active">
+<h2 class="numbers-head" id="numbers">The numbers</h2>
+<div id="status" class="status">Loading live data from HubSpot&hellip;</div>
+<div class="goal-section">
+  <div class="goal-row">
+    <span class="goal-label">2026 IHG Revenue Goal</span>
+    <span class="goal-value">YTD: <strong id="goal-ytd">&mdash;</strong> / $19.6M &nbsp;&middot;&nbsp; <span id="goal-pct">&mdash;</span> of goal &nbsp;&middot;&nbsp; pace: <span id="goal-pace">&mdash;</span> &nbsp;&middot;&nbsp; <span id="goal-asof">counting&hellip;</span> <a href="#numbers" id="goal-refresh">Refresh</a></span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="goal-fill" style="width:0%"></div>
+    <div class="progress-pace" id="goal-pace-marker" style="left:0%"></div>
+  </div>
+  <div class="footnote">Revenue = sum of <code>final_event_total_accounting</code> &times; 0.95 (net of sales tax, per CEO) on IHG venue deals with events completed in 2026 to date. Pace marker = where YTD revenue should be if evenly distributed across the year.</div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card spend"><div class="label">Paid Ad Spend</div><div class="value" id="kpi-spend">&mdash;</div><div class="sub" id="kpi-spend-sub">&nbsp;</div></div>
+  <div class="kpi-card spend"><div class="label">Fully Loaded Spend</div><div class="value" id="kpi-spend-fl">&mdash;</div><div class="sub">incl. salary, agency, software</div></div>
+  <div class="kpi-card"><div class="label">Leads</div><div class="value" id="kpi-leads">&mdash;</div></div>
+  <div class="kpi-card"><div class="label">Tours</div><div class="value" id="kpi-tours">&mdash;</div></div>
+  <div class="kpi-card"><div class="label">Bookings</div><div class="value" id="kpi-bookings">&mdash;</div><div class="sub">cancellations not included</div></div>
+  <div class="kpi-card"><div class="label">Cancelled</div><div class="value" id="kpi-cancelled">&mdash;</div><div class="sub">signed, then cancelled</div></div>
+  <div class="kpi-card"><div class="label">Completed Events</div><div class="value" id="kpi-events">&mdash;</div><div class="sub" id="kpi-events-sub">events that have happened</div></div>
+  <div class="kpi-card revenue"><div class="label">Event Revenue</div><div class="value" id="kpi-revenue">&mdash;</div><div class="sub" id="kpi-revenue-sub">net of tax &middot; final totals only</div></div>
+  <div class="kpi-card rate"><div class="label">Lead&rarr;Tour</div><div class="value" id="kpi-l2t">&mdash;</div></div>
+  <div class="kpi-card rate"><div class="label">Tour&rarr;Book</div><div class="value" id="kpi-t2b">&mdash;</div></div>
+  <div class="kpi-card rate"><div class="label">Lead&rarr;Book</div><div class="value" id="kpi-l2b">&mdash;</div></div>
+  <div class="kpi-card cost"><div class="label">CPL (Paid)</div><div class="value" id="kpi-cpl">&mdash;</div></div>
+  <div class="kpi-card cost"><div class="label">CPL (Fully Loaded)</div><div class="value" id="kpi-cpl-fl">&mdash;</div></div>
+  <div class="kpi-card cost"><div class="label">CPB (Paid)</div><div class="value" id="kpi-cpb">&mdash;</div></div>
+  <div class="kpi-card cost"><div class="label">CPB (Fully Loaded)</div><div class="value" id="kpi-cpb-fl">&mdash;</div></div>
+  <div class="kpi-card revenue"><div class="label">ROAS</div><div class="value" id="kpi-roas">&mdash;</div><div class="sub">Net Revenue &divide; Paid Spend</div></div>
+</div>
+<div class="ai-narrative">
+  <h2>AI Analysis <span class="hint">auto-generated &middot; refreshes with the data</span></h2>
+  <div class="body" id="ai-body"><span class="loading">Generating insight once data loads&hellip;</span></div>
+</div>
+<!-- Open Date Filler: open Fri/Sat/Sun dates at the 7 venues (same list the sales boards read). -->
+<div class="section" id="open-dates">
+  <h2>Open Dates <span class="hint">next 6 months &middot; Fridays, Saturdays and Sundays with nothing booked &middot; ignores period filter</span></h2>
+  <table class="compact">
+    <thead><tr><th>Venue</th><th class="num">Open Saturdays</th><th class="num">Open Fri/Sat/Sun</th><th>Next open Saturday</th><th>Next open dates</th></tr></thead>
+    <tbody id="open-dates-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="footnote" id="open-dates-note">Open = nothing booked at that venue on that day: no signed contract and no Event Planning deal (cancelled bookings do not count). At The Bridge Building a booking in any space takes the date.</div>
+</div>
+<div class="section funnel-section">
+  <h2>Conversion Funnel &amp; Website Traction <span class="hint">GA4 sessions &rarr; HubSpot leads &rarr; tours &rarr; bookings &rarr; revenue &middot; follows period filter</span></h2>
+  <div class="funnel-controls">
+    <label for="funnel-venue">Venue</label>
+    <select id="funnel-venue">
+      <option value="all">All Venues</option>
+      <option value="TBB">TBB</option>
+      <option value="TBT">TBT</option>
+      <option value="ECD">ECD</option>
+      <option value="SWF">SWF</option>
+    </select>
+    <span id="funnel-ga-status" class="funnel-ga-status">&nbsp;</span>
+  </div>
+  <div id="funnel-content"><div class="footnote">Loading website traction&hellip;</div></div>
+  <div class="footnote">
+    <strong>Sessions</strong> are pulled live from Google Analytics 4 across the four tracked venue sites (TBB, TBT, ECD, SWF). <strong>Leads, Tours, Bookings, and Revenue</strong> come from the same HubSpot data as the rest of this dashboard, these are real counts, not estimates. Revenue is net of sales tax (&times; 0.95). Percentages on the right are stage-to-stage conversion rates. If GA4 isn't connected yet, the Sessions stage shows &ldquo;&mdash;&rdquo; and the funnel begins at Leads; everything below Sessions still reflects live data.
+  </div>
+</div>
+<div class="section">
+  <h2>Full Funnel by Venue <span class="hint"><span class="export-btns"><button class="btn" id="export-tours">Tours CSV</button><button class="btn" id="export-bookings">Bookings CSV</button><button class="btn" id="export-cancelled">Cancelled CSV</button></span></span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Venue</th>
+        <th class="num">Paid Spend</th>
+        <th class="num">Leads</th>
+        <th class="num">Tours</th>
+        <th class="num">Bookings</th>
+        <th class="num">Cancelled</th>
+        <th class="num">Completed</th>
+        <th class="num">Revenue</th>
+        <th class="num">L&rarr;T</th>
+        <th class="num">T&rarr;B</th>
+        <th class="num">L&rarr;B</th>
+        <th class="num">CPL (Paid)</th>
+        <th class="num">CPB (Paid)</th>
+      </tr>
+    </thead>
+    <tbody id="funnel-body"><tr><td colspan="13" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="footnote">
+    <strong>Tours</strong> = unique deals with <code>initial_tour_date</code> in window, pulled from both Sales and Event Planning pipelines, deduped by normalized <code>dealname</code> (pairs collapsed to one, event-pipeline-only tours counted once).
+    <strong>Bookings</strong> = unique deals with <code>contract_signed_date</code> in window, pulled from both Sales and Event Planning pipelines, deduped by normalized <code>dealname</code>. Matches the HubSpot "Events Booked Per Month and Year" report.
+    Bookings exclude cancellations, which are counted separately in <strong>Cancelled</strong> (deals whose Booked/Cancelled field says Cancelled).
+    <strong>Completed</strong> = deals currently in the Event Planning Pipeline (IHG) at the "Event Completed" stage. Mirrors Katherine's HubSpot pipeline view directly: one deal per finished event, source-of-truth for event count.
+    <strong>Revenue</strong> = sum of <code>final_event_total_accounting</code> &times; 0.95 (net of sales tax, per CEO) for completed events that have been finance-locked. Revenue lags the Completed count until invoices close.
+    Use the Tours CSV / Bookings CSV / Cancelled CSV buttons to export the underlying deal list for reconciliation against your master sheet.
+  </div>
+</div>
+<div class="section">
+  <h2>Leads by Source &times; Venue <span class="hint">cross-tab &middot; sources as rows, venues as columns</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th class="num">TBB</th>
+        <th class="num">TBT</th>
+        <th class="num">ECD</th>
+        <th class="num">SWF</th>
+        <th class="num">OS</th>
+        <th class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody id="source-body"><tr><td colspan="7" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="footnote">Multi-venue leads (where <code>venue_s_</code> contains multiple venues like "TBB;TBT") are counted in their first listed venue only, consistent with all other Leads metrics on this dashboard. Sources sorted by total leads descending.</div>
+</div>
+<div class="section">
+  <h2>Bookings by Event Type</h2>
+  <table>
+    <thead><tr><th>Event Type</th><th class="num">Bookings</th><th class="num">% of Total</th></tr></thead>
+    <tbody id="type-body"><tr><td colspan="3" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+</div>
+<div class="section">
+  <h2>Spend Breakdown by Channel <span class="hint">from 2026 Spend Input &middot; paid ads only</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th class="num">TBB</th>
+        <th class="num">TBT</th>
+        <th class="num">ECD</th>
+        <th class="num">SWF</th>
+        <th class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody id="channel-body"><tr><td colspan="6" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+</div>
+<div class="section">
+  <h2>Fixed Marketing Costs <span class="hint">fully-loaded components beyond paid ads</span></h2>
+  <table>
+    <thead><tr><th>Cost</th><th class="num">Amount</th></tr></thead>
+    <tbody id="fixed-body"><tr><td colspan="2" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+</div>
+<div class="section">
+  <h2>Revenue by Event Type &times; Venue <span class="hint">CEO view &middot; finance-locked events in window &middot; net of sales tax (&times; 0.95)</span></h2>
+  <table class="compact">
+    <thead>
+      <tr>
+        <th rowspan="2" style="vertical-align:bottom">Venue</th>
+        <th colspan="3" class="group group-wedding">Wedding</th>
+        <th colspan="3" class="group group-social">Social</th>
+        <th colspan="3" class="group group-corp">Corp/Non-Profit</th>
+        <th colspan="3" class="group">Total</th>
+      </tr>
+      <tr>
+        <th class="num">Revenue</th><th class="num">#</th><th class="num">IPE</th>
+        <th class="num">Revenue</th><th class="num">#</th><th class="num">IPE</th>
+        <th class="num">Revenue</th><th class="num">#</th><th class="num">IPE</th>
+        <th class="num">Revenue</th><th class="num">#</th><th class="num">IPE</th>
+      </tr>
+    </thead>
+    <tbody id="ceo-revenue-body"><tr><td colspan="13" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="footnote">
+    <strong>Bucketing rules:</strong> Wedding includes weddings, rehearsal dinners, elopement celebrations, vow renewals, and welcome receptions. Social includes birthdays, non-wedding anniversaries, celebrations of life, proms, and showers (wedding anniversaries route to Social per CEO directive). Corp/Non-Profit covers everything else (corporate, conferences, fundraisers, galas, holiday parties, productions).
+    <strong>Event type source:</strong> primary signal is HubSpot's <code>event_type_sales</code> on the deal; when blank on the EP-side record, the dashboard inherits from the paired Sales-pipeline deal; if still blank, it falls back to keyword matching on the dealname. Any events that can't be auto-classified appear in the worklist below.
+    <strong>IPE</strong> = Income Per Event = Revenue &divide; # Events for that cell, matching the format in your CEO's spreadsheet.
+    <strong>Reconciliation:</strong> <span id="ceo-recon">&mdash;</span>
+  </div>
+  <h3 class="sub-head attention"><span>Events Missing Event Type</span> <span class="count"><span id="ceo-missing-count">&mdash;</span> events &middot; tag <code>event_type_sales</code> in HubSpot to clear</span></h3>
+  <table>
+    <thead>
+      <tr><th>Event Date</th><th>Venue</th><th>Deal Name</th><th class="num">Net Revenue</th><th>Action</th></tr>
+    </thead>
+    <tbody id="ceo-missing-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+</div>
+<div class="section">
+  <h2>Completed Events: Revenue Detail <span class="hint">finance-locked events only (those with <code>final_event_total_accounting</code>) &middot; amounts shown net of sales tax (&times; 0.95)</span></h2>
+  <table>
+    <thead><tr><th>Event Date</th><th>Venue</th><th>Type</th><th>Deal Name</th><th class="num">Net Total</th></tr></thead>
+    <tbody id="revenue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+</div>
+<div class="section">
+  <h2>Projected Revenue <span class="hint">booked future events &middot; section ignores period filter</span></h2>
+  <div class="kpi-grid two">
+    <div class="kpi-card revenue">
+      <div class="label">Booked Future Revenue</div>
+      <div class="value" id="proj-confirmed">&mdash;</div>
+      <div class="sub" id="proj-confirmed-sub">&nbsp;</div>
+      <div class="sub" style="font-style: italic;" id="proj-estimated-sub">&nbsp;</div>
+    </div>
+    <div class="kpi-card revenue">
+      <div class="label">Expected 2026 Total</div>
+      <div class="value" id="proj-2026-total">&mdash;</div>
+      <div class="sub" id="proj-2026-sub">&nbsp;</div>
+      <div class="sub" style="font-style: italic;" id="proj-2026-est-sub">&nbsp;</div>
+    </div>
+  </div>
+  <h3 class="sub-head">Booked Future by Month</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Event Month</th>
+        <th class="num">Events</th>
+        <th class="num">With $ Entered</th>
+        <th class="num">Confirmed Booked</th>
+        <th class="num">Estimated Total*</th>
+      </tr>
+    </thead>
+    <tbody id="proj-month-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <h3 class="sub-head">Booked Future by Venue</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Venue</th>
+        <th class="num">Events</th>
+        <th class="num">With $ Entered</th>
+        <th class="num">Confirmed Booked</th>
+        <th class="num">Estimated Total*</th>
+      </tr>
+    </thead>
+    <tbody id="proj-venue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <h3 class="sub-head attention"><span>Contracts Missing <code>current_event_total</code></span> <span class="count"><span id="proj-missing-count">&mdash;</span> &middot; EP team punch list, sorted by event date</span></h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Event Date</th>
+        <th>Venue</th>
+        <th>Type</th>
+        <th>Deal Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="proj-missing-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="footnote">
+    <strong>Confirmed Booked</strong> = sum of <code>current_event_total</code> &times; 0.95 for booked-future events that have a value entered in HubSpot. Real, finance-verifiable data.
+    <strong>*Estimated Total</strong> = Confirmed Booked + (events without <code>current_event_total</code> &times; average <code>final_event_total_accounting</code> from completed events of the same venue+event type, fallback to venue average when the type sample is small). Estimates are clearly italicized and starred, they are NOT real data and should not be cited externally.
+    All amounts net of sales tax (&times; 0.95) per CEO directive.
+    This entire section ignores the period selector; it always shows booked future events from today forward.
+  </div>
+</div>
+<div class="section">
+  <h2>2026 Monthly Trend &middot; Leads, Bookings, Cancelled, Revenue</h2>
+  <div class="status" id="trend-status">Loading&hellip;</div>
+  <div class="chart-wrap"><canvas id="trend-chart"></canvas></div>
+</div>
+</div><!-- /#panel-ihg -->
+
+<div id="panel-elle" class="tab-panel">
+  <div class="elle-banner">
+    <strong>Elle venues, held separate from Infinity numbers.</strong>
+    Saint Elle, The Cordelle &amp; Estelle are acquisition properties. Their website traffic is shown here on its own and is <strong>not</strong> rolled into any Infinity total, funnel, or goal on the Infinity Hospitality tab. When the revenue converts to IH, we pull them into the full mix. Traffic only for now, no spend/CAC until Katherine adds Elle spend.
+  </div>
+  <div class="elle-controls">
+    <label for="elle-period">Period</label>
+    <select id="elle-period">
+      <option value="30">Last 30 days</option>
+      <option value="90" selected>Last 90 days</option>
+      <option value="ytd">2026 YTD</option>
+    </select>
+    <span id="elle-status" class="elle-status">&nbsp;</span>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card elle"><div class="label">Elle Sessions</div><div class="value" id="elle-kpi-sessions">&mdash;</div><div class="sub">STE + COR + EST · website visits</div></div>
+    <div class="kpi-card elle"><div class="label">New Users</div><div class="value" id="elle-kpi-newusers">&mdash;</div><div class="sub">first-time visitors</div></div>
+    <div class="kpi-card elle"><div class="label">Venues Reporting</div><div class="value" id="elle-kpi-venues">&mdash;</div><div class="sub">of 3 Elle GA4 properties</div></div>
+  </div>
+  <div class="section">
+    <h2>Elle Website Traffic by Venue <span class="hint">live from GA4 · Elle properties only</span></h2>
+    <table>
+      <thead>
+        <tr><th>Venue</th><th class="num">Sessions</th><th class="num">New Users</th><th>Top Source</th><th class="num">GA4 Property</th></tr>
+      </thead>
+      <tbody id="elle-venue-body"><tr><td colspan="5" class="skeleton">Loading&hellip;</td></tr></tbody>
+    </table>
+    <div class="footnote">Sessions and new users pulled live from each Elle venue's Google Analytics 4 property. Kept fully separate from the Infinity tab, no Elle number appears in any Infinity aggregate.</div>
+  </div>
+  <div class="section">
+    <h2>Elle Traffic by Source <span class="hint">across all three Elle venues combined</span></h2>
+    <table>
+      <thead><tr><th>Source</th><th class="num">Sessions</th><th class="num">% of Elle Total</th></tr></thead>
+      <tbody id="elle-source-body"><tr><td colspan="3" class="skeleton">Loading&hellip;</td></tr></tbody>
+    </table>
+  </div>
+</div><!-- /#panel-elle -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+(async () => {
+  const HS_TOOL = 'mcp__5b8352e2-daf2-44c3-ac3b-ab96e1ae2b35__search_crm_objects';
+  const IHG_VENUES = ['TBB', 'TBT', 'ECD', 'SWF', 'OS'];
+  const SALES_PIPELINE = '746391920';
+  const EVENT_PIPELINE_DEFAULT = 'default';
+  const IHG_GOAL_2026 = 19600000;
+  // Bookings — matches HubSpot "Events Booked Per Month and Year" report.
+  const BOOKED_DATE_FIELD = 'contract_signed_date';
+  // Tours: `initial_tour_date` is populated on BOTH Sales and Event Planning pipelines.
+  const TOUR_DATE_FIELD = 'initial_tour_date';
+  // Completed Events — Event Planning Pipeline (IHG, id = `default`) at "Event Completed" stage.
+  const EVENT_COMPLETED_STAGE = '1071914498';
+  // Revenue net-of-tax multiplier (per CEO directive).
+  const REVENUE_NET_MULTIPLIER = 0.95;
+  // GA4 raw sessionSource -> friendly bucket (mirrors server GA4_TO_HUBSPOT_SOURCE_MAP).
+  const GA4_SOURCE_MAP = {
+    'cpc': 'Paid Search', 'paid_search': 'Paid Search',
+    'direct': 'Direct', '(direct)': 'Direct',
+    'google': 'Organic Search', 'bing': 'Organic Search', 'duckduckgo': 'Organic Search', 'yahoo': 'Organic Search',
+    'referral': 'Referral',
+    'tiktok': 'Social Media', 'facebook': 'Social Media', 'instagram': 'Social Media', 'pinterest': 'Social Media',
+    'm.facebook.com': 'Social Media', 'l.facebook.com': 'Social Media', 'lm.facebook.com': 'Social Media',
+    'email': 'Email', 'other': 'Other'
+  };
+  // 2026 spend data from "IHG MARKETING SPEND INPUT" tab
+  const CHANNELS = [
+    { key: 'google_ads', label: 'Google Ads' },
+    { key: 'tiktok', label: 'TikTok' },
+    { key: 'hctg', label: 'Here Comes the Guide' },
+    { key: 'wedsociety', label: 'WedSociety' },
+    { key: 'zola', label: 'Zola' },
+    { key: 'cvent', label: 'CVent' },
+    { key: 'the_knot', label: 'The Knot' },
+    { key: 'weddingwire', label: 'WeddingWire' }
+  ];
+  const FIXED = [
+    { key: 'salary', label: 'Katherine Salary' },
+    { key: 'kam_agency', label: 'K+M Agency' },
+    { key: 'content_creator', label: 'Content Creator' },
+    { key: 'software_tools', label: 'Software & Tools' },
+    { key: 'website', label: 'Website' }
+  ];
+  // Per-month spend. channels[channel][venue]; fixed[category]
+  // ORDER #182 rider ("Unify spend"): this used to be an inline copy of Katherine's
+  // spend data, drifted from server.js's OWN differently-shaped copy of the same
+  // figures (a real "which one is truth" landmine). Now there is exactly one copy —
+  // server.js's SPEND_MONTHS_2026 — served from GET /api/spend and fetched once here.
+  let SPEND_2026 = null;
+  async function fetchSpendData() {
+    const r = await fetch('/api/spend');
+    if (!r.ok) throw new Error(`/api/spend returned ${r.status}`);
+    return r.json();
+  }
+
+  const periodSel = document.getElementById('period');
+  const statusEl = document.getElementById('status');
+  // Stash the live datasets so export buttons can read them after render
+  let CURRENT = { period: null, tours: [], bookings: [], cancelled: [] };
+  // Funnel state — holds real per-venue funnel data + live GA4 sessions for the current period.
+  let FUNNEL = { venue: 'all', token: null, real: null, ga4: null };
+
+  function monthRange(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    const start = new Date(Date.UTC(y, m - 1, 1));
+    const end = new Date(Date.UTC(y, m, 1));
+    return { start: start.toISOString(), end: end.toISOString(), label: start.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }) };
+  }
+  function ytdRange() {
+    const now = new Date();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+    return { start: start.toISOString(), end: now.toISOString(), label: `${now.getUTCFullYear()} YTD` };
+  }
+  function mtdRange() {
+    const now = new Date();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    return { start: start.toISOString(), end: now.toISOString(), label: start.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }) + ' MTD' };
+  }
+  function resolvePeriod(val) {
+    if (val === 'ytd') return { ...ytdRange(), kind: 'ytd' };
+    if (val === 'mtd') return { ...mtdRange(), kind: 'mtd' };
+    return { ...monthRange(val), kind: 'month', ym: val };
+  }
+  // Convert a full ISO string to a YYYY-MM-DD for date-type HubSpot properties
+  function toDateStr(iso) { return iso.slice(0, 10); }
+  // HubSpot DATE-type props (initial_tour_date, contract_signed_date, actual_event_date) must be
+  // FILTERED with UTC-midnight epoch ms; YYYY-MM-DD / ISO return 400. Returned values stay YYYY-MM-DD.
+  function toEpochMs(d) { const x = new Date(d); return String(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate())); }
+  // Normalize a dealname for cross-pipeline dedupe.
+  function normalizeDealName(name) {
+    return (name || '')
+      .replace(/\(Sales Deal\)/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+  const EVENT_TYPE_BUCKETS = ['Wedding', 'Social', 'Corp/Non-Profit'];
+  function classifyEventType(eventTypeStr, dealnameStr) {
+    const et = (eventTypeStr || '').toLowerCase().trim();
+    const name = (dealnameStr || '').toLowerCase().trim();
+    const combined = et + ' ' + name;
+    // "Wedding anniversary" is Social per CEO — must catch BEFORE the Wedding regex.
+    if (/wedding\s+anniversary/.test(combined)) return 'Social';
+    // Social
+    if (/\b(social|birthday|celebration\s+of\s+life|baby\s+shower|bridal\s+shower|sweet\s+sixteen|quincea[ñn]era|\bprom\b|private\s+party|personal\s+party|family\s+gather)\b/.test(combined)) return 'Social';
+    if (/\banniversary\b/.test(combined) && !/wedding/.test(combined)) return 'Social';
+    // Wedding
+    if (/\b(wedding|rehearsal\s+dinner|elopement|vow\s+renewal|welcome\s+reception|sangeet|baratt)\b/.test(combined)) return 'Wedding';
+    // Corp / Non-Profit catch-all
+    if (/(corp|non-?profit|fundraiser|conference|gala|holiday\s+party|awards|production|film\s+(crew|shoot|hold)|investor|leadership|summit|recognition|\bboard\b|charity|foundation|company|client|business|\bpartners?\b|networking|holding|police\s+department|healthcare|launch|sales\s+meeting|annual\s+(meeting|investor|dinner)|industry|media|conference|\breception\b|\bdinner\b|\bmeeting\b|\bsales\b)/.test(combined)) return 'Corp/Non-Profit';
+    return null;
+  }
+  function buildEventTypeMap(deals) {
+    const map = new Map();
+    for (const d of deals) {
+      const val = d.properties?.event_type_sales;
+      if (!val) continue;
+      const k = normalizeDealName(d.properties?.dealname);
+      if (!map.has(k) || d.properties?.pipeline === SALES_PIPELINE) {
+        map.set(k, val);
+      }
+    }
+    return map;
+  }
+  function resolveEventTypeSales(deal, typingMap) {
+    const own = deal.properties?.event_type_sales;
+    if (own) return own;
+    return typingMap.get(normalizeDealName(deal.properties?.dealname)) || '';
+  }
+
+  function paidSpendForMonth(ym) {
+    const m = SPEND_2026[ym];
+    if (!m) return null;
+    const venueTotals = { TBB: 0, TBT: 0, ECD: 0, SWF: 0 };
+    let total = 0;
+    for (const c of CHANNELS) {
+      for (const v of Object.keys(venueTotals)) {
+        const val = m.channels[c.key]?.[v] || 0;
+        venueTotals[v] += val;
+        total += val;
+      }
+    }
+    return { total, venue: venueTotals, channels: m.channels };
+  }
+  function fullyLoadedForMonth(ym) {
+    const m = SPEND_2026[ym];
+    if (!m) return 0;
+    const paid = paidSpendForMonth(ym).total;
+    const fixedTotal = FIXED.reduce((a, f) => a + (m.fixed[f.key] || 0), 0);
+    return paid + fixedTotal;
+  }
+  function aggregateSpend(period) {
+    const now = new Date();
+    const currentMonthIdx = now.getUTCFullYear() === 2026 ? now.getUTCMonth() : (now.getUTCFullYear() > 2026 ? 11 : -1);
+    let monthsToInclude = [];
+    if (period.kind === 'month') monthsToInclude = [period.ym];
+    else if (period.kind === 'mtd') monthsToInclude = [`2026-${String(currentMonthIdx + 1).padStart(2, '0')}`];
+    else if (period.kind === 'ytd') {
+      for (let i = 0; i <= currentMonthIdx; i++) monthsToInclude.push(`2026-${String(i + 1).padStart(2, '0')}`);
+    }
+    const venueTotals = { TBB: 0, TBT: 0, ECD: 0, SWF: 0 };
+    let paid = 0, fullyLoaded = 0;
+    const channelVenueTotals = {};
+    CHANNELS.forEach(c => channelVenueTotals[c.key] = { TBB: 0, TBT: 0, ECD: 0, SWF: 0 });
+    const fixedTotals = {};
+    FIXED.forEach(f => fixedTotals[f.key] = 0);
+    for (const ym of monthsToInclude) {
+      const ps = paidSpendForMonth(ym); if (!ps) continue;
+      paid += ps.total;
+      for (const v of Object.keys(venueTotals)) venueTotals[v] += ps.venue[v];
+      for (const c of CHANNELS) for (const v of Object.keys(venueTotals)) channelVenueTotals[c.key][v] += SPEND_2026[ym].channels[c.key]?.[v] || 0;
+      for (const f of FIXED) fixedTotals[f.key] += SPEND_2026[ym].fixed[f.key] || 0;
+      fullyLoaded += fullyLoadedForMonth(ym);
+    }
+    return { paid, fullyLoaded, venueTotals, channelVenueTotals, fixedTotals };
+  }
+
+  // Production proxy: calls /api/hubspot/search on the Railway backend.
+  async function callHs(args) {
+    const res = await fetch('/api/hubspot/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(args)
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`HubSpot proxy error: ${res.status} ${errText}`);
+    }
+    return res.json();
+  }
+  async function countDeals(filters) { return (await callHs({ objectType: 'deals', filterGroups: [{ filters }], limit: 1 })).total || 0; }
+  async function countContacts(filters) { return (await callHs({ objectType: 'contacts', filterGroups: [{ filters }], limit: 1 })).total || 0; }
+  async function fetchAll(objectType, filterGroups, properties, maxPages = 60) {
+    // HubSpot CRM Search uses CURSOR paging (paging.next.after), NOT offset. Sending offset
+    // is ignored, so the same first 200 rows return every page, inflating any count over 200.
+    const out = []; let after;
+    for (let i = 0; i < maxPages; i++) {
+      const body = { objectType, filterGroups, properties, limit: 200 };
+      if (after) body.after = after;
+      const data = await callHs(body);
+      const batch = data.results || []; out.push(...batch);
+      after = data.paging && data.paging.next && data.paging.next.after;
+      if (!after || batch.length < 200) break;
+    }
+    return out;
+  }
+
+  // GA4 summary proxy: returns { dateRange, venues: { TBB: { totalSessions, newUsers, bySource:[{sessionSource,sessions,newUsers}] }, ... } }
+  // Never throws — returns { error } so a GA4 outage can't break the dashboard.
+  async function fetchGa4Summary(period) {
+    try {
+      const s = toDateStr(period.start), e = toDateStr(period.end);
+      const r = await fetch(`/api/ga4/summary?startDate=${s}&endDate=${e}`);
+      if (!r.ok) throw new Error(`GA4 ${r.status}`);
+      return await r.json();
+    } catch (err) {
+      return { error: err.message || String(err) };
+    }
+  }
+
+  const money = n => n == null || isNaN(n) ? '-' : '$' + Math.round(n).toLocaleString();
+  const num = n => n == null ? '-' : n.toLocaleString();
+  const pct = n => n == null || !isFinite(n) ? '-' : (n * 100).toFixed(1) + '%';
+
+  function groupByVenue(records, key) {
+    const out = { TBB: 0, TBT: 0, ECD: 0, SWF: 0, OS: 0 };
+    for (const r of records) {
+      const raw = r.properties?.[key] || '';
+      const v = raw.split(';')[0].trim();
+      if (out[v] !== undefined) out[v]++;
+    }
+    return out;
+  }
+  function revenueByVenue(deals) {
+    const out = { TBB: 0, TBT: 0, ECD: 0, SWF: 0, OS: 0 };
+    let total = 0;
+    for (const d of deals) {
+      const raw = d.properties?.venue || 'OS';
+      const v = raw.split(';')[0].trim() || 'OS';
+      const amt = (parseFloat(d.properties?.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
+      if (out[v] !== undefined) out[v] += amt;
+      total += amt;
+    }
+    return { byVenue: out, total };
+  }
+
+  async function fetchUniqueTours(period) {
+    const filtersFor = (pl) => [
+      { propertyName: 'pipeline', operator: 'EQ', value: pl },
+      { propertyName: TOUR_DATE_FIELD, operator: 'GTE', value: toEpochMs(period.start) },
+      { propertyName: TOUR_DATE_FIELD, operator: 'LT', value: toEpochMs(period.end) }
+    ];
+    const props = ['venue', TOUR_DATE_FIELD, 'event_type_sales', 'dealname', 'pipeline'];
+    const [salesTours, eventTours] = await Promise.all([
+      fetchAll('deals', [{ filters: filtersFor(SALES_PIPELINE) }], props),
+      fetchAll('deals', [{ filters: filtersFor(EVENT_PIPELINE_DEFAULT) }], props)
+    ]);
+    const salesKeys = new Set(salesTours.map(d => normalizeDealName(d.properties?.dealname)));
+    const eventOnly = eventTours.filter(d => !salesKeys.has(normalizeDealName(d.properties?.dealname)));
+    salesTours.forEach(d => d._origin = 'sales');
+    eventOnly.forEach(d => d._origin = 'event-only');
+    return { all: [...salesTours, ...eventOnly], salesCount: salesTours.length, eventOnlyCount: eventOnly.length };
+  }
+
+  // ORDER #1663 (Mimi, 10.12.2026: "we need cancelled in its own category, cancelled is an actual count").
+  // booked_cancelled__reporting_use_only_ is a HubSpot enumeration: "Booked" or "Cancelled".
+  // A booking is cancelled when ANY deal sharing its normalized dealname in the window says so
+  // (the Sales and Event Planning twins may not both carry the field). Cancelled is NOT a booking.
+  function isCancelledBooking(d) {
+    const v = String(d.properties?.booked_cancelled__reporting_use_only_ || '').trim().toLowerCase();
+    return v === 'cancelled' || v === 'canceled' || v === 'true' || v === 'yes';
+  }
+  function splitCancelled(result, everyDeal) {
+    const cancelledKeys = new Set(everyDeal.filter(isCancelledBooking).map(d => normalizeDealName(d.properties?.dealname)));
+    const live = result.all.filter(d => !cancelledKeys.has(normalizeDealName(d.properties?.dealname)));
+    const cancelled = result.all.filter(d => cancelledKeys.has(normalizeDealName(d.properties?.dealname)));
+    return { ...result, all: live, cancelled };
+  }
+  async function fetchUniqueBookings(period) {
+    const filtersFor = (pl) => [
+      { propertyName: 'pipeline', operator: 'EQ', value: pl },
+      { propertyName: BOOKED_DATE_FIELD, operator: 'GTE', value: toEpochMs(period.start) },
+      { propertyName: BOOKED_DATE_FIELD, operator: 'LT', value: toEpochMs(period.end) }
+    ];
+    const props = ['venue', BOOKED_DATE_FIELD, 'event_type_sales', 'dealname', 'pipeline', 'booked_cancelled__reporting_use_only_'];
+    const [salesBookings, eventBookings] = await Promise.all([
+      fetchAll('deals', [{ filters: filtersFor(SALES_PIPELINE) }], props),
+      fetchAll('deals', [{ filters: filtersFor(EVENT_PIPELINE_DEFAULT) }], props)
+    ]);
+    const salesKeys = new Set(salesBookings.map(d => normalizeDealName(d.properties?.dealname)));
+    const eventOnly = eventBookings.filter(d => !salesKeys.has(normalizeDealName(d.properties?.dealname)));
+    salesBookings.forEach(d => d._origin = 'sales');
+    eventOnly.forEach(d => d._origin = 'event-only');
+    return splitCancelled({ all: [...salesBookings, ...eventOnly], salesCount: salesBookings.length, eventOnlyCount: eventOnly.length }, [...salesBookings, ...eventBookings]);
+  }
+
+  async function loadPeriod(period) {
+    statusEl.textContent = `Loading ${period.label}…`;
+    statusEl.className = 'status';
+    const filtersTime = p => [
+      { propertyName: p, operator: 'GTE', value: period.start },
+      { propertyName: p, operator: 'LT', value: period.end }
+    ];
+    // Date-type deal props (actual_event_date) need epoch-ms bounds.
+    const filtersTimeMs = p => [
+      { propertyName: p, operator: 'GTE', value: toEpochMs(period.start) },
+      { propertyName: p, operator: 'LT', value: toEpochMs(period.end) }
+    ];
+    try {
+      const leadsP = fetchAll('contacts',
+        [{ filters: [
+          { propertyName: 'venue_s_', operator: 'IN', values: IHG_VENUES },
+          ...filtersTime('createdate')
+        ]}],
+        ['venue_s_', 'lead_source', 'createdate']);
+      const toursResultP = fetchUniqueTours(period);
+      const bookingsResultP = fetchUniqueBookings(period);
+      const completedEventsFilters = [
+        { propertyName: 'pipeline', operator: 'EQ', value: EVENT_PIPELINE_DEFAULT },
+        { propertyName: 'dealstage', operator: 'EQ', value: EVENT_COMPLETED_STAGE }
+      ];
+      if (period.kind !== 'ytd') {
+        completedEventsFilters.push(
+          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(period.start) },
+          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(period.end) }
+        );
+      }
+      const completedEventsP = fetchAll('deals',
+        [{ filters: completedEventsFilters }],
+        ['venue', 'dealname', 'final_event_total_accounting', 'event_type_sales', 'actual_event_date', 'pipeline', 'dealstage']);
+      const revenueP = fetchAll('deals',
+        [{ filters: [
+          { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
+          { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
+          ...filtersTimeMs('actual_event_date')
+        ]}],
+        ['venue', 'dealname', 'final_event_total_accounting', 'event_type_sales', 'actual_event_date', 'pipeline']);
+      const typingLookupP = fetchAll('deals',
+        [{ filters: [
+          { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
+          { propertyName: 'event_type_sales', operator: 'HAS_PROPERTY' },
+          ...filtersTimeMs('actual_event_date')
+        ]}],
+        ['dealname', 'event_type_sales', 'pipeline']);
+
+      // ORDER #182 rider ("Per-section error handling"): Promise.all rejects the WHOLE
+      // batch on any single failure, which used to error-banner the entire dashboard even
+      // when 5 of 6 queries succeeded. Promise.allSettled + a per-query fallback means one
+      // bad section degrades to empty (rendered honestly, named in the status line) while
+      // every other section still renders with its own real data.
+      const labels = ['leads', 'tours', 'bookings', 'completedEvents', 'revenueDeals', 'typingLookup'];
+      const settled = await Promise.allSettled([leadsP, toursResultP, bookingsResultP, completedEventsP, revenueP, typingLookupP]);
+      const failed = [];
+      const emptyToursBookings = { all: [], cancelled: [], salesCount: 0, eventOnlyCount: 0 };
+      const fallback = { leads: [], tours: emptyToursBookings, bookings: emptyToursBookings, completedEvents: [], revenueDeals: [], typingLookup: [] };
+      const out = {};
+      settled.forEach((r, i) => {
+        const label = labels[i];
+        if (r.status === 'fulfilled') { out[label] = r.value; return; }
+        out[label] = fallback[label];
+        failed.push(label);
+        console.error(`[loadPeriod] ${label} failed:`, r.reason);
+      });
+      const leads = out.leads;
+      const toursResult = out.tours, bookingsResult = out.bookings;
+      const completedEvents = out.completedEvents, revenueDeals = out.revenueDeals;
+      const typingMap = buildEventTypeMap(out.typingLookup);
+      const tours = toursResult.all;
+      const bookings = bookingsResult.all;
+      const cancelled = bookingsResult.cancelled || [];
+      CURRENT = { period, tours, bookings, cancelled, completedEvents, revenueDeals, typingMap };
+      renderAll(period, { leads, tours, bookings, cancelled, completedEvents, revenueDeals, typingMap });
+      const tourExtra = toursResult.eventOnlyCount
+        ? ` (${toursResult.salesCount} Sales + ${toursResult.eventOnlyCount} event-only)`
+        : '';
+      const bookExtra = bookingsResult.eventOnlyCount
+        ? ` (${bookingsResult.salesCount} Sales + ${bookingsResult.eventOnlyCount} event-only, deduped)`
+        : '';
+      const liveLine = `Live · ${period.label} · ${leads.length} leads · ${tours.length} tours${tourExtra} · ${bookings.length} bookings${bookExtra} · ${cancelled.length} cancelled · ${completedEvents.length} completed events (${revenueDeals.length} w/ final totals) · refreshed ${new Date().toLocaleTimeString()}`;
+      if (failed.length) {
+        statusEl.textContent = `${liveLine}, ⚠️ failed to load: ${failed.join(', ')} (shown as empty, not guessed)`;
+        statusEl.className = 'status error';
+      } else {
+        statusEl.textContent = liveLine;
+      }
+      generateNarrative(period, { leads, tours, bookings, cancelled, completedEvents, revenueDeals });
+    } catch (e) {
+      statusEl.textContent = 'Error loading HubSpot: ' + (e.message || e);
+      statusEl.className = 'status error';
+      console.error(e);
+    }
+  }
+
+  function renderAll(period, { leads, tours, bookings, cancelled = [], completedEvents, revenueDeals, typingMap }) {
+    const spend = aggregateSpend(period);
+    const leadsByV = groupByVenue(leads, 'venue_s_');
+    const toursByV = groupByVenue(tours, 'venue');
+    const bookingsByV = groupByVenue(bookings, 'venue');
+    const cancelledByV = groupByVenue(cancelled, 'venue');
+    const eventsByV = groupByVenue(completedEvents, 'venue');
+    const rev = revenueByVenue(revenueDeals);
+    const totalL = leads.length, totalT = tours.length, totalB = bookings.length, totalC = cancelled.length, totalE = completedEvents.length, totalR = rev.total;
+    // KPI cards
+    document.getElementById('kpi-spend').textContent = money(spend.paid);
+    document.getElementById('kpi-spend-fl').textContent = money(spend.fullyLoaded);
+    document.getElementById('kpi-leads').textContent = num(totalL);
+    document.getElementById('kpi-tours').textContent = num(totalT);
+    document.getElementById('kpi-bookings').textContent = num(totalB);
+    document.getElementById('kpi-cancelled').textContent = num(totalC);
+    document.getElementById('kpi-events').textContent = num(totalE);
+    document.getElementById('kpi-events-sub').textContent = `${revenueDeals.length} w/ final totals`;
+    document.getElementById('kpi-revenue').textContent = money(totalR);
+    document.getElementById('kpi-revenue-sub').textContent = `${revenueDeals.length} finalized of ${totalE}`;
+    document.getElementById('kpi-l2t').textContent = totalL ? pct(totalT / totalL) : '-';
+    document.getElementById('kpi-t2b').textContent = totalT ? pct(totalB / totalT) : '-';
+    document.getElementById('kpi-l2b').textContent = totalL ? pct(totalB / totalL) : '-';
+    document.getElementById('kpi-cpl').textContent = totalL ? money(spend.paid / totalL) : '-';
+    document.getElementById('kpi-cpl-fl').textContent = totalL ? money(spend.fullyLoaded / totalL) : '-';
+    document.getElementById('kpi-cpb').textContent = totalB ? money(spend.paid / totalB) : '-';
+    document.getElementById('kpi-cpb-fl').textContent = totalB ? money(spend.fullyLoaded / totalB) : '-';
+    document.getElementById('kpi-roas').textContent = spend.paid ? (totalR / spend.paid).toFixed(2) + 'x' : '-';
+    // Full funnel
+    const fb = document.getElementById('funnel-body'); fb.innerHTML = '';
+    for (const v of [...['TBB','TBT','ECD','SWF'], 'OS', 'TOTAL']) {
+      const isTot = v === 'TOTAL';
+      const s = isTot ? spend.paid : (spend.venueTotals[v] || 0);
+      const l = isTot ? totalL : leadsByV[v];
+      const t = isTot ? totalT : toursByV[v];
+      const b = isTot ? totalB : bookingsByV[v];
+      const c = isTot ? totalC : cancelledByV[v];
+      const ev = isTot ? totalE : (eventsByV[v] || 0);
+      const r = isTot ? totalR : (rev.byVenue[v] || 0);
+      const l2t = l ? t / l : null, t2b = t ? b / t : null, l2b = l ? b / l : null;
+      const cpl = l ? s / l : null, cpb = b ? s / b : null;
+      fb.innerHTML += `<tr class="${isTot ? 'total-row' : ''}">
+        <td class="venue-label">${v}</td>
+        <td class="num">${money(s)}</td>
+        <td class="num">${num(l)}</td>
+        <td class="num">${num(t)}</td>
+        <td class="num">${num(b)}</td>
+        <td class="num">${num(c)}</td>
+        <td class="num">${num(ev)}</td>
+        <td class="num">${money(r)}</td>
+        <td class="num">${l2t !== null ? pct(l2t) : '<span class="dash">-</span>'}</td>
+        <td class="num">${t2b !== null ? pct(t2b) : '<span class="dash">-</span>'}</td>
+        <td class="num">${l2b !== null ? pct(l2b) : '<span class="dash">-</span>'}</td>
+        <td class="num">${cpl !== null ? money(cpl) : '<span class="dash">-</span>'}</td>
+        <td class="num">${cpb !== null ? money(cpb) : '<span class="dash">-</span>'}</td>
+      </tr>`;
+    }
+    // Sources — cross-tab: rows = lead_source, columns = venues (first venue when multi-select)
+    const sb = document.getElementById('source-body');
+    const venuesXT = ['TBB', 'TBT', 'ECD', 'SWF', 'OS'];
+    const srcXT = {};
+    for (const l of leads) {
+      const s = l.properties?.lead_source || '(none)';
+      const v = (l.properties?.venue_s_ || '').split(';')[0].trim() || 'OS';
+      if (!srcXT[s]) srcXT[s] = { TBB: 0, TBT: 0, ECD: 0, SWF: 0, OS: 0, total: 0 };
+      if (venuesXT.includes(v)) srcXT[s][v]++;
+      srcXT[s].total++;
+    }
+    const srcRows = Object.entries(srcXT).sort((a, b) => b[1].total - a[1].total);
+    const venueTotalsXT = { TBB: 0, TBT: 0, ECD: 0, SWF: 0, OS: 0, total: 0 };
+    let sbHtml = srcRows.map(([s, c]) => {
+      for (const v of venuesXT) venueTotalsXT[v] += c[v];
+      venueTotalsXT.total += c.total;
+      return `<tr>
+        <td>${s}</td>
+        ${venuesXT.map(v => `<td class="num">${c[v] ? num(c[v]) : '<span class="dash">-</span>'}</td>`).join('')}
+        <td class="num"><strong>${num(c.total)}</strong></td>
+      </tr>`;
+    }).join('');
+    if (srcRows.length) {
+      sbHtml += `<tr class="total-row"><td>TOTAL</td>${venuesXT.map(v => `<td class="num">${num(venueTotalsXT[v])}</td>`).join('')}<td class="num">${num(venueTotalsXT.total)}</td></tr>`;
+    }
+    sb.innerHTML = srcRows.length ? sbHtml : '<tr><td colspan="7" class="dash">No leads in window.</td></tr>';
+    // Event types
+    const tb = document.getElementById('type-body');
+    const tc = {};
+    for (const b of bookings) { const t = b.properties?.event_type_sales || '(unclassified)'; tc[t] = (tc[t] || 0) + 1; }
+    const te = Object.entries(tc).sort((a, b) => b[1] - a[1]);
+    tb.innerHTML = te.length ? te.map(([t, n]) => `<tr><td>${t}</td><td class="num">${num(n)}</td><td class="num">${pct(n / totalB)}</td></tr>`).join('') : '<tr><td colspan="3" class="dash">No bookings in window.</td></tr>';
+    // Channel spend breakdown
+    const cb = document.getElementById('channel-body'); cb.innerHTML = '';
+    for (const ch of CHANNELS) {
+      const row = spend.channelVenueTotals[ch.key];
+      const total = (row.TBB || 0) + (row.TBT || 0) + (row.ECD || 0) + (row.SWF || 0);
+      if (total === 0) continue;
+      cb.innerHTML += `<tr>
+        <td>${ch.label}</td>
+        <td class="num">${money(row.TBB)}</td>
+        <td class="num">${money(row.TBT)}</td>
+        <td class="num">${money(row.ECD)}</td>
+        <td class="num">${money(row.SWF)}</td>
+        <td class="num">${money(total)}</td>
+      </tr>`;
+    }
+    const cTot = { TBB: 0, TBT: 0, ECD: 0, SWF: 0 };
+    for (const ch of CHANNELS) for (const v of Object.keys(cTot)) cTot[v] += spend.channelVenueTotals[ch.key][v] || 0;
+    cb.innerHTML += `<tr class="total-row"><td>Total Paid Ads</td><td class="num">${money(cTot.TBB)}</td><td class="num">${money(cTot.TBT)}</td><td class="num">${money(cTot.ECD)}</td><td class="num">${money(cTot.SWF)}</td><td class="num">${money(spend.paid)}</td></tr>`;
+    // Fixed costs
+    const xb = document.getElementById('fixed-body'); xb.innerHTML = '';
+    let fixedSum = 0;
+    for (const f of FIXED) {
+      const v = spend.fixedTotals[f.key];
+      fixedSum += v;
+      xb.innerHTML += `<tr><td>${f.label}</td><td class="num">${money(v)}</td></tr>`;
+    }
+    xb.innerHTML += `<tr class="total-row"><td>Total Fixed</td><td class="num">${money(fixedSum)}</td></tr>`;
+    xb.innerHTML += `<tr><td>Paid Ads + Fixed = Fully Loaded</td><td class="num"><strong>${money(spend.fullyLoaded)}</strong></td></tr>`;
+    // Revenue detail
+    const rb = document.getElementById('revenue-body');
+    const sorted = revenueDeals.slice().sort((a, b) => (b.properties?.actual_event_date || '').localeCompare(a.properties?.actual_event_date || ''));
+    rb.innerHTML = sorted.length ? sorted.map(d => {
+      const p = d.properties || {};
+      const amt = (parseFloat(p.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
+      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
+      const resolvedType = resolveEventTypeSales(d, typingMap);
+      const bucket = classifyEventType(resolvedType, p.dealname);
+      const typeDisplay = resolvedType || (bucket ? `<em class="muted">${bucket} (derived)</em>` : '-');
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${typeDisplay}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="dash">No completed events in window.</td></tr>';
+    // CEO View — revenue by event type × venue
+    renderCeoRevenueView(revenueDeals, typingMap);
+    // Conversion funnel — stash real per-venue data, render, then refresh GA4 sessions.
+    FUNNEL.real = {
+      byVenue: {
+        TBB: { leads: leadsByV.TBB, tours: toursByV.TBB, bookings: bookingsByV.TBB, cancelled: cancelledByV.TBB, revenue: rev.byVenue.TBB },
+        TBT: { leads: leadsByV.TBT, tours: toursByV.TBT, bookings: bookingsByV.TBT, cancelled: cancelledByV.TBT, revenue: rev.byVenue.TBT },
+        ECD: { leads: leadsByV.ECD, tours: toursByV.ECD, bookings: bookingsByV.ECD, cancelled: cancelledByV.ECD, revenue: rev.byVenue.ECD },
+        SWF: { leads: leadsByV.SWF, tours: toursByV.SWF, bookings: bookingsByV.SWF, cancelled: cancelledByV.SWF, revenue: rev.byVenue.SWF }
+      },
+      all: { leads: totalL, tours: totalT, bookings: totalB, cancelled: totalC, revenue: totalR }
+    };
+    FUNNEL.token = period.start + '|' + period.kind + '|' + (period.ym || '');
+    renderFunnel();
+    const tokenAtFetch = FUNNEL.token;
+    fetchGa4Summary(period).then(g => {
+      if (FUNNEL.token !== tokenAtFetch) return; // stale — period changed
+      FUNNEL.ga4 = g;
+      renderFunnel();
+    });
+  }
+
+  // ---- CONVERSION FUNNEL RENDER ----
+  // Builds GA4 Sessions -> Leads -> Tours -> Bookings -> Revenue using live data.
+  // Real HubSpot counts for Leads/Tours/Bookings/Revenue; GA4 sessions on top.
+  function ga4SessionsForVenue(ga4, venue) {
+    if (!ga4 || ga4.error || !ga4.venues) return null;
+    if (venue === 'all') {
+      let sum = 0, any = false;
+      for (const v of ['TBB', 'TBT', 'ECD', 'SWF']) {
+        const vd = ga4.venues[v];
+        if (vd && !vd.error && typeof vd.totalSessions === 'number') { sum += vd.totalSessions; any = true; }
+      }
+      return any ? sum : null;
+    }
+    const vd = ga4.venues[venue];
+    if (!vd || vd.error || typeof vd.totalSessions !== 'number') return null;
+    return vd.totalSessions;
+  }
+  function ga4SourcesForVenue(ga4, venue) {
+    if (!ga4 || ga4.error || !ga4.venues) return null;
+    const acc = {};
+    const addRows = (vd) => {
+      if (!vd || vd.error || !Array.isArray(vd.bySource)) return;
+      for (const row of vd.bySource) {
+        const bucket = row.source || 'Direct';
+        acc[bucket] = (acc[bucket] || 0) + (row.sessions || 0);
+      }
+    };
+    if (venue === 'all') { for (const v of ['TBB', 'TBT', 'ECD', 'SWF']) addRows(ga4.venues[v]); }
+    else addRows(ga4.venues[venue]);
+    return Object.keys(acc).length ? acc : null;
+  }
+  function renderFunnel() {
+    const content = document.getElementById('funnel-content');
+    const statusSpan = document.getElementById('funnel-ga-status');
+    if (!FUNNEL.real) { content.innerHTML = '<div class="footnote">Loading website traction…</div>'; return; }
+    const venue = FUNNEL.venue;
+    const real = venue === 'all' ? FUNNEL.real.all : FUNNEL.real.byVenue[venue];
+    const leads = real.leads || 0, tours = real.tours || 0, bookings = real.bookings || 0, cancelled = real.cancelled || 0, revenue = real.revenue || 0;
+    const sessions = ga4SessionsForVenue(FUNNEL.ga4, venue);
+    const gaPending = !FUNNEL.ga4;
+    const gaLive = sessions != null;
+    // GA status pill
+    if (gaPending) { statusSpan.textContent = 'GA4: loading…'; statusSpan.className = 'funnel-ga-status'; }
+    else if (gaLive) { statusSpan.textContent = '● GA4 live'; statusSpan.className = 'funnel-ga-status live'; }
+    else { statusSpan.textContent = '○ GA4 not connected'; statusSpan.className = 'funnel-ga-status offline'; }
+
+    // Bar widths sized relative to the top populated stage.
+    const topCount = sessions != null ? sessions : leads;
+    const widthPct = (n) => {
+      if (!topCount || topCount <= 0) return 100;
+      return Math.max(14, Math.min(100, (n / topCount) * 100));
+    };
+    const avgBooking = bookings ? revenue / bookings : 0;
+
+    const stages = [];
+    // Sessions
+    if (sessions != null) {
+      stages.push({ cls: 'stage-sessions', name: 'Sessions', main: num(sessions), sub: 'website visits', width: widthPct(sessions), conv: '<strong>' + num(sessions) + '</strong>GA4 sessions', empty: false });
+    } else {
+      stages.push({ cls: 'stage-sessions', name: 'Sessions', main: '-', sub: gaPending ? 'loading GA4…' : 'connect GA4', width: 100, conv: '<strong>-</strong>GA4 not connected', empty: true });
+    }
+    // Leads
+    stages.push({ cls: 'stage-leads', name: 'Leads', main: num(leads), sub: 'HubSpot contacts', width: widthPct(leads),
+      conv: '<strong>' + (sessions ? pct(leads / sessions) : '-') + '</strong>' + (sessions ? 'session → lead' : 'top of funnel'), empty: leads === 0 });
+    // Tours
+    stages.push({ cls: 'stage-tours', name: 'Tours', main: num(tours), sub: 'venue tours', width: widthPct(tours),
+      conv: '<strong>' + (leads ? pct(tours / leads) : '-') + '</strong>lead → tour', empty: tours === 0 });
+    // Bookings
+    stages.push({ cls: 'stage-bookings', name: 'Bookings', main: num(bookings), sub: 'contracts signed', width: widthPct(bookings),
+      conv: '<strong>' + (tours ? pct(bookings / tours) : '-') + '</strong>tour → booking', empty: bookings === 0 });
+    // Cancelled: its own count, never folded into Bookings (ORDER #1663)
+    stages.push({ cls: 'stage-cancelled', name: 'Cancelled', main: num(cancelled), sub: 'signed, then cancelled', width: widthPct(cancelled),
+      conv: '<strong>' + num(cancelled) + '</strong>not in bookings', empty: cancelled === 0 });
+    // Revenue (scaled vs bookings count for bar — revenue is dollars, so size by bookings share)
+    stages.push({ cls: 'stage-revenue', name: 'Revenue', main: money(revenue), sub: 'net of tax', width: widthPct(bookings),
+      conv: '<strong>' + (bookings ? money(avgBooking) : '-') + '</strong>avg / booking', empty: revenue === 0 });
+
+    let html = '<div class="funnel-container">';
+    for (const s of stages) {
+      html += `<div class="funnel-stage ${s.cls}">
+        <div class="stage-name">${s.name}</div>
+        <div class="funnel-bar-track">
+          <div class="funnel-bar${s.empty ? ' empty' : ''}" style="width:${s.width}%">
+            <span>${s.main}</span><span class="bar-sub">${s.sub}</span>
+          </div>
+        </div>
+        <div class="stage-conv">${s.conv}</div>
+      </div>`;
+    }
+    html += '</div>';
+
+    // Source breakdown
+    const sources = ga4SourcesForVenue(FUNNEL.ga4, venue);
+    html += '<div class="source-breakdown"><div class="source-breakdown-title">Website Traffic by Source</div>';
+    if (sources) {
+      const totalS = Object.values(sources).reduce((a, b) => a + b, 0) || 1;
+      const rows = Object.entries(sources).sort((a, b) => b[1] - a[1]);
+      html += '<div class="source-pills">';
+      for (const [src, cnt] of rows) {
+        html += `<div class="source-pill">${src}: <strong>${((cnt / totalS) * 100).toFixed(0)}%</strong> <span class="muted">(${num(cnt)})</span></div>`;
+      }
+      html += '</div>';
+    } else {
+      html += `<div class="footnote" style="margin-top:0">${gaPending ? 'Loading traffic sources from GA4…' : 'GA4 not connected yet, traffic-by-source will populate once Google Analytics credentials are configured.'}</div>`;
+    }
+    html += '</div>';
+
+    content.innerHTML = html;
+  }
+
+  function renderCeoRevenueView(revenueDeals, typingMap) {
+    const venues = ['TBB', 'TBT', 'ECD', 'SWF', 'OS'];
+    const buckets = EVENT_TYPE_BUCKETS; // Wedding, Social, Corp/Non-Profit
+    const cells = {};
+    venues.forEach(v => { cells[v] = {}; buckets.forEach(b => cells[v][b] = { rev: 0, count: 0 }); cells[v]._total = { rev: 0, count: 0 }; });
+    const colTotals = {}; buckets.forEach(b => colTotals[b] = { rev: 0, count: 0 });
+    const grand = { rev: 0, count: 0 };
+    const unclassified = [];
+    for (const d of revenueDeals) {
+      const p = d.properties || {};
+      const venueRaw = (p.venue || 'OS').split(';')[0].trim() || 'OS';
+      const venue = venues.includes(venueRaw) ? venueRaw : 'OS';
+      const amt = (parseFloat(p.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
+      const resolvedType = resolveEventTypeSales(d, typingMap);
+      const bucket = classifyEventType(resolvedType, p.dealname);
+      cells[venue]._total.rev += amt;
+      cells[venue]._total.count++;
+      grand.rev += amt;
+      grand.count++;
+      if (bucket) {
+        cells[venue][bucket].rev += amt;
+        cells[venue][bucket].count++;
+        colTotals[bucket].rev += amt;
+        colTotals[bucket].count++;
+      } else {
+        unclassified.push(d);
+      }
+    }
+    const ipe = (rev, count) => count > 0 ? money(rev / count) : '<span class="dash">-</span>';
+    const dashIfZero = (s) => s === '$0' || s === '0' ? '<span class="dash">-</span>' : s;
+    const body = document.getElementById('ceo-revenue-body');
+    let html = '';
+    for (const v of venues) {
+      const row = cells[v];
+      html += `<tr><td class="venue-label">${v}</td>`;
+      for (const b of buckets) {
+        html += `<td class="num">${dashIfZero(money(row[b].rev))}</td><td class="num">${row[b].count || '<span class="dash">-</span>'}</td><td class="num">${ipe(row[b].rev, row[b].count)}</td>`;
+      }
+      html += `<td class="num">${money(row._total.rev)}</td><td class="num">${row._total.count}</td><td class="num">${ipe(row._total.rev, row._total.count)}</td>`;
+      html += `</tr>`;
+    }
+    html += `<tr class="total-row"><td>TOTAL</td>`;
+    for (const b of buckets) {
+      html += `<td class="num">${dashIfZero(money(colTotals[b].rev))}</td><td class="num">${colTotals[b].count || '<span class="dash">-</span>'}</td><td class="num">${ipe(colTotals[b].rev, colTotals[b].count)}</td>`;
+    }
+    html += `<td class="num">${money(grand.rev)}</td><td class="num">${grand.count}</td><td class="num">${ipe(grand.rev, grand.count)}</td></tr>`;
+    body.innerHTML = html;
+    const classifiedRev = buckets.reduce((a, b) => a + colTotals[b].rev, 0);
+    const gap = grand.rev - classifiedRev;
+    document.getElementById('ceo-recon').textContent = unclassified.length
+      ? `${unclassified.length} of ${grand.count} events (${money(gap)}) couldn't be auto-classified, see worklist below.`
+      : `All ${grand.count} events classified · ${money(grand.rev)} reconciles to the Event Revenue KPI.`;
+    const wb = document.getElementById('ceo-missing-body');
+    const wsorted = unclassified.slice().sort((a, b) => (a.properties?.actual_event_date || '').localeCompare(b.properties?.actual_event_date || ''));
+    wb.innerHTML = wsorted.length ? wsorted.map(d => {
+      const p = d.properties || {};
+      const amt = (parseFloat(p.final_event_total_accounting || '0') || 0) * REVENUE_NET_MULTIPLIER;
+      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
+      const url = `https://app.hubspot.com/contacts/49701209/record/0-3/${d.id}`;
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.dealname || '-'}</td><td class="num">${money(amt)}</td><td><a href="${url}" target="_blank" rel="noopener" class="hs-link">Open in HubSpot ↗</a></td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="dash">All revenue events classified into Wedding, Social, or Corp/Non-Profit. ✓</td></tr>';
+    document.getElementById('ceo-missing-count').textContent = `${unclassified.length}`;
+  }
+
+  // ORDER #2332: the YTD figure is summed and cached on the server
+  // (lib/revenue-goal.js, 15 minutes); the page reads one answer and its stamp.
+  async function updateGoalBar(refresh = false) {
+    try {
+      const r = await fetch('/api/revenue-goal' + (refresh ? '?refresh=1' : ''));
+      if (!r.ok) throw new Error(`revenue goal ${r.status}`);
+      const g = await r.json();
+      const ytd = g.ytd;
+      const today = new Date();
+      document.getElementById('goal-asof').textContent = 'as of ' + g.as_of_ct;
+      const pctOfGoal = ytd / IHG_GOAL_2026;
+      const dayOfYear = Math.floor((today - new Date(today.getUTCFullYear(), 0, 1)) / (1000 * 60 * 60 * 24));
+      const pace = dayOfYear / 365;
+      document.getElementById('goal-ytd').textContent = money(ytd);
+      document.getElementById('goal-pct').textContent = pct(pctOfGoal);
+      document.getElementById('goal-pace').textContent = money(IHG_GOAL_2026 * pace) + ' expected';
+      document.getElementById('goal-fill').style.width = Math.min(pctOfGoal * 100, 100) + '%';
+      document.getElementById('goal-pace-marker').style.left = Math.min(pace * 100, 100) + '%';
+    } catch (e) {
+      console.error('Goal bar error:', e);
+      document.getElementById('goal-asof').textContent = 'could not count, try Refresh';
+      const tile = document.getElementById('home-goal');
+      if (tile && !/\d/.test(tile.textContent)) tile.textContent = '?';
+    }
+  }
+  document.getElementById('goal-refresh').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('goal-asof').textContent = 'counting…';
+    updateGoalBar(true);
+  });
+
+  async function loadProjectedRevenue() {
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    try {
+      const filtersFor = (pl) => [
+        { propertyName: 'pipeline', operator: 'EQ', value: pl },
+        { propertyName: 'contract_signed_date', operator: 'HAS_PROPERTY' },
+        { propertyName: 'actual_event_date', operator: 'GT', value: toEpochMs(todayStr) }
+      ];
+      const props = ['venue', 'dealname', 'pipeline', 'contract_signed_date', 'actual_event_date', 'current_event_total', 'final_event_total_accounting', 'event_type_sales', 'dealstage'];
+      const sampleStart = new Date(today.getTime() - 18 * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const [salesContracts, epContracts, completedSample] = await Promise.all([
+        fetchAll('deals', [{ filters: filtersFor(SALES_PIPELINE) }], props),
+        fetchAll('deals', [{ filters: filtersFor(EVENT_PIPELINE_DEFAULT) }], props),
+        fetchAll('deals', [{ filters: [
+          { propertyName: 'pipeline', operator: 'IN', values: [SALES_PIPELINE, EVENT_PIPELINE_DEFAULT] },
+          { propertyName: 'final_event_total_accounting', operator: 'HAS_PROPERTY' },
+          { propertyName: 'actual_event_date', operator: 'GTE', value: toEpochMs(sampleStart) },
+          { propertyName: 'actual_event_date', operator: 'LT', value: toEpochMs(todayStr) }
+        ]}], ['venue', 'event_type_sales', 'final_event_total_accounting', 'actual_event_date'])
+      ]);
+      const epByName = new Map();
+      for (const d of epContracts) epByName.set(normalizeDealName(d.properties?.dealname), d);
+      const salesKeys = new Set(salesContracts.map(d => normalizeDealName(d.properties?.dealname)));
+      const epOnly = epContracts.filter(d => !salesKeys.has(normalizeDealName(d.properties?.dealname)));
+      const allBooked = [...salesContracts, ...epOnly];
+      const vtSum = {}, vtCount = {}, vSum = {}, vCount = {};
+      for (const d of completedSample) {
+        const v = (d.properties?.venue || 'OS').split(';')[0].trim() || 'OS';
+        const t = d.properties?.event_type_sales || 'Unknown';
+        const amt = parseFloat(d.properties?.final_event_total_accounting || '0') || 0;
+        if (amt <= 0) continue;
+        const vt = v + '|' + t;
+        vtSum[vt] = (vtSum[vt] || 0) + amt; vtCount[vt] = (vtCount[vt] || 0) + 1;
+        vSum[v] = (vSum[v] || 0) + amt;     vCount[v] = (vCount[v] || 0) + 1;
+      }
+      function estimateAmount(venue, type) {
+        const vt = venue + '|' + type;
+        if ((vtCount[vt] || 0) >= 3) return vtSum[vt] / vtCount[vt];
+        if ((vCount[venue] || 0) >= 1) return vSum[venue] / vCount[venue];
+        return 0;
+      }
+      for (const d of allBooked) {
+        const ep = epByName.get(normalizeDealName(d.properties?.dealname)) || d;
+        const ept = ep.properties?.current_event_total;
+        const epf = ep.properties?.final_event_total_accounting;
+        const dpt = d.properties?.current_event_total;
+        const dpf = d.properties?.final_event_total_accounting;
+        const entered = parseFloat(ept || epf || dpt || dpf || '0') || 0;
+        d._hasEntered = entered > 0;
+        d._projectedAmount = entered;
+        const v = (d.properties?.venue || 'OS').split(';')[0].trim() || 'OS';
+        const t = d.properties?.event_type_sales || 'Unknown';
+        d._estimatedAmount = entered > 0 ? entered : estimateAmount(v, t);
+      }
+      const ytdActual = completedSample.reduce((a, d) => {
+        const dt = d.properties?.actual_event_date || '';
+        if (dt < '01.01.2026' || dt > todayStr) return a;
+        return a + (parseFloat(d.properties?.final_event_total_accounting || '0') || 0);
+      }, 0) * REVENUE_NET_MULTIPLIER;
+      renderProjected(allBooked, ytdActual);
+    } catch (e) {
+      console.error('Projected revenue error:', e);
+      document.getElementById('proj-confirmed').textContent = 'Error';
+      document.getElementById('proj-confirmed-sub').textContent = e.message || String(e);
+    }
+  }
+
+  function renderProjected(allBooked, ytdActual) {
+    const total = allBooked.length;
+    const enteredCount = allBooked.filter(d => d._hasEntered).length;
+    const confirmedTotal = allBooked.reduce((a, d) => a + (d._hasEntered ? d._projectedAmount : 0), 0) * REVENUE_NET_MULTIPLIER;
+    const estimatedTotal = allBooked.reduce((a, d) => a + d._estimatedAmount, 0) * REVENUE_NET_MULTIPLIER;
+    document.getElementById('proj-confirmed').textContent = money(confirmedTotal);
+    document.getElementById('proj-confirmed-sub').textContent = `${enteredCount} of ${total} events with contract totals entered`;
+    document.getElementById('proj-estimated-sub').textContent = `Estimated total (incl. unfilled at hist. avg): ${money(estimatedTotal)}`;
+    const restOf2026 = allBooked.filter(d => (d.properties?.actual_event_date || '') < '01.01.2027');
+    const restOf2026Confirmed = restOf2026.reduce((a, d) => a + (d._hasEntered ? d._projectedAmount : 0), 0) * REVENUE_NET_MULTIPLIER;
+    const restOf2026Estimated = restOf2026.reduce((a, d) => a + d._estimatedAmount, 0) * REVENUE_NET_MULTIPLIER;
+    const exp2026 = ytdActual + restOf2026Confirmed;
+    const exp2026Est = ytdActual + restOf2026Estimated;
+    document.getElementById('proj-2026-total').textContent = money(exp2026);
+    document.getElementById('proj-2026-sub').textContent = `YTD actual ${money(ytdActual)} + booked rest-of-2026 ${money(restOf2026Confirmed)} (${restOf2026.length} events)`;
+    document.getElementById('proj-2026-est-sub').textContent = `Estimated 2026 (incl. unfilled at hist. avg): ${money(exp2026Est)} · ${pct(exp2026Est / IHG_GOAL_2026)} of $19.6M goal`;
+    const byMonth = new Map();
+    for (const d of allBooked) {
+      const ym = (d.properties?.actual_event_date || '').slice(0, 7);
+      if (!ym) continue;
+      if (!byMonth.has(ym)) byMonth.set(ym, { events: 0, entered: 0, confirmed: 0, estimated: 0 });
+      const e = byMonth.get(ym);
+      e.events++;
+      if (d._hasEntered) { e.entered++; e.confirmed += d._projectedAmount; }
+      e.estimated += d._estimatedAmount;
+    }
+    const sortedMonths = Array.from(byMonth.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const mb = document.getElementById('proj-month-body');
+    let curYear = '', yt = { events: 0, entered: 0, confirmed: 0, estimated: 0 }, html = '';
+    function emitYear(y, t) {
+      if (!y) return;
+      html += `<tr class="total-row"><td>${y} Total</td><td class="num">${num(t.events)}</td><td class="num">${num(t.entered)}</td><td class="num">${money(t.confirmed * REVENUE_NET_MULTIPLIER)}</td><td class="num">${money(t.estimated * REVENUE_NET_MULTIPLIER)}</td></tr>`;
+    }
+    for (const [ym, e] of sortedMonths) {
+      const yr = ym.slice(0, 4);
+      if (yr !== curYear) { emitYear(curYear, yt); curYear = yr; yt = { events: 0, entered: 0, confirmed: 0, estimated: 0 }; }
+      yt.events += e.events; yt.entered += e.entered; yt.confirmed += e.confirmed; yt.estimated += e.estimated;
+      const label = monthRange(ym + '-01').label;
+      html += `<tr><td>${label}</td><td class="num">${num(e.events)}</td><td class="num">${num(e.entered)}</td><td class="num">${money(e.confirmed * REVENUE_NET_MULTIPLIER)}</td><td class="num">${money(e.estimated * REVENUE_NET_MULTIPLIER)}</td></tr>`;
+    }
+    emitYear(curYear, yt);
+    mb.innerHTML = html || '<tr><td colspan="5" class="dash">No booked future events.</td></tr>';
+    const venues = ['TBB', 'TBT', 'ECD', 'SWF', 'OS'];
+    const byV = {};
+    venues.forEach(v => byV[v] = { events: 0, entered: 0, confirmed: 0, estimated: 0 });
+    for (const d of allBooked) {
+      const v = (d.properties?.venue || 'OS').split(';')[0].trim() || 'OS';
+      const target = byV[v] || byV.OS;
+      target.events++;
+      if (d._hasEntered) { target.entered++; target.confirmed += d._projectedAmount; }
+      target.estimated += d._estimatedAmount;
+    }
+    const vb = document.getElementById('proj-venue-body');
+    let vhtml = '', vtot = { events: 0, entered: 0, confirmed: 0, estimated: 0 };
+    for (const v of venues) {
+      const e = byV[v];
+      vtot.events += e.events; vtot.entered += e.entered; vtot.confirmed += e.confirmed; vtot.estimated += e.estimated;
+      vhtml += `<tr><td class="venue-label">${v}</td><td class="num">${num(e.events)}</td><td class="num">${num(e.entered)}</td><td class="num">${money(e.confirmed * REVENUE_NET_MULTIPLIER)}</td><td class="num">${money(e.estimated * REVENUE_NET_MULTIPLIER)}</td></tr>`;
+    }
+    vhtml += `<tr class="total-row"><td>TOTAL</td><td class="num">${num(vtot.events)}</td><td class="num">${num(vtot.entered)}</td><td class="num">${money(vtot.confirmed * REVENUE_NET_MULTIPLIER)}</td><td class="num">${money(vtot.estimated * REVENUE_NET_MULTIPLIER)}</td></tr>`;
+    vb.innerHTML = vhtml;
+    const missing = allBooked.filter(d => !d._hasEntered)
+      .sort((a, b) => (a.properties?.actual_event_date || '').localeCompare(b.properties?.actual_event_date || ''));
+    const mw = document.getElementById('proj-missing-body');
+    mw.innerHTML = missing.length ? missing.map(d => {
+      const p = d.properties || {};
+      const date = p.actual_event_date ? p.actual_event_date.slice(0, 10) : '-';
+      const url = `https://app.hubspot.com/contacts/49701209/record/0-3/${d.id}`;
+      return `<tr><td>${date}</td><td class="venue-label">${p.venue || '-'}</td><td>${p.event_type_sales || '-'}</td><td>${p.dealname || '-'}</td><td><a href="${url}" target="_blank" rel="noopener" class="hs-link">Open in HubSpot ↗</a></td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="dash">All booked future events have contract totals entered. ✓</td></tr>';
+    document.getElementById('proj-missing-count').textContent = `${missing.length} of ${total}`;
+  }
+
+  // ORDER #2335: the monthly series are summed and cached on the server
+  // (lib/trend.js, 15 minutes); the chart reads one answer and its stamp.
+  async function loadTrend() {
+    const trendStatus = document.getElementById('trend-status');
+    let t;
+    try {
+      const r = await fetch('/api/trend');
+      if (!r.ok) throw new Error(`trend ${r.status}`);
+      t = await r.json();
+    } catch (e) {
+      trendStatus.textContent = '?';
+      trendStatus.className = 'status error';
+      throw e;
+    }
+    trendStatus.textContent = 'as of ' + t.as_of_ct;
+    const labels = t.labels;
+    const leadCounts = t.leads, bookingCounts = t.bookings, cancelledCounts = t.cancelled, revenues = t.revenue;
+    // ORDER #1675: the chart reads the same tokens as the page (a canvas cannot
+    // use CSS variables, so they are read once here; the hex is the fallback).
+    const tok = (name, fallback) => (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
+    const C = {
+      leads: tok('--ihg-color-inverse-bg', '#211E1B'),
+      bookings: tok('--ihg-color-action-bg', '#A94B43'),
+      cancelled: tok('--ihg-color-border-control', '#89847C'),
+      revenue: tok('--ihg-status-done-mark', '#3E7050'),
+      text: tok('--ihg-color-text-secondary', '#565559'),
+      grid: tok('--ihg-color-border', '#E3DED4'),
+    };
+    if (window.Chart && Chart.defaults) {
+      Chart.defaults.font.family = tok('--ihg-font-ui', 'Inter, system-ui, sans-serif');
+      Chart.defaults.color = C.text;
+      Chart.defaults.borderColor = C.grid;
+    }
+    new Chart(document.getElementById('trend-chart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { type: 'bar', label: 'Leads', data: leadCounts, backgroundColor: C.leads, borderRadius: 4, maxBarThickness: 36, yAxisID: 'y' },
+          { type: 'line', label: 'Bookings', data: bookingCounts, borderColor: C.bookings, backgroundColor: C.bookings, yAxisID: 'y2', tension: 0.2, pointRadius: 4 },
+          { type: 'line', label: 'Cancelled', data: cancelledCounts, borderColor: C.cancelled, backgroundColor: C.cancelled, yAxisID: 'y2', tension: 0.2, pointRadius: 3 },
+          { type: 'line', label: 'Revenue ($)', data: revenues, borderColor: C.revenue, backgroundColor: C.revenue, yAxisID: 'y3', tension: 0.2, pointRadius: 4, borderDash: [5, 3] }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Leads' } },
+          y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Bookings / Cancelled' } },
+          y3: { beginAtZero: true, display: false }
+        },
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 16 } } }
+      }
+    });
+  }
+
+  async function generateNarrative(period, data) {
+    const el = document.getElementById('ai-body');
+    try {
+      const spend = aggregateSpend(period);
+      const leadsByV = groupByVenue(data.leads, 'venue_s_');
+      const bookingsByV = groupByVenue(data.bookings, 'venue');
+      const cancelledByV = groupByVenue(data.cancelled || [], 'venue');
+      const rev = revenueByVenue(data.revenueDeals);
+      const srcCount = {};
+      for (const l of data.leads) { const s = l.properties?.lead_source || '(none)'; srcCount[s] = (srcCount[s] || 0) + 1; }
+      const topSources = Object.entries(srcCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      const summary = {
+        period: period.label,
+        paid_spend: spend.paid,
+        fully_loaded_spend: spend.fullyLoaded,
+        total_leads: data.leads.length,
+        total_tours: data.tours.length,
+        total_bookings: data.bookings.length,
+        total_cancelled: (data.cancelled || []).length,
+        cancelled_note: 'Bookings exclude cancellations; cancelled is its own count.',
+        total_completed_events: data.completedEvents?.length ?? 0,
+        total_finalized_events: data.revenueDeals.length,
+        total_revenue_net_of_tax: rev.total,
+        revenue_note: 'All revenue figures are net of sales tax (final_event_total_accounting × 0.95) per CEO directive, these reflect Infinity\'s actual kept revenue.',
+        by_venue: ['TBB','TBT','ECD','SWF'].map(v => ({
+          venue: v, spend: spend.venueTotals[v] || 0, leads: leadsByV[v], bookings: bookingsByV[v], cancelled: cancelledByV[v],
+          revenue_net_of_tax: rev.byVenue[v] || 0,
+          cpl: leadsByV[v] ? (spend.venueTotals[v] || 0) / leadsByV[v] : null,
+          cpb: bookingsByV[v] ? (spend.venueTotals[v] || 0) / bookingsByV[v] : null,
+          lead_to_book: leadsByV[v] ? bookingsByV[v] / leadsByV[v] : null
+        })),
+        top_lead_sources: topSources.map(([s, n]) => ({ source: s, leads: n }))
+      };
+      const prompt = `You are analyzing marketing performance for Infinity Hospitality Group, a Nashville-area wedding and event venue company with four venues: TBB (Bell Tower on 16th), TBT (The Bell Tower), ECD (Estate at Cherokee Dock), SWF (Saddle Woods Farm). Industry benchmarks for wedding venues: CPL $50-150, CPB $500-2,000. Write a concise marketing analysis in 3 short sections (no headers, no bullet lists, use short paragraphs): 1. Efficiency snapshot vs industry benchmarks (1-2 sentences) 2. Venue-level story: which is winning, which needs attention, which is a conversion problem vs spend problem (2-3 sentences) 3. Top 2-3 specific actions for this period (2-3 sentences) Keep it under 180 words total. Be direct. No preamble.`;
+      const r = await fetch('/api/ai/narrative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, data: [summary] })
+      });
+      if (!r.ok) throw new Error(`AI proxy error: ${r.status}`);
+      const result = await r.json();
+      el.textContent = result.text || 'No narrative returned.';
+    } catch (e) {
+      el.innerHTML = `<span class="err-text">Narrative failed: ${e.message || e}</span>`;
+    }
+  }
+
+  // CSV export
+  function csvEscape(v) {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  function downloadCsv(filename, rows) {
+    if (!rows.length) { alert('No rows to export, change the period or wait for data to load.'); return; }
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(','), ...rows.map(r => headers.map(h => csvEscape(r[h])).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+  document.getElementById('export-tours').addEventListener('click', () => {
+    const periodLabel = CURRENT.period?.label?.replace(/\s+/g, '_') || 'period';
+    const rows = CURRENT.tours.map(d => ({
+      deal_id: d.id,
+      pipeline: d.properties?.pipeline,
+      origin: d._origin || '',
+      venue: d.properties?.venue || '',
+      initial_tour_date: d.properties?.initial_tour_date || '',
+      event_type_sales: d.properties?.event_type_sales || '',
+      dealname: d.properties?.dealname || ''
+    })).sort((a, b) => (b.initial_tour_date || '').localeCompare(a.initial_tour_date || ''));
+    downloadCsv(`ihg_tours_${periodLabel}.csv`, rows);
+  });
+  const bookingCsvRows = (deals) => deals.map(d => ({
+      deal_id: d.id,
+      pipeline: d.properties?.pipeline || '',
+      origin: d._origin || '',
+      venue: d.properties?.venue || '',
+      contract_signed_date: d.properties?.contract_signed_date || '',
+      booked_status: d.properties?.booked_cancelled__reporting_use_only_ || '',
+      event_type_sales: d.properties?.event_type_sales || '',
+      dealname: d.properties?.dealname || ''
+    })).sort((a, b) => (b.contract_signed_date || '').localeCompare(a.contract_signed_date || ''));
+  document.getElementById('export-bookings').addEventListener('click', () => {
+    const periodLabel = CURRENT.period?.label?.replace(/\s+/g, '_') || 'period';
+    downloadCsv(`ihg_bookings_${periodLabel}.csv`, bookingCsvRows(CURRENT.bookings));
+  });
+  document.getElementById('export-cancelled').addEventListener('click', () => {
+    const periodLabel = CURRENT.period?.label?.replace(/\s+/g, '_') || 'period';
+    downloadCsv(`ihg_cancelled_${periodLabel}.csv`, bookingCsvRows(CURRENT.cancelled || []));
+  });
+
+  // Funnel venue filter — re-renders from already-loaded data, no refetch.
+  document.getElementById('funnel-venue').addEventListener('change', (e) => {
+    FUNNEL.venue = e.target.value;
+    renderFunnel();
+  });
+
+  periodSel.addEventListener('change', () => loadPeriod(resolvePeriod(periodSel.value)));
+  // Goal progress (always YTD-based, the annual goal doesn't change by filter).
+  // ORDER #2332: asked first and once, not behind the period's HubSpot load.
+  updateGoalBar();
+  // ORDER #2335: one cached server answer, so it no longer waits behind the period load.
+  loadTrend().catch(e => console.error(e));
+  try {
+    SPEND_2026 = await fetchSpendData();
+  } catch (e) {
+    console.error('[spend]', e.message);
+    SPEND_2026 = {}; // degrade to "no spend data" rather than block the rest of the dashboard
+  }
+  await loadPeriod(resolvePeriod('ytd'));
+  loadProjectedRevenue().catch(e => console.error(e));
+})();
+</script>
+<script>
+/* ============================================================
+   ELLE TAB — fully self-contained. Reads ONLY /api/ga4/elle/summary.
+   Shares no state with the IHG dashboard closure above. Never throws.
+   ============================================================ */
+(() => {
+  const ELLE_NAMES = { STE: 'Saint Elle', COR: 'The Cordelle', EST: 'Estelle' };
+  const fmt = n => (n == null || isNaN(n)) ? '-' : Number(n).toLocaleString('en-US');
+  const pct = (a, b) => (!b) ? '-' : (Math.round((a / b) * 1000) / 10).toFixed(1) + '%';
+  let elleLoaded = false;
+
+  function elleDateRange(val) {
+    const today = new Date();
+    const end = today.toISOString().split('T')[0];
+    if (val === 'ytd') return { startDate: '01.01.2026', endDate: end };
+    const days = parseInt(val, 10) || 90;
+    const start = new Date(today.getTime() - days * 86400000);
+    return { startDate: start.toISOString().split('T')[0], endDate: end };
+  }
+
+  function setStatus(text, cls) {
+    const s = document.getElementById('elle-status');
+    s.textContent = text;
+    s.className = 'elle-status' + (cls ? ' ' + cls : '');
+  }
+
+  function topSource(bySource) {
+    if (!Array.isArray(bySource) || !bySource.length) return '-';
+    const top = bySource.slice().sort((a, b) => (b.sessions || 0) - (a.sessions || 0))[0];
+    return (top.sessionSource || '(direct)') + ' · ' + fmt(top.sessions);
+  }
+
+  async function loadElle() {
+    const range = elleDateRange(document.getElementById('elle-period').value);
+    setStatus('loading GA4…');
+    const venueBody = document.getElementById('elle-venue-body');
+    const sourceBody = document.getElementById('elle-source-body');
+    venueBody.innerHTML = '<tr><td colspan="5" class="skeleton">Loading…</td></tr>';
+    sourceBody.innerHTML = '<tr><td colspan="3" class="skeleton">Loading…</td></tr>';
+
+    let data;
+    try {
+      const r = await fetch(`/api/ga4/elle/summary?startDate=${range.startDate}&endDate=${range.endDate}`);
+      data = await r.json();
+    } catch (e) {
+      setStatus('● GA4 unreachable', 'pending');
+      venueBody.innerHTML = '<tr><td colspan="5" class="footnote">Could not reach the GA4 endpoint.</td></tr>';
+      return;
+    }
+
+    // Plumbing staged but property IDs / access not in yet — clean pending state, not an error.
+    if (data.pending) {
+      setStatus('○ plumbing staged, awaiting property IDs + access', 'pending');
+      document.getElementById('elle-kpi-sessions').textContent = '-';
+      document.getElementById('elle-kpi-newusers').textContent = '-';
+      document.getElementById('elle-kpi-venues').textContent = '0';
+      venueBody.innerHTML = Object.keys(ELLE_NAMES).map(v =>
+        `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span class="muted">(${v})</span></td>`
+        + `<td class="num">-</td><td class="num">-</td><td>awaiting GA4 property ID + service-account access</td><td class="num">-</td></tr>`
+      ).join('');
+      sourceBody.innerHTML = '<tr><td colspan="3" class="footnote">Traffic-by-source populates once the three Elle GA4 property IDs are filled in and the dashboard service account is granted Viewer on each property.</td></tr>';
+      return;
+    }
+
+    const venues = data.venues || {};
+    let totalSessions = 0, totalNew = 0, reporting = 0;
+    const sourceTotals = {};
+
+    const rows = Object.keys(ELLE_NAMES).map(v => {
+      const vd = venues[v];
+      if (!vd || vd.error) {
+        return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span class="muted">(${v})</span></td>`
+          + `<td class="num">-</td><td class="num">-</td><td class="warn-text">${vd && vd.error ? 'GA4 error' : 'no data'}</td><td class="num">-</td></tr>`;
+      }
+      reporting++;
+      totalSessions += vd.totalSessions || 0;
+      totalNew += vd.newUsers || 0;
+      (vd.bySource || []).forEach(s => {
+        const key = s.sessionSource || '(direct)';
+        sourceTotals[key] = (sourceTotals[key] || 0) + (s.sessions || 0);
+      });
+      return `<tr><td class="elle-venue-label">${ELLE_NAMES[v]} <span class="muted">(${v})</span></td>`
+        + `<td class="num">${fmt(vd.totalSessions)}</td><td class="num">${fmt(vd.newUsers)}</td>`
+        + `<td>${topSource(vd.bySource)}</td><td class="num muted">${vd.propertyId || '-'}</td></tr>`;
+    }).join('');
+
+    venueBody.innerHTML = rows;
+    document.getElementById('elle-kpi-sessions').textContent = fmt(totalSessions);
+    document.getElementById('elle-kpi-newusers').textContent = fmt(totalNew);
+    document.getElementById('elle-kpi-venues').textContent = reporting + ' / 3';
+    setStatus(reporting ? '● GA4 live' : '○ no Elle data in range', reporting ? 'live' : 'pending');
+
+    const sorted = Object.entries(sourceTotals).sort((a, b) => b[1] - a[1]);
+    sourceBody.innerHTML = sorted.length
+      ? sorted.map(([src, n]) => `<tr><td>${src}</td><td class="num">${fmt(n)}</td><td class="num">${pct(n, totalSessions)}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="footnote">No traffic sources in this period.</td></tr>';
+  }
+
+  // ---- Tab switching ----
+  const headerControls = document.querySelector('header .controls');
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('panel-ihg').classList.toggle('active', tab === 'ihg');
+    document.getElementById('panel-elle').classList.toggle('active', tab === 'elle');
+    // The header period selector drives IHG only — hide it on the Elle tab to avoid confusion.
+    if (headerControls) headerControls.style.visibility = (tab === 'elle') ? 'hidden' : 'visible';
+    if (tab === 'elle' && !elleLoaded) { elleLoaded = true; loadElle(); }
+  }
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.getElementById('elle-period').addEventListener('change', loadElle);
+})();
+</script>
+<script src="https://dispatch.infinityhospitalitygroup.com/ihg-nav.js" defer></script>
+<script>
+// Open Date Filler card. Dates only; never names or money.
+(async () => {
+  const body = document.getElementById('open-dates-body');
+  if (!body) return;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  try {
+    const r = await fetch('/api/open-dates?months=6', { credentials: 'same-origin' });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ('server ' + r.status));
+    body.innerHTML = j.venues.map((v) => `<tr><td class="venue-label">${esc(v.name)} <span class="muted">(${esc(v.code)})</span></td>`
+      + `<td class="num">${v.open_saturdays}</td><td class="num">${v.open_count} of ${v.prime_days}</td>`
+      + `<td>${esc(v.next_open_saturday || 'none in 6 months')}</td>`
+      + `<td>${v.open.slice(0, 6).map((d) => esc(d.label)).join(' &middot; ') || '<span class="muted">fully booked</span>'}</td></tr>`).join('');
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="5" class="err-text">Open dates could not load right now (${esc(e.message)}).</td></tr>`;
+  }
+})();
+</script>
+</body>
+</html>

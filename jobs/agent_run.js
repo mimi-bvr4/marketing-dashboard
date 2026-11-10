@@ -4,6 +4,7 @@
 //   node jobs/agent_run.js <agent> [--ask "text"] [--dry]
 //   node jobs/agent_run.js --due [--date YYYY-MM-DD]   every agent whose cadence falls today (Nashville date)
 //   node jobs/agent_run.js --list
+//   node jobs/agent_run.js scout --dry --watch-list   #3047: the sites the Scout will watch (sheet + page), nothing fetched
 //   node jobs/agent_run.js competitors   #1668: sync the competitor sheet and write the top profiles now
 //
 // --dry prints the cards and writes nothing. Otherwise cards go to the Review
@@ -44,6 +45,7 @@ function parseArgs(argv) {
     if (x === '--dry') a.dry = true;
     else if (x === '--due') a.due = true;
     else if (x === '--list') a.list = true;
+    else if (x === '--watch-list') a.watchList = true;
     else if (x === '--ask') a.ask = argv[++i];
     else if (x === '--date') a.date = argv[++i];
     else a.agents.push(x);
@@ -51,11 +53,12 @@ function parseArgs(argv) {
   return a;
 }
 
-async function main({ argv = process.argv.slice(2), log = console.log, pool, llm, env = process.env, fetchImpl } = {}) {
+async function main({ argv = process.argv.slice(2), log = console.log, pool, llm, env = process.env, fetchImpl, driveFactory } = {}) {
   const args = parseArgs(argv);
   if (args.list) { listAgents().forEach((s) => { const d = loadAgent(s); log(`${s.padEnd(15)} ${d.name}: ${d.cadence}`); }); return 0; }
   const competitorsOnly = !args.due && args.agents.length === 1 && args.agents[0] === 'competitors';
   const slugs = competitorsOnly ? [] : (args.due ? dueAgents(args.date || nashvilleYmd()) : args.agents);
+  if (args.watchList && !(args.dry && slugs.includes('scout'))) { log('--watch-list needs: scout --dry --watch-list'); return 2; }
   if (competitorsOnly && args.dry) { log('competitors: --dry is not supported; it writes profiles'); return 2; }
   if (!slugs.length && !competitorsOnly) { log('usage: agent_run.js <agent> [--ask text] [--dry] | --due | --list'); return 2; }
   let store;
@@ -96,10 +99,23 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   // the Scout reads every top competitor; profiles are written after it.
   const C = require('../lib/competitor-profiles');
   const weekly = competitorsOnly || (args.due && !args.dry && slugs.includes('scout'));
+  // #3047: a Scout dry run reads the sheet too (read-only, into the in-memory
+  // store), so it previews the same watch list Monday's run will use. Before
+  // this it said "no competitors listed yet" while the live run watched 29.
+  const dryScout = args.dry && slugs.includes('scout');
   let drive = null;
-  if (weekly) {
-    try { drive = require('../lib/drive-client').createDriveClient(); } catch (e) { log(`competitors: no service account key (${e.message.slice(0, 80)})`); }
+  if (weekly || dryScout) {
+    try { drive = driveFactory ? driveFactory() : require('../lib/drive-client').createDriveClient(); } catch (e) { log(`competitors: no service account key (${e.message.slice(0, 80)})`); }
     await C.syncFromSheet({ store, drive, log });
+  }
+  // #3047: `scout --dry --watch-list` prints the sites the Scout will watch and
+  // stops: no site is fetched, no model is called, nothing is saved.
+  if (args.watchList) {
+    const { scoutWatchList } = require('../lib/agent-sources');
+    const w = await scoutWatchList(store, 'scout');
+    log(`scout watch list: ${w.list.length} competitor site(s), ${w.fromSheet} from the IHG Competitors sheet, ${w.fromPage} added on the Scout's page`);
+    for (const x of w.list) log(`  ${x.from_sheet ? 'sheet' : 'page '}  ${x.label ? `${x.label} (${x.site})` : x.site}`);
+    return w.list.length ? 0 : 1;
   }
   // #2909: opts.only comes from the Producer while its hold is on (Google Business: RED replies only).
   const runOne = async (slug, opts = {}) => {

@@ -16,7 +16,7 @@ const { createTrendRouter } = require('../routes/trend');
 const { FLEET_READ_PREFIXES } = require('../middleware/page-gate');
 
 const NOW = new Date('2026-10-24T20:15:00Z'); // Sat 10.24.2026 15:15 CT
-const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'numbers.html'), 'utf8'); // ORDER #3116: the report moved off home
 
 // ---- THE OLD METHOD, verbatim from public/index.html on main cfcf3e8 ----
 // loadTrend()'s queries and math, with the helpers it called (callHs,

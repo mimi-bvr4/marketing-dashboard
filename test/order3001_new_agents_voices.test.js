@@ -12,7 +12,8 @@ const path = require('path');
 const AV = require('../lib/agent-voices');
 const { listAgents } = require('../lib/agent-runner');
 
-const NEW = { 'planner-scout': 'Roger', 'gala-scout': 'River', 'engagement-sleuth': 'Adam' };
+// #3119: Engagement Sleuth re-cast 11.07.2026, Adam -> Emma.
+const NEW = { 'planner-scout': 'Roger', 'gala-scout': 'River', 'engagement-sleuth': 'Emma' };
 
 test('each new agent is a card on the team page under the slug its clips use', () => {
   const cards = listAgents();
@@ -57,5 +58,6 @@ test('a PROPOSED character (waiting for Mimi\'s OK) is not read: no card, no but
   ].join('\n');
   const parsed = AV.parseScript(text);
   assert.deepStrictEqual(parsed.map((c) => [c.slug, c.lines]), [['scout', ['One.']]]);
-  assert.ok(!AV.loadScript().some((c) => c.voice === 'Harry'), 'the proposed Harry character is not a card yet');
+  // #3045: the Marketing chat retitled Harry's section ADDED 11.06.2026, so he is now the AI Slop Stopper's card and nobody else's.
+  assert.deepStrictEqual(AV.loadScript().filter((c) => c.voice === 'Harry').map((c) => c.slug), ['ai-tell-detective']);
 });
