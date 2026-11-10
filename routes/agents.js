@@ -9,6 +9,7 @@
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
 //                                       (409 for an agent with an ask_page, #1688: asked on that page)
 //   POST /api/agents/:slug/cards/:id/redo { words } -> #2914 one revised draft of that card, queued
+//   POST /api/agents/keyword-queen/cards/:id/topics/:n/approve -> #3163 one Bloggy Bob request for that topic
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
 //   POST /api/agents/asks/:id/decide    { decision: 'apply' | 'decline', note }  EXEC ONLY (rung 3)
 //   POST /api/agents/:slug/name         { name }  -> #1664, '' puts the default back
@@ -256,6 +257,19 @@ function createAgentsRouter({ store, identity, clock = () => new Date() }) {
     const out = await store.queueRedo(id, { agent: req.params.slug, words: (req.body || {}).words, who: personOf(req) });
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ request: out.request, card: out.card, message: REDO_MESSAGE });
+  });
+
+  // #3163: approve ONE topic on a Keyword Queen card: one queued Bloggy Bob
+  // request for it, ever. Off (AGENT_KEYWORD_QUEEN unset) this answers 404.
+  r.post('/api/agents/keyword-queen/cards/:id/topics/:n/approve', need, async (req, res) => {
+    const kq = require('../lib/keyword-queen');
+    const id = Number(req.params.id);
+    const n = Number(req.params.n);
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(n) || n < 1) return res.status(400).json({ error: 'bad id' });
+    const out = await kq.approveTopic({ card: await store.get(id), n, who: personOf(req), store, env: process.env });
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json(out.request ? { request: out.request, message: 'Queued for Bloggy Bob. His draft lands on the Review tab within about 15 minutes.' }
+      : { already: true, message: 'Already queued for Bloggy Bob.' });
   });
 
   r.post('/api/agents/:slug/asks', need, known, async (req, res) => {

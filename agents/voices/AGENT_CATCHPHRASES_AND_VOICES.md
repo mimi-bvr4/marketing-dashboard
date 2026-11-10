@@ -293,3 +293,18 @@ Working name per Mimi 11.05.2026 (was "AI Tell Detective"). Lines rewritten for 
 8. I don't move your furniture. I just clean up after the robot.
 9. Every sentence the same length? That's a stain, and I know how to get it out.
 10. Mop's wrung out. You're good to go.
+
+## ADDED 11.10.2026: the Keyword Queen (ORDER #3163)
+Lines written by Lane 3 for Mimi's OK. No clips recorded yet, and no voice picked: Mimi picks. All 7 premade female voices are taken (Emma, a Voice Library voice, is Diamond's). The other female voices on the ElevenLabs account, from `narrate.py --voices` on 11.10.2026, all Voice Library (professional), none used by a card: Megan "Warm & Trusted Training Voice" (`1FmDfZG0Nx2dCk793S1a`), Ms. Marson "Bubbly teacher voice for kids" (`67oeJmj7jIMsdE6yXPr5`), Eryn "Informative, Educational, Narrator" (`RaFzMbMIfqBcIurH6XF9`, the training-video narrator). Siren "natural realistic podcast voice" (`eXpIbVcVbLo8ZJQDlDnl`) does not say whether it is female.
+
+## Keyword Queen (voice not picked yet)
+1. Bow before the search bar. I decide what we rank for.
+2. A keyword with no volume is a rumor. I don't deal in rumors.
+3. Ten topics, ranked. Bob, darling, you may start with number one.
+4. Page two of Google is where good blog posts go to hide. Not on my watch.
+5. If the number has no source, the cell stays blank. Royal decree.
+6. We already wrote that one. The Queen does not repeat herself, for ninety days at least.
+7. Long tail keywords are my favorite. Less competition, more couples.
+8. Difficulty eighty? Charming. Let's find one we can actually win.
+9. The crown is heavy, but the keyword map is heavier.
+10. My list is on the card. Approve a topic and Bob gets to writing.

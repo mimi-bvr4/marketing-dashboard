@@ -16,7 +16,9 @@ const AV = require('../lib/agent-voices');
 // ORDER #3000 (11.05.2026): NB's three new agents got their lines and voices in
 // the script (Roger, River, Adam). ORDER #3001: their 30 clips are recorded, so
 // nobody is waiting.
-const WAITING = [];
+// ORDER #3163 (11.10.2026): the Keyword Queen has her lines; Mimi picks her
+// voice, and no clip is recorded until she does.
+const WAITING = ['keyword-queen'];
 
 const files = fs.readdirSync(AV.CLIP_DIR).filter((f) => !f.startsWith('.'));
 
