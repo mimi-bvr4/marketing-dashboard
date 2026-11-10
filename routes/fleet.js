@@ -4,7 +4,7 @@ const { pool, hasDb } = require('../db');
 const jwt = require('jsonwebtoken');
 const { requireAuth } = require('../middleware/auth');
 const { issueSso } = require('../lib/session_life');   // ORDER #1318
-const { staffIdentity, canCheck, isAllowed, DENIED_MESSAGE } = require('../lib/access');   // ORDER #1370
+const { staffIdentity, canCheck, seatOf, HANDOFF_SEAT, DENIED_MESSAGE } = require('../lib/access');   // ORDER #1370, #3165
 const { mintRaw } = require('../lib/fleet-tokens');
 function baseUrl(req){
   const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
@@ -115,14 +115,17 @@ router.post('/api/auth/sso', async (req, res) => {
     console.warn('[auth] #1370 access check failed, no session minted: ' + e.message);
     return res.status(503).json({ error: 'Could not confirm access. Try again in a minute.' });
   }
-  if (!isAllowed(who)) {
+  // ORDER #3165: Mary Topp's hand-off seat is the one other door, and it
+  // opens only the Sales Hand-off desk and a read-only Review (lib/access.js).
+  const seat = seatOf(who);
+  if (!seat) {
     return res.status(403).json({ error: DENIED_MESSAGE, denied: true });
   }
   // The session this mints is THIS app's own, signed with THIS app's secret.
   // ORDER #1318: 30 days, renewed after a Dispatch staff check, when that
   // check can run here; the 12 hours of before when it cannot. The token and
   // its cookie come from one place (lib/session_life.js) so they agree.
-  const session = issueSso(claims);
+  const session = issueSso(claims, seat === HANDOFF_SEAT ? { seat } : {});
   // ORDER #661: two cookies in one response — the session, and the EXPIRY of
   // the bounce marker. Clearing it here rather than on the next page load is
   // what makes the loop guard self-healing: the next time this person arrives
