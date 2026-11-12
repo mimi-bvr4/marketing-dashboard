@@ -1,14 +1,13 @@
 {
   "name": "Site Guardian",
-  "job": "keeps our 8 WordPress sites up and safe",
-  "cadence": "All the time, once it is built; it only speaks up when something is wrong",
-  "card_only": "not running yet: the read-only watch is being built",
+  "job": "keeps our 9 WordPress sites up and safe",
+  "cadence": "Every 5 minutes on the Box, with one deeper check a day; it only speaks up when something is wrong",
+  "card_only": "watched by the Box every 5 minutes; this card shows the watch's own last check",
   "max_cards": 1,
   "sources": [
     {
-      "type": "pending",
-      "label": "uptime checks on all 8 WordPress sites",
-      "why": "the read-only watch is being built"
+      "type": "box_watch",
+      "label": "uptime, certificates, domains, DNS and hack signals on all 9 WordPress sites (the Box watch, every 5 minutes)"
     },
     {
       "type": "pending",
