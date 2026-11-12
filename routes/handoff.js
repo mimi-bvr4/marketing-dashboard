@@ -41,6 +41,15 @@ async function canPick(req, identity) {
   return Number(who.rung) >= 3 || who.person_id === desk.MARY_PERSON_ID;
 }
 
+// #3245: the roster's plumbing note (which owner source answered, or why a read
+// failed) is an admin line for an exec (rung 3) only. Mary's page never shows it.
+async function isExec(req, identity) {
+  const me = personOf(req);
+  if (!me || !identity) return false;
+  const who = await identity.lookup(me.email);
+  return !!(who && who.active === true && Number(who.rung) >= 3);
+}
+
 function ids(body) {
   const list = Array.isArray(body && body.card_ids) ? body.card_ids : [];
   const out = [...new Set(list.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
@@ -67,8 +76,10 @@ function createHandoffRouter({ store, identity, roster = createRosterReader(), e
         csv_url: `/api/handoff/import.csv?batch=${encodeURIComponent(b.key)}` };
     }
     const ros = await roster();
+    const exec = await isExec(req, identity);
     res.json({ on: desk.on(env), flag: desk.FLAG, waiting_line: desk.waitingLine(list) || 'Nothing is waiting for a salesperson.',
-      batches: list, roster: ros.people, roster_note: ros.why, roster_where: ros.where, can_pick: await canPick(req, identity) });
+      batches: list, roster: ros.people, admin_note: exec ? (ros.why || null) : null, roster_where: exec ? (ros.where || null) : null,
+      can_pick: await canPick(req, identity) });
   });
 
   r.post('/api/handoff/assign', need, needPicker, async (req, res) => {
