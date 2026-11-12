@@ -67,7 +67,7 @@ test('the board: one plain line for each new card, and Paid Ads paused (not a ca
   const b = P.board({ ymd: '2026-11-04', defs });
   const line = (s) => b.find((x) => x.slug === s);
   assert.deepStrictEqual([line('web').state, line('web').line], ['own', 'works on its own page, Web: upload a page there']);
-  assert.deepStrictEqual([line('site-guardian').state, line('site-guardian').line], ['own', 'not running yet: the read-only watch is being built']);
+  assert.deepStrictEqual([line('site-guardian').state, line('site-guardian').line], ['own', "watched by the Box every 5 minutes; this card shows the watch's own last check"]); // #3246: the watch is built
   assert.strictEqual(line('paid-ads').state, 'paused');
   assert.strictEqual(line('paid-ads').line, 'paused until the Google + Meta ads export Sheet exists; waiting since 10.13');
   for (const x of b) assert.doesNotMatch(x.line, ORDER_NO);

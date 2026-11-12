@@ -167,11 +167,23 @@
       <circle cx="69" cy="67" r="17" fill="#fff" stroke="${ink}" stroke-width="2"/>
       <g transform="translate(57 55)"><path d="${icon}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
   }
+  // #3246: a card-only member's line. Site Guardian's comes from its watch state
+  // (label, sites up, flagged, and when it last checked), read from the API.
+  function cardOnlyLine(a) {
+    const g = a.guardian;
+    if (!g) return a.card_only;
+    const s = g.summary;
+    const counts = s ? ` · ${s.up} of ${s.sites} sites up, ${s.down || 0} down, ${s.flagged || 0} flagged` : '';
+    const when = g.checked ? ` · last check ${g.checked}` : '';
+    return `${g.label}${counts}${when}${(g.lines || []).length ? ' · ' + g.lines.slice(0, 3).join(' · ') : ''}`;
+  }
   // Status from facts the page already has; never a guess.
   function status(a) {
     const on = a.current ? a.current.enabled : true;
     if (!on) return { cls: 's-off', label: 'Paused' };
     if (a.paused) return { cls: 's-off', label: 'Paused' }; // #2903: Paid Ads, until its source exists
+    // #3246: Site Guardian's status is the Box watch's own state, as the API reads it; never fixed here.
+    if (a.guardian) return { cls: a.guardian.live ? 's-ok' : 's-wait', label: a.guardian.label };
     if (a.card_only && !a.ask_page) return { cls: 's-part', label: 'Not running yet' }; // #2903: Site Guardian
     if (a.sources.some((s) => s.required && s.pending)) return { cls: 's-wait', label: 'Waiting on input' };
     if (a.last_run && a.last_run.status === 'failed') return { cls: 's-wait', label: 'Last run failed' };
@@ -198,7 +210,7 @@
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${boxes.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${boxes.needs.length - 1} more)</summary><ul>${boxes.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
       ${boxes.paused ? `<div class="need"><strong>Paused:</strong> ${esc(boxes.paused)}</div>` : ''}
       ${a.pinterest ? `<p class="meta">Pinterest: ${esc(a.pinterest.line)}. <a href="${esc(a.pinterest.page)}">Settings, Pinterest accounts</a></p>` : ''}
-      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(a.card_only)}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
+      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(cardOnlyLine(a))}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
   }
@@ -353,7 +365,7 @@
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
           <span class="meta">${run ? `Last run: ${esc(run.status)} ${fmt(run.started_at)}` : 'Has not run yet'}</span></div>
         ${a.ask_page ? `<div class="row"><a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a></div>
-        <p class="meta" style="margin:0">${esc(a.ask_note || 'Asked on his own page; the Box answers there within 15 minutes.')}</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(a.card_only)}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
+        <p class="meta" style="margin:0">${esc(a.ask_note || 'Asked on his own page; the Box answers there within 15 minutes.')}</p>` : a.card_only ? `<p class="meta" style="margin:0">${esc(cardOnlyLine(a))}</p>` : `<div class="row"><input type="text" data-f="ask" placeholder="Optional request, e.g. a winter-wedding post for The Bell Tower" aria-label="Request for this run">
           <button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button></div>
         <p class="meta" style="margin:0" data-runonce>This applies to this run only. To change it for good, use Ask for a new ability.
           <button class="btn ghost" data-a="permanent" style="min-height:32px;font-size:13px">Make this permanent</button></p>

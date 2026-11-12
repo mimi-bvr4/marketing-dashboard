@@ -60,6 +60,9 @@ const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 const REDO_MESSAGE = 'Redo asked. The new version lands here within about 15 minutes.';
 // #2900: the Producer's profile key in agent_profiles.
 const PRODUCER = 'producer';
+// #3246: the Site Guardian card's status comes from the Box watch's state.
+const GUARDIAN = 'site-guardian';
+const guardianCard = require('../lib/guardian-card');
 
 function sourceView(src) {
   const label = src.label || src.path || (src.newest ? `newest ${src.newest}*` : src.type);
@@ -173,12 +176,17 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     }
     let pinRows = null;
     if (pinterestAccounts && require('../lib/pinterest-venues').perVenueOn()) { try { pinRows = await pinterestAccounts.list(); } catch (e) { pinRows = null; } }
+    // #3246: Site Guardian's card reads the Box watch's latest state, never a fixed "live".
+    let guardian = null;
+    try { guardian = guardianCard.view(store.guardianState ? await store.guardianState() : null, clock()); } catch (e) { guardian = guardianCard.view(null, clock()); }
     res.json({ exec, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
       const asks = allAsks.filter((a) => a.agent === slug);
       const p = profiles.get(slug);
       const pin = pinterestNeed(watchNeed(characterOf(d, asks, runs.get(slug), clock(), checks), watchers[slug], sheetWatch[slug] || 0), slug, pinRows);
+      const sg = slug === GUARDIAN ? guardian : null;
+      if (sg) pin.character = { ...pin.character, needs: guardianCard.needs(pin.character.needs, sg) };
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
         named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, ask_note: d.ask_note || null, sources: (d.sources || []).map(sourceView),
@@ -191,6 +199,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
         last_run: runs.get(slug) || null,
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
         character: pin.character,
+        guardian: sg,
         pinterest: pin.pinterest,
         watch: watchers[slug] || null,
         watch_sheet: watchers[slug] ? (sheetWatch[slug] || 0) : null,
