@@ -200,6 +200,19 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ name: displayName(loadAgent(req.params.slug), out.profile), profile: out.profile });
   });
+  // #3003/#3012: a Scout's salesperson, a HubSpot owner id (never a name). Empty clears it.
+  // Setting it makes the Scout's waiting approved cards eligible; the Box hands each off once.
+  r.get('/api/agents/:slug/sales-owner', need, known, async (req, res) => {
+    const outreach = require('../lib/outreach');
+    const owner = await outreach.salesOwner(req.params.slug, { store });
+    res.json({ setting: outreach.ownerSettingAgent(req.params.slug), owner, line: outreach.ownerLine(owner) });
+  });
+  r.post('/api/agents/:slug/sales-owner', need, known, async (req, res) => {
+    if (!store.setSalesOwner) return res.status(501).json({ error: 'this store has no salesperson setting' });
+    const out = await store.setSalesOwner(req.params.slug, (req.body || {}).owner_id, personOf(req));
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json(out);
+  });
   const raw = express.raw({ type: () => true, limit: '2mb' });
   r.put('/api/agents/:slug/portrait', need, hasFace, raw, async (req, res) => {
     const out = await store.setPortrait(req.params.slug, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), personOf(req));

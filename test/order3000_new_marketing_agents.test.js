@@ -75,7 +75,9 @@ test('OUTREACH_AUTO_SEND: off by default, and even on there is no send path', ()
 test('every outreach draft carries an opt-out and the mailing address, once; auto pot is off', () => {
   const d = outreach.draft({ company: 'X', email: 'Hello.' }, {});
   assert.ok(d.email.includes(outreach.OPT_OUT));
-  assert.ok(d.email.includes(outreach.NO_ADDRESS), 'no address set: the draft says so, never a guessed one');
+  // #3012: unset = the main office (Mimi's ruling); only an empty string shows the placeholder.
+  assert.ok(d.email.includes(outreach.DEFAULT_ADDRESS), 'no address set: the main office, as Mimi ruled');
+  assert.ok(outreach.draft({ company: 'X', email: 'Hello.' }, { OUTREACH_MAILING_ADDRESS: '' }).email.includes(outreach.NO_ADDRESS));
   assert.strictEqual(d.auto_pot, false);
   const withAddr = outreach.draft({ company: 'X', email: 'Hello.' }, { OUTREACH_MAILING_ADDRESS: 'ZZ_TEST 1 Example St' });
   assert.ok(withAddr.email.endsWith('ZZ_TEST 1 Example St'));
@@ -92,9 +94,9 @@ test('approved Scout and Gala cards wait for a named salesperson; they never fal
     assert.ok(!out.error, out.error);
   }
   const logs = [];
-  await handoff({ store, fetchImpl, secrets: () => null, env: { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 't' }, log: (l) => logs.push(l) });
+  await handoff({ store, fetchImpl, secrets: () => null, env: { CONVENTION_TO_HUBSPOT: 'on', HUBSPOT_SANDBOX_TOKEN: 't', HANDOFF_VIA_MARY: 'off' }, log: (l) => logs.push(l) });
   assert.strictEqual(calls.length, 0);
-  assert.strictEqual(logs.filter((l) => /no salesperson named/.test(l)).length, 2);
+  assert.strictEqual(logs.filter((l) => /No salesperson set yet/.test(l)).length, 2);
   for (const c of await store.list({ status: 'ready' })) assert.ok(!c.handoff, 'left as is, so it hands off once a salesperson is named');
   assert.strictEqual(outreach.ownerFor('convention-connector'), 'Cameron Creasy');
 });
@@ -151,7 +153,8 @@ test('Engagement Sleuth: one plan card, Meta read access pending, no Meta write 
   const d = loadAgent('engagement-sleuth');
   assert.strictEqual(d.max_cards, 1);
   assert.ok(!d.sales_fields);
-  assert.ok(d.sources.some((s) => s.type === 'pending' && /Meta/.test(s.label)));
+  // #3012: the Meta source is the GET-only reader, pending until the token exists.
+  assert.ok(d.sources.some((s) => s.type === 'meta_ads_read' && /Meta/.test(s.label)));
   assert.match(d.skill, /never find, name, describe or contact a person who got engaged/i);
   const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'agent-sources.js'), 'utf8');
   assert.ok(!/graph\.facebook\.com/.test(src), 'no Meta Graph API call in the sources');

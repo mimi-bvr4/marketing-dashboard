@@ -136,11 +136,27 @@
       <p style="margin:.25rem 0"><strong>${esc(p.title)}</strong></p><p style="margin:.25rem 0">${esc(p.description || '')}</p>
       <p class="meta">Links to <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link)}</a></p></div></div>`;
   }
-  // #2940: the email Cameron gets, exactly. Edit on this card changes this email.
+  // #3003/#3012: who sends a sales card. The server says; a Scout with no owner id says "No salesperson set yet".
+  const NO_OWNER = 'No salesperson set yet';
+  // #3165: with Mary's desk on, the server sends c.mary { state, line }; "No salesperson set yet" becomes this.
+  const WAITING = 'Waiting on Mary to pick a salesperson';
+  function salesWho(c) { return c.sales_owner || 'Cameron Creasy'; }
+  function noOwner(c) { return c.sales_owner === NO_OWNER; }
+  function viaMary(c) { return !!c.mary; }
+  function maryBadge(c) {
+    const m = c.mary; if (!m || !m.line) return '';
+    const cls = m.state === 'assigned' ? 'good' : 'bad';
+    return `<p class="meta"><span class="badge ${cls}">${esc(m.line)}</span>${m.state === 'waiting' ? ' <a href="/handoff">Open the Sales Hand-off desk</a>' : ''}</p>`;
+  }
+  // #2940: the email the salesperson gets, exactly. Edit on this card changes this email.
   function salesHtml(c) {
     const s = c.payload && c.payload.sales; if (!s) return '';
+    const how = viaMary(c) ? `Approve sends it to Mary Topp's Sales Hand-off desk, where she picks the salesperson. Edit changes this email`
+      : noOwner(c) ? `${NO_OWNER}: Approve makes no HubSpot task, and the card waits in Ready until Mimi or Katherine sets one. Edit changes this email`
+      : `Approve sends it to ${esc(salesWho(c))} in HubSpot; Edit changes this email`;
     return `<div class="sales" style="border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
-      <p class="meta">The email for Sales${c.status === 'draft' ? ' (Approve sends it to Cameron in HubSpot; Edit changes this email)' : ''}. Company: <strong>${esc(s.company)}</strong>${s.website ? ` <a href="${esc(s.website)}" target="_blank" rel="noopener">${esc(s.website)}</a>` : ''}</p>
+      ${viaMary(c) ? maryBadge(c) : noOwner(c) ? `<p class="meta"><span class="badge bad">${NO_OWNER}</span></p>` : ''}
+      <p class="meta">The email for Sales${c.status === 'draft' ? ` (${how})` : ''}. Company: <strong>${esc(s.company)}</strong>${s.website ? ` <a href="${esc(s.website)}" target="_blank" rel="noopener">${esc(s.website)}</a>` : ''}</p>
       <p style="margin:.25rem 0"><strong>Subject:</strong> ${esc(s.subject || '(none)')}</p>
       <p style="margin:.25rem 0;white-space:pre-wrap">${esc(s.email)}</p></div>`;
   }
@@ -156,13 +172,32 @@
   function handoffHtml(c) {
     const h = c.handoff; const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
     const sales = c.payload && c.payload.sales;
-    // #2940: an approved convention email goes to Cameron Creasy as a HubSpot task.
+    // #2940: an approved sales email goes to its salesperson as a HubSpot task (#3012: a Scout's waits for one).
     if (sales) {
-      if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to send this to Cameron in HubSpot (it checks every 15 minutes).</p>' : '';
-      if (h.pending) return '<p class="meta">Being sent to Cameron in HubSpot now.</p>';
-      if (h.ok) return `<p class="meta"><span class="badge good">Sent to Cameron in HubSpot</span> as a task${h.stand_in ? ` (sandbox: ${esc(h.owner_name)})` : ''}${h.where === 'sandbox' ? ', in the test HubSpot' : ''}. <a href="${esc(h.company_link)}" target="_blank" rel="noopener">Open the company</a>${h.company_created ? ' (added to HubSpot from this card)' : ''}.</p>`;
+      // #3165: before the Box takes it, the card says where it is on Mary's desk.
+      if (!h && viaMary(c)) {
+        if (c.mary.state === 'assigned') return `<p class="meta">${esc(c.mary.line)}. Waiting for the Box to send it in HubSpot (it checks every 15 minutes).</p>`;
+        return ''; // waiting / sent back: the badge on the email box says it (maryBadge)
+      }
+      if (h && h.assigned_by) {
+        const tail = ` <span class="meta">(assigned by ${esc(h.assigned_by)}${h.assigned_at ? `, ${esc(new Date(h.assigned_at).toLocaleDateString('en-US'))}` : ''})</span>`;
+        return handoffSales(c, h) + tail;
+      }
+      return handoffSales(c, h);
+    }
+    return handoffOther(c, h, post, pin);
+  }
+  function handoffSales(c, h) {
+    { // (kept as the #2940 block, unchanged inside)
+      const who = esc(h && h.owner_name && !h.stand_in ? h.owner_name : salesWho(c));
+      if (!h && c.status === 'ready' && noOwner(c)) return `<p class="meta"><span class="badge bad">${NO_OWNER}</span> This card waits in Ready. Once Mimi or Katherine sets the salesperson, the Box sends it as one HubSpot task.</p>`;
+      if (!h) return c.status === 'ready' ? `<p class="meta">Waiting for the Box to send this to ${who} in HubSpot (it checks every 15 minutes).</p>` : '';
+      if (h.pending) return `<p class="meta">Being sent to ${who} in HubSpot now.</p>`;
+      if (h.ok) return `<p class="meta"><span class="badge good">Sent to ${who} in HubSpot</span> as a task${h.stand_in ? ` (sandbox: ${esc(h.owner_name)})` : ''}${h.where === 'sandbox' ? ', in the test HubSpot' : ''}. <a href="${esc(h.company_link)}" target="_blank" rel="noopener">Open the company</a>${h.company_created ? ' (added to HubSpot from this card)' : ''}.</p>`;
       return `<p class="meta"><span class="badge bad">${h.alarm ? 'ALARM' : 'Not sent to Sales'}</span> ${esc(h.why)}</p>`;
     }
+  }
+  function handoffOther(c, h, post, pin) {
     if (pin) {
       if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to pin this on Pinterest (it checks every 15 minutes; a venue that is not connected yet waits until it is).</p>' : '';
       if (h.ok) return `<p class="meta"><span class="badge good">Pinned to ${esc(h.board)}</span> <a href="${esc(h.pin_url)}" target="_blank" rel="noopener">Open the pin</a></p>`;
@@ -187,7 +222,9 @@
     const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
     let what;
     const sales = c.payload && c.payload.sales;
-    if (sales) what = `sent to Cameron Creasy (Sales) as a HubSpot task with this email word for word${sales.company ? `, linked to ${esc(sales.company)}` : ''}. Cameron sends it.`;
+    if (sales && viaMary(c)) what = `sent to Mary Topp's Sales Hand-off desk. ${WAITING}; nothing goes to HubSpot until she picks.`;
+    else if (sales && noOwner(c)) what = `kept in Ready. ${NO_OWNER}, so no HubSpot task is made until Mimi or Katherine sets one.`;
+    else if (sales) what = `sent to ${esc(salesWho(c))} (Sales) as a HubSpot task with this email word for word${sales.company ? `, linked to ${esc(sales.company)}` : ''}. ${salesWho(c) === 'Cameron Creasy' ? 'Cameron' : 'The salesperson'} sends it.`;
     else if (pin) what = `pinned live on Pinterest${pin.board ? `, board ${esc(pin.board)}` : ''}.`;
     else if (post) what = `saved as an unpublished WordPress draft on ${esc(post.site || 'the site')}. Nothing is published.`;
     else what = 'marked ready for you to use. Nothing is posted or sent.';

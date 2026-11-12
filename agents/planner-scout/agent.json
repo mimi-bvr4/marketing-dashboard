@@ -14,7 +14,10 @@
     {
       "type": "request",
       "required": true,
-      "label": "the request (the target city Katherine picks)"
+      "label": "the request (the target city Katherine picks)",
+      "default": "Atlanta",
+      "default_env": "PLANNER_SCOUT_CITY",
+      "default_text": "Target city: {value}"
     },
     {
       "type": "web_trends",

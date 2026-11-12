@@ -23,6 +23,8 @@ const express = require('express');
 const path = require('path');
 const { lint } = require('../lib/ai-tells');
 const handover = require('../lib/handover');
+const outreach = require('../lib/outreach');
+const maryDesk = require('../lib/mary-desk');
 const detective = require('../lib/ai-tell-detective');
 const tellReview = require('../lib/ai-tell-review');
 const fs = require('fs');
@@ -60,7 +62,18 @@ function createReviewRouter({ store }) {
   r.get('/api/review/cards', need, async (req, res) => {
     // #1664: show the name Katherine gave each agent, on old cards too.
     const names = new Map((store.profiles ? await store.profiles() : []).filter((p) => p.display_name).map((p) => [p.agent, p.display_name]));
-    const named = (c) => (names.has(c.agent) ? { ...c, agent_name: names.get(c.agent) } : c);
+    // #3003/#3012: who sends a sales card ("No salesperson set yet" for a Scout with no owner id).
+    const owners = new Map();
+    for (const a of [...outreach.OWNER_SETTING_AGENTS, ...Object.keys(outreach.OWNERS)]) owners.set(a, outreach.ownerLine(await outreach.salesOwner(a, { store })));
+    // #3165 (HANDOFF_VIA_MARY on): every sales card goes to Mary's desk, so the
+    // card carries her state instead ("Waiting on Mary to pick a salesperson",
+    // "Assigned to X by Mary Topp, date", "Sent back to Katherine by ...").
+    const viaMary = maryDesk.on();
+    const named = (c) => {
+      const o = names.has(c.agent) ? { ...c, agent_name: names.get(c.agent) } : c;
+      if (viaMary && c.payload && c.payload.sales) return { ...o, mary: maryDesk.leadState(c), sales_owner: maryDesk.DESK };
+      return c.payload && c.payload.sales && owners.has(c.agent) ? { ...o, sales_owner: owners.get(c.agent) } : o;
+    };
     // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
     // newest first. Empty while the line is unset. Each card stays openable,
     // copyable and approvable; none of them counts.
