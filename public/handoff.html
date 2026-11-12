@@ -39,6 +39,7 @@
     <h1>Sales Hand-off</h1>
     <p class="meta" id="line">Loading…</p>
     <p class="meta" id="rosterNote"></p>
+    <p class="meta" id="adminNote" style="font-size:12px"></p>
     <p class="meta"><a href="/review">Review (read only for the desk)</a></p>
   </header>
   <p class="err" id="err"></p>
@@ -117,7 +118,8 @@
     try {
       state = await api('/api/handoff');
       $('#line').textContent = state.on ? state.waiting_line : `The desk is off (${state.flag}=off): sales cards go straight to the salesperson set on each agent.`;
-      $('#rosterNote').textContent = state.roster_note ? `Salesperson list: ${state.roster_note}.` : (state.can_pick ? '' : 'You can look here; only Mary Topp or an exec picks the salesperson.');
+      $('#rosterNote').textContent = state.can_pick ? '' : 'You can look here; only Mary Topp or an exec picks the salesperson.';
+      $('#adminNote').textContent = state.admin_note ? `Admin note (execs only), salesperson list: ${state.admin_note}.` : '';
       $('#list').innerHTML = state.batches.length ? state.batches.map(batchHtml).join('') : '<p class="empty">No approved sales batches yet.</p>';
     } catch (e) { $('#err').textContent = e.message; }
   }
