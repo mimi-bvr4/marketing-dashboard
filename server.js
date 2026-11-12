@@ -377,24 +377,8 @@ app.post('/api/ai/narrative', async (req, res) => {
 
   const { prompt, data } = req.body;
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        messages: [{
-          role: 'user',
-          content: prompt + '\n\nData: ' + JSON.stringify(data)
-        }]
-      })
-    });
-    const result = await r.json();
-    res.json({ text: result.content?.[0]?.text || 'No analysis available.' });
+    // ORDER #3250: the model id is lib/fast-model.js (env FAST_MODEL).
+    res.json(await require('./lib/ai-narrative').requestNarrative({ apiKey, prompt, data }));
   } catch (e) {
     console.error('[AI narrative]', e.message);
     res.status(500).json({ error: e.message });

@@ -256,7 +256,7 @@ if (require.main === module) {
   const makeModel = () => {
     const k = T.findApiKey();
     if (!k) return null;
-    const model = process.argv.includes('--apply') || process.argv.includes('--clusters') ? T.PICK_MODEL : T.MODEL;
+    const model = process.argv.includes('--apply') || process.argv.includes('--clusters') ? T.PICK_MODEL : T.fastModel();
     console.log(`model ${model}; key from ${k.source}`);
     return T.createClaudeClient({ apiKey: k.key, model });
   };
