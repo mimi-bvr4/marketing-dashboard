@@ -428,7 +428,9 @@ test('photo_nightly.sh runs the embed step after the thumbnails, even with taggi
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);
   assert.match(lines[1], /photo_crawl\.js --thumbs/);
   assert.match(lines[2], /photo_embed\.js --budget-min 45/);
-  assert.strictEqual(lines.length, 3, 'tagging off: no tagger');
+  // #3085 (1c33582): the fourth call is the always-on measuring dry run (no model, no tag rows), never a tagger.
+  assert.match(lines[3], /photo_tag\.js --clusters --dry-run$/);
+  assert.strictEqual(lines.length, 4, 'tagging off: no tagger, only the #3085 dry run');
   assert.match(r.stdout, /embed exit 0/);
 });
 

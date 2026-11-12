@@ -14,7 +14,7 @@ const path = require('node:path');
 
 const { createMemoryStore, SCHEMA_SQL } = require('../lib/agent-store');
 const { lint } = require('../lib/ai-tells');
-const { runAgent } = require('../lib/agent-runner');
+const { runAgent, loadAgent } = require('../lib/agent-runner');
 const { takeAndRun } = require('../jobs/agent_requests');
 const { createAgentsRouter, REDO_MESSAGE } = require('../routes/agents');
 
@@ -36,6 +36,10 @@ function web() {
   f.calls = calls;
   return f;
 }
+// #2977 made the Concierge's required source the live Google API (gbp_reviews), which this
+// no-network test cannot reach. Like #1758's runs (#2977), keep gbp's REAL definition and
+// swap only its sources for the pulse fixture above.
+const gbpDef = () => ({ ...loadAgent('gbp'), sources: [{ type: 'file', newest: '07_Marketing_and_Brand/Venue_Review_Pulse_', required: true, label: 'the newest review pulse' }] });
 const SEEN = { venue: 'The Bridge Building', reviewer: 'Ana P.', platform: 'Google', review_text: 'Lovely night.' };
 const first = [{ title: 'Reply to Ana P. on Google', target: 'The Bridge Building', body: 'Thank you, Ana. We loved hosting you.', seen: SEEN }];
 const revised = [{ title: 'Reply to Ana P. on Google (warmer)', target: 'The Bridge Building', body: 'Ana, thank you for the lovely words about your night on the rooftop.', seen: SEEN }];
@@ -64,7 +68,7 @@ test('a redo on card N queues one run whose ask carries N\'s title and her words
   const store = createMemoryStore({ lint });
   const env = tree(t);
   const fetchImpl = web();
-  const r1 = await runAgent({ slug: 'gbp', store, llm: model(() => first), env, fetchImpl, scheduled: true });
+  const r1 = await runAgent({ def: gbpDef(), store, llm: model(() => first), env, fetchImpl, scheduled: true });
   assert.ok(r1.ok, r1.error);
   const n = r1.cards[0];
 
@@ -90,7 +94,7 @@ test('a redo on card N queues one run whose ask carries N\'s title and her words
 
   // The 15-minute job takes it. Same review, so without the redo the seen-skip would drop it.
   const llm = model(() => revised);
-  await takeAndRun({ store, env: {}, log: () => {}, runOne: (slug, ask, o) => runAgent({ slug, store, llm, ask, env, fetchImpl, redoOf: o.redoOf }) });
+  await takeAndRun({ store, env: {}, log: () => {}, runOne: (slug, ask, o) => runAgent({ def: slug === 'gbp' ? gbpDef() : undefined, slug, store, llm, ask, env, fetchImpl, redoOf: o.redoOf }) });
   assert.strictEqual(q.status, 'done', q.note);
   assert.match(llm.calls[0].user, /REDO ONE CARD[\s\S]*Make it warmer/);
   assert.match(llm.calls[0].user, /Write at most 1 card/);

@@ -103,7 +103,12 @@ test('photo_nightly.sh: PHOTO_TAG_CAP=0 runs changes and thumbs, never the tagge
   assert.strictEqual(off.r.status, 0, off.r.stdout + off.r.stderr);
   assert.match(off.r.stdout, /TAGGING OFF/);
   assert.match(off.calls, /photo_crawl\.js --changes/); assert.match(off.calls, /photo_crawl\.js --thumbs/);
-  assert.doesNotMatch(off.calls, /photo_tag\.js/);
+  // #3085 (1c33582) added an always-on measuring step, `photo_tag.js --clusters --dry-run`: no model,
+  // no key, no tag rows. It is the only photo_tag.js call allowed with tagging off; nothing that tags.
+  const tagCalls = off.calls.split('\n').filter((l) => /photo_tag\.js/.test(l));
+  assert.deepStrictEqual(tagCalls.map((l) => l.replace(/^.*node jobs\//, '')), ['photo_tag.js --clusters --dry-run']);
+  assert.doesNotMatch(off.calls, /photo_tag\.js --apply/);
+  assert.doesNotMatch(off.calls, /photo_tag\.js --clusters --cap/);
   const on = run('1000');                                    // known-good: the tagger still runs when asked
   assert.match(on.calls, /photo_tag\.js --apply --cap 1000/);
   fs.rmSync(home, { recursive: true, force: true });
