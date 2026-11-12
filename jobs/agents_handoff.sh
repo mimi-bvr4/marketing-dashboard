@@ -18,6 +18,12 @@ set -u
 stamp() { echo "[agents_handoff $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT')] $*" >&2; }
 cd "$HOME/repos/marketing-dashboard" || { echo "agents_handoff: no ~/repos/marketing-dashboard"; exit 1; }
 echo "=== agents 15-minute job $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT') ==="
+# ORDER #3243: the live "Waiting on" checks, every 15 minutes (so at least
+# hourly). Its exit is logged, never folded into this job's own exit.
+stamp agent_checks start
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_checks.js'
+stamp agent_checks exit $?
 stamp kh_route start
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/kh_route.js'

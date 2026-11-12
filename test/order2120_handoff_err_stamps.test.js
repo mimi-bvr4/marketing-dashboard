@@ -18,7 +18,9 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const STEPS = ['kh_route', 'agent_requests', 'agent_asks', 'agent_handoff', 'cadet_run', 'web_run'];
+// #3243 added agent_checks first: stamped like the rest, but its exit is logged
+// only, never folded into the job's own exit or its `=== done:` line.
+const STEPS = ['agent_checks', 'kh_route', 'agent_requests', 'agent_asks', 'agent_handoff', 'cadet_run', 'web_run'];
 const STAMP = /^\[agents_handoff \d{2}\.\d{2}\.\d{4} \d{2}:\d{2} CT\] (\S+) (start|exit (\d+))$/;
 
 function runWithFake(code) {
@@ -44,10 +46,10 @@ function stamped(stderr) {
   return stderr.split('\n').map((l) => l.match(STAMP)).filter(Boolean);
 }
 
-test('KNOWN-BAD: a failing railway leaves six start and six exit 1 lines, stamped, in step order', () => {
+test('KNOWN-BAD: a failing railway leaves seven start and seven exit 1 lines, stamped, in step order', () => {
   const r = runWithFake(1);
   const lines = stamped(r.stderr);
-  assert.strictEqual(lines.length, 12, `12 stamped stderr lines, got:\n${r.stderr}`);
+  assert.strictEqual(lines.length, 14, `14 stamped stderr lines, got:\n${r.stderr}`);
   STEPS.forEach((step, i) => {
     assert.strictEqual(lines[2 * i][1], step);
     assert.strictEqual(lines[2 * i][2], 'start');
@@ -60,10 +62,10 @@ test('KNOWN-BAD: a failing railway leaves six start and six exit 1 lines, stampe
   assert.notStrictEqual(r.status, 0, 'the script still exits non-zero');
 });
 
-test('a clean railway leaves six exit 0 lines and the script exits 0', () => {
+test('a clean railway leaves seven exit 0 lines and the script exits 0', () => {
   const r = runWithFake(0);
   const lines = stamped(r.stderr);
-  assert.strictEqual(lines.length, 12, `12 stamped stderr lines, got:\n${r.stderr}`);
+  assert.strictEqual(lines.length, 14, `14 stamped stderr lines, got:\n${r.stderr}`);
   assert.deepStrictEqual(lines.filter((m) => m[2] === 'exit 0').map((m) => m[1]), STEPS);
   assert.strictEqual(r.status, 0);
 });

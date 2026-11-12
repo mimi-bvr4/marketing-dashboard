@@ -53,6 +53,7 @@ const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
 const agentVoices = require('../lib/agent-voices');
+const { applyChecks } = require('../lib/agent-checks');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
@@ -95,7 +96,10 @@ function liveMissing(d, run, now) {
   return out;
 }
 
-function characterOf(d, asks, run, now = new Date()) {
+// #3243: `checks` is the latest live check per id (lib/agent-checks.js). A need
+// whose check passes is dropped; one that fails says why and when it was checked;
+// a need no check decides stays as written.
+function characterOf(d, asks, run, now = new Date(), checks = null, env = process.env) {
   const c = d.character || { role: d.job, does: [], traits: [], needs: [] };
   const applied = asks.filter((a) => a.status === 'applied');
   const cants = asks.filter((a) => a.status === 'cant');
@@ -104,7 +108,7 @@ function characterOf(d, asks, run, now = new Date()) {
     role: c.role,
     does: [...(c.does || []), ...applied.map((a) => `${a.ask} (added from ask #${a.id})`)],
     traits: [...(c.traits || []), ...cants.map((a) => ({ cant: a.ask, instead: (a.triage && a.triage.instead) || '', ask_id: a.id }))],
-    needs: [...new Set([...(c.needs || []), ...missing])],
+    needs: applyChecks([...new Set([...(c.needs || []), ...missing])], checks, env),
   };
 }
 
@@ -155,6 +159,9 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     const allAsks = await store.listAsks();
     const exec = await isExec(req, identity);
     const profiles = new Map((store.profiles ? await store.profiles() : []).map((p) => [p.agent, p]));
+    // #3243 the live Waiting-on checks; a store without them (or a read error) shows needs as written.
+    let checks = null;
+    if (store.checkRows) { try { checks = new Map((await store.checkRows()).map((x) => [x.id, x])); } catch (e) { checks = null; } }
     const watchers = {};
     const sheetWatch = {};
     for (const slug of listAgents()) {
@@ -171,7 +178,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
       const s = current.get(slug);
       const asks = allAsks.filter((a) => a.agent === slug);
       const p = profiles.get(slug);
-      const pin = pinterestNeed(watchNeed(characterOf(d, asks, runs.get(slug), clock()), watchers[slug], sheetWatch[slug] || 0), slug, pinRows);
+      const pin = pinterestNeed(watchNeed(characterOf(d, asks, runs.get(slug), clock(), checks), watchers[slug], sheetWatch[slug] || 0), slug, pinRows);
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
         named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, ask_note: d.ask_note || null, sources: (d.sources || []).map(sourceView),
