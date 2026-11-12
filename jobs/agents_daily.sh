@@ -11,6 +11,11 @@
 set -u
 cd "$HOME/repos/marketing-dashboard" || { echo "agents_daily: no ~/repos/marketing-dashboard"; exit 1; }
 echo "=== agents_daily $(TZ=America/Chicago date '+%m.%d.%Y %H:%M CT') ==="
+# ORDER #3243: re-run the live "Waiting on" checks first, with this job's own
+# env (the plist's switches). A failed check run never stops the agents.
+railway run --service Postgres -- sh -c \
+  'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_checks.js'
+echo "agent_checks exit $?"
 railway run --service Postgres -- sh -c \
   'MARKETING_DATABASE_URL="$DATABASE_PUBLIC_URL" node jobs/agent_run.js --due'
 rc=$?
