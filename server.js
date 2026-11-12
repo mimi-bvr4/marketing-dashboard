@@ -132,7 +132,7 @@ app.use(pageGate);
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
       '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*',
-      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch', '/settings/pinterest', '/api/pinterest/*', '/handoff', '/handoff.html', '/api/handoff'],
+      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch', '/settings/pinterest', '/api/pinterest/*', '/handoff', '/handoff.html', '/api/handoff', '/api/handoff/*'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }

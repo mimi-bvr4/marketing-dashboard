@@ -69,7 +69,7 @@
     return `<div class="lead">
       <p><label>${can ? `<input type="checkbox" data-b="${esc(b.key)}" value="${l.card_id}" checked> ` : ''}<strong>${esc(l.company || l.title)}</strong></label>
         ${l.website ? ` <a href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.website)}</a>` : ''}
-        <span class="badge ${l.state === 'assigned' ? 'good' : l.state === 'waiting' ? 'bad' : ''}">${esc(l.line)}</span> <span class="meta">card #${l.card_id}</span></p>
+        <span class="badge ${l.state === 'assigned' || l.state === 'in_hubspot' ? 'good' : l.state === 'waiting' ? 'bad' : ''}">${esc(l.line)}</span> <span class="meta">card #${l.card_id}</span></p>
       ${l.target ? `<p class="meta">Target: ${esc(l.target)}</p>` : ''}
       ${src ? `<p class="meta">Sources: ${src}</p>` : ''}
       <details><summary>Read the blast${l.subject ? `: ${esc(l.subject)}` : ''}</summary>
@@ -88,13 +88,29 @@
         <button data-a="back" data-b="${esc(b.key)}">Send the ticked leads back</button>
       </div><p class="meta">To split a batch, untick the leads for the second person, assign, then tick the rest and assign again.</p>` : '';
     return `<article class="card">
-      <h2 style="margin:0">${esc(b.agent_name)} <span class="badge ${b.state === 'waiting' ? 'bad' : b.state === 'assigned' ? 'good' : ''}">${esc(b.line)}</span></h2>
+      <h2 style="margin:0">${esc(b.agent_name)} <span class="badge ${b.state === 'waiting' ? 'bad' : b.state === 'assigned' || b.state === 'in_hubspot' ? 'good' : ''}">${esc(b.line)}</span></h2>
       <p class="meta">${b.leads.length} lead${b.leads.length === 1 ? '' : 's'}${b.run_id ? ` · run ${b.run_id}` : ''}${b.job ? ` · ${esc(b.job)}` : ''}${b.target ? ` · target: ${esc(b.target)}` : ''}</p>
       ${b.keywords.length ? `<p class="meta">Main keywords: ${b.keywords.map((k) => `<span class="kw">${esc(k)}</span>`).join(' ')}</p>` : ''}
       <p class="meta">Approved by ${esc(b.approved_by.join(', ') || 'unknown')}${b.approve_notes.length ? `. Katherine's note: ${esc(b.approve_notes.join(' / '))}` : ''}</p>
       ${b.leads.map((l) => leadHtml(b, l)).join('')}
       ${act}
+      ${prospectingHtml(b)}
     </article>`;
+  }
+  // ORDER #3166: after the pick, Mary sends it through HubSpot's Prospecting
+  // Agent herself. We hand her the import file, the brief and the steps.
+  function prospectingHtml(b) {
+    const p = b.prospecting; if (!p) return '';
+    const marked = b.leads.filter((l) => l.state === 'assigned').map((l) => l.card_id);
+    return `<div class="lead">
+      <h3 style="margin:0">Send it through HubSpot's Prospecting Agent</h3>
+      <p class="actions"><a class="btn" href="${esc(p.csv_url)}" download>HubSpot import file</a>
+        ${state.can_pick && marked.length ? `<button data-a="sent" data-b="${esc(b.key)}" data-ids="${marked.join(',')}">Sent to HubSpot</button>` : ''}</p>
+      <ol>${p.checklist.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+      <details><summary>Prospecting Agent brief (copy into the play)</summary>
+        <div class="email" id="brief-${esc(b.key)}">${esc(p.brief)}</div>
+        <button data-copy="brief-${esc(b.key)}">Copy the brief</button></details>
+    </div>`;
   }
   async function load() {
     $('#err').textContent = '';
@@ -107,8 +123,21 @@
   }
   const ticked = (key) => [...document.querySelectorAll(`input[type=checkbox][data-b="${CSS.escape(key)}"]:checked`)].map((x) => Number(x.value));
   document.addEventListener('click', async (ev) => {
+    const cp = ev.target.closest('button[data-copy]');
+    if (cp) { try { await navigator.clipboard.writeText(document.getElementById(cp.dataset.copy).textContent); cp.textContent = 'Copied'; } catch (e) { $('#err').textContent = 'Copy did not work here; select the text and copy it.'; } return; }
     const btn = ev.target.closest('button[data-a]'); if (!btn) return;
-    const key = btn.dataset.b; const ids = ticked(key);
+    const key = btn.dataset.b;
+    if (btn.dataset.a === 'sent') {
+      btn.disabled = true;
+      try {
+        const j = await api('/api/handoff/sent-to-hubspot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_ids: btn.dataset.ids.split(',').map(Number) }) });
+        await load();
+        const bad = (j.results || []).filter((x) => !x.ok);
+        if (bad.length) $('#err').textContent = bad.map((x) => `card #${x.card_id}: ${x.why}`).join(' ');
+      } catch (e) { $('#err').textContent = e.message; btn.disabled = false; }
+      return;
+    }
+    const ids = ticked(key);
     if (!ids.length) { $('#err').textContent = 'Tick at least one lead.'; return; }
     btn.disabled = true;
     try {
