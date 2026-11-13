@@ -74,8 +74,11 @@
       }
     ],
     "needs": [
-      "Mimi: switch it on (AGENT_PLANNER_SCOUT)",
-      "Mimi: name the salesperson who sends its drafts"
-    ]
+      "Mimi: switch it on (AGENT_PLANNER_SCOUT)"
+    ],
+    "pointer": {
+      "text": "Batches go to Mary's desk (/handoff); Mary picks the salesperson for each one.",
+      "href": "/handoff"
+    }
   }
 }

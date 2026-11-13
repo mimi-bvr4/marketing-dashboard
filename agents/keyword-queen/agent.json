@@ -48,6 +48,7 @@
   ],
   "character": {
     "role": "The Keyword Queen",
+    "title_always": true,
     "does": [
       "Keeps one target keyword list per venue and brand, venue names only from the canonical venue list",
       "Every Tuesday, one Review card: the top 10 blog topics for the week, ranked, each with its keyword, monthly volume and difficulty with the source, the venue it serves, and why now",

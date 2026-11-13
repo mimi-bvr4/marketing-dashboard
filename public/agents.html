@@ -180,9 +180,10 @@
   }
   // #2941 the eyebrow rule (public/agents-view.js): the role shows only when the name differs from it.
   const V = window.AgentsView;
-  const eyebrow = (key, role, name) => `<span class="role" data-role-for="${esc(key)}" data-role="${esc(role)}" ${V.showEyebrow(role, name) ? '' : 'hidden'}>${esc(role)}</span>`;
+  // #3310: "always" (agent.json character.title_always) keeps a title that matches the name by order.
+  const eyebrow = (key, role, name, always) => `<span class="role" data-role-for="${esc(key)}" data-role="${esc(role)}" data-always="${always ? '1' : ''}" ${V.showEyebrow(role, name, always) ? '' : 'hidden'}>${esc(role)}</span>`;
   function syncEyebrow(key, name) {
-    const r = main.querySelector(`[data-role-for="${key}"]`); if (r) r.hidden = !V.showEyebrow(r.dataset.role, name);
+    const r = main.querySelector(`[data-role-for="${key}"]`); if (r) r.hidden = !V.showEyebrow(r.dataset.role, name, r.dataset.always === '1');
   }
   const nameInput = (a, cls) => `<input class="name ${cls || ''}" data-name="${a.slug}" value="${esc(a.name)}" maxlength="40" aria-label="Name for ${esc(a.character.role)}" title="Click to rename">`;
 
@@ -192,11 +193,12 @@
     const boxes = V.cardBoxes(a.character.needs, a.paused);
     const need = boxes.needs[0];
     return `<article class="card" data-slug="${a.slug}">
-      <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name)}${nameInput(a)}<span class="job">${esc(a.job)}</span>${V.speakerHtml(voices, a.slug, a.name, esc)}</div></div>
+      <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name, a.character.title_always)}${nameInput(a)}<span class="job">${esc(a.job)}</span>${V.speakerHtml(voices, a.slug, a.name, esc)}</div></div>
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span class="sched">${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${boxes.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${boxes.needs.length - 1} more)</summary><ul>${boxes.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
       ${boxes.paused ? `<div class="need"><strong>Paused:</strong> ${esc(boxes.paused)}</div>` : ''}
+      ${a.character.pointer ? `<p class="meta pointer"><a href="${esc(a.character.pointer.href)}">${esc(a.character.pointer.text)}</a></p>` : ''}
       ${a.pinterest ? `<p class="meta">Pinterest: ${esc(a.pinterest.line)}. <a href="${esc(a.pinterest.page)}">Settings, Pinterest accounts</a></p>` : ''}
       <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(a.card_only)}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
@@ -347,7 +349,7 @@
         ${a.portrait ? '<button class="btn ghost" data-a="noportrait" style="min-height:36px;font-size:13px">Use the drawn portrait</button>' : ''}
         <span class="meta" style="text-align:center">PNG, JPG or WebP. Square works best; it is resized here before saving.</span></div>
       <div class="info">
-        <span class="role">${V.showEyebrow(c.role, a.name) ? `${esc(c.role)} · ` : ''}${esc(a.job)}</span>
+        <span class="role">${V.showEyebrow(c.role, a.name, c.title_always) ? `${esc(c.role)} · ` : ''}${esc(a.job)}</span>
         ${nameInput(a)}
         <span class="meta">${a.named_by ? `Named by ${esc(a.named_by)}. ` : ''}Rename any time; it saves at once. Clear the box to go back to "${esc(a.default_name)}".</span>
         <div class="row"><span class="pill ${st.cls}">${st.label}</span><span class="meta">${esc(a.cadence)}</span>
@@ -372,7 +374,7 @@
         ${a.watch.length ? `<ul class="asks">${a.watch.map((w) => `<li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><strong>${esc(w.label || w.site)}</strong>${w.label ? ` <span class="meta">${esc(w.site)}</span>` : ''}</span><button class="btn ghost" style="min-height:32px;font-size:13px" data-a="unwatch" data-id="${w.id}" aria-label="Stop watching ${esc(w.site)}">Remove</button></li>`).join('')}</ul>` : (a.watch_sheet ? '<p class="meta">None added here yet. The sheet\'s top competitors are watched either way.</p>' : '<p class="meta">No competitors yet. Add the first one below.</p>')}
         <div class="row"><input type="text" data-f="wsite" placeholder="Website, e.g. example.com" aria-label="Competitor website">
           <input type="text" data-f="wlabel" placeholder="Name (optional)" aria-label="Competitor name"><button class="btn ghost" data-a="watch">Add</button></div></section>` : ''}
-      <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}</section>
+      <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}${c.pointer ? `<p class="meta pointer"><a href="${esc(c.pointer.href)}">${esc(c.pointer.text)}</a></p>` : ''}</section>
       <section class="panel"><h2 class="serif">Ask for a new ability</h2>
         <label class="meta" for="newask">The Box sorts it within 15 minutes: an instruction change (Mimi approves it), a build (filed to the Box), or a can't (added to the rules, with what it does instead).</label>
         <textarea id="newask" data-f="newask" rows="3" placeholder="e.g. add a short FAQ to every post"></textarea>

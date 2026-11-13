@@ -109,6 +109,9 @@ function characterOf(d, asks, run, now = new Date(), checks = null, env = proces
     does: [...(c.does || []), ...applied.map((a) => `${a.ask} (added from ask #${a.id})`)],
     traits: [...(c.traits || []), ...cants.map((a) => ({ cant: a.ask, instead: (a.triage && a.triage.instead) || '', ask_id: a.id }))],
     needs: applyChecks([...new Set([...(c.needs || []), ...missing])], checks, env),
+    // #3310: a pointer (e.g. "Batches go to Mary's desk") is shown, never counted as Waiting on.
+    ...(c.pointer ? { pointer: c.pointer } : {}),
+    ...(c.title_always === true ? { title_always: true } : {}),
   };
 }
 
