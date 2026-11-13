@@ -29,7 +29,7 @@
 const A = require('../lib/photo-archive');
 const F = require('../lib/photo-facts');
 const { ensurePhotoTables } = require('../lib/photo-schema');
-const { allChanges } = require('../lib/drive-client');
+const { allChanges, withBackoff } = require('../lib/drive-client');
 const { VENUES_DEFAULT } = require('../lib/photo-config');   // ORDER #1241: 'unknown' at launch
 
 const kindOf = (mime) => (/^image\//.test(mime || '') ? 'image' : /^video\//.test(mime || '') ? 'video' : null);
@@ -348,13 +348,30 @@ async function applyResume({ client, pool, log, thumbs, budgetMin = 20, concurre
   return { complete: true, done: folders.length, total: folders.length, counts: totals };
 }
 
-async function applyChanges({ client, pool, log, thumbs }) {
+async function applyChanges({ client, pool, log, thumbs, backoff = {} }) {
   await ensurePhotoTables(pool);
   const last = (await pool.query(`SELECT start_page_token FROM photo_crawl_runs
     WHERE start_page_token IS NOT NULL ORDER BY id DESC LIMIT 1`)).rows[0];
   if (!last) throw new Error('no stored start-page token: run --apply once first');
-  const root = await client.getFile(A.ROOT_FOLDER_ID, 'id, driveId');
-  const { changes, newStartPageToken } = await allChanges(client, last.start_page_token, root.driveId);
+  // ORDER #3327: Drive's rate limit is retried with backoff (lib/drive-client.js
+  // withBackoff); every retry is logged so the night's .out shows it.
+  const bo = { ...backoff, onRetry: ({ attempt, wait, error }) =>
+    log(`DRIVE RATE LIMIT: try ${attempt} refused (${error.message}); waiting ${Math.round(wait / 1000)} s`) };
+  const root = await withBackoff(() => client.getFile(A.ROOT_FOLDER_ID, 'id, driveId'), bo);
+  // When the feed gives up part-way, the pages already read are applied and the
+  // token of the page it could not read is stored, so tomorrow resumes there.
+  let changes;
+  let newStartPageToken;
+  let gaveUp = null;
+  try {
+    ({ changes, newStartPageToken } = await allChanges(client, last.start_page_token, root.driveId, bo));
+  } catch (e) {
+    if (!e.gaveUp || !e.partial) throw e;
+    gaveUp = e;
+    changes = e.partial.changes;
+    newStartPageToken = e.partial.resumeToken;
+    if (newStartPageToken === last.start_page_token) throw e;   // nothing read: the stored token stays the newest
+  }
   const folders = new Map((await pool.query('SELECT drive_id, path FROM photo_folders')).rows.map((r) => [r.drive_id, r.path]));
   const counts = { seen: changes.length, new: 0, moved: 0, removed: 0, failed: 0, images: 0, videos: 0 };
   for (const ch of changes) {
@@ -391,8 +408,13 @@ async function applyChanges({ client, pool, log, thumbs }) {
       counts[`${kindOf(file.mimeType)}s`] += 1;
     }
   }
-  await recordRun(pool, 'changes', counts, { startPageToken: newStartPageToken });
+  await recordRun(pool, 'changes', counts, { startPageToken: newStartPageToken,
+    detail: gaveUp ? { partial: true, gave_up: gaveUp.message } : undefined });
   log(`CHANGES: seen ${counts.seen}, new ${counts.new}, moved ${counts.moved}, removed ${counts.removed}, failed ${counts.failed}`);
+  if (gaveUp) {
+    log('CHANGES PARTIAL: Drive kept refusing; the pages read so far are applied and the next run resumes from the page it could not read.');
+    throw gaveUp;
+  }
   return { counts, newStartPageToken };
 }
 
@@ -474,7 +496,7 @@ async function backfillThumbs({ client, pool, log, budgetMin = 45, concurrency =
 // `client` and `pool` are handed in so a test can run every mode with mocks.
 // The dry run is never given a pool and never asks for one.
 async function main({ argv = process.argv.slice(2), client, pool, makePool, log = console.log, now = Date.now,
-  gate } = {}) {
+  gate, backoff } = {}) {
   const { mode, thumbs, listingOut, resume, budgetMin, concurrency } = parseArgs(argv);
   log(`photo_crawl ${mode}${resume ? ' --resume' : ''} as ${client.serviceAccount || '(mock)'}; scopes: ${A.DRIVE_SCOPES.join(' ')}`);
   if (mode === 'dry-run') return dryRun({ client, log, listingOut, concurrency });
@@ -482,7 +504,7 @@ async function main({ argv = process.argv.slice(2), client, pool, makePool, log 
   if (!db) throw new Error(`--${mode} needs MARKETING_DATABASE_URL`);
   if (mode === 'thumbs') return backfillThumbs({ client, pool: db, log, budgetMin, concurrency, now, gate });
   if (mode === 'apply' && resume) return applyResume({ client, pool: db, log, thumbs, budgetMin, concurrency, now });
-  return mode === 'apply' ? applyFull({ client, pool: db, log, thumbs }) : applyChanges({ client, pool: db, log, thumbs });
+  return mode === 'apply' ? applyFull({ client, pool: db, log, thumbs }) : applyChanges({ client, pool: db, log, thumbs, backoff });
 }
 
 if (require.main === module) {
