@@ -39,9 +39,10 @@ test('every real team member follows the rule on its default name and on a renam
 
 test('the page uses the rule on every character card, the profile and the Producer', () => {
   assert.match(HTML, /<script src="\/agents-view\.js"><\/script>/);
-  assert.match(HTML, /eyebrow\(a\.slug, a\.character\.role, a\.name\)/, 'character cards');
+  // #3310 adds a third argument, character.title_always (the Keyword Queen).
+  assert.match(HTML, /eyebrow\(a\.slug, a\.character\.role, a\.name, a\.character\.title_always\)/, 'character cards');
   assert.match(HTML, /eyebrow\('producer', 'The producer', p\.name\)/, 'the Producer');
-  assert.match(HTML, /V\.showEyebrow\(c\.role, a\.name\)/, 'the profile page');
+  assert.match(HTML, /V\.showEyebrow\(c\.role, a\.name, c\.title_always\)/, 'the profile page');
   assert.doesNotMatch(HTML, /<span class="role">\$\{esc\(a\.character\.role\)\}<\/span>/, 'no unconditional eyebrow left');
   assert.match(HTML, /syncEyebrow\(a\.slug, r\.name\)/, 'a rename updates the eyebrow at once');
 });

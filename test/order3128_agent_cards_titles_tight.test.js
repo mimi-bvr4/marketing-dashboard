@@ -17,15 +17,14 @@ const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'agents.html')
 test('every agent has a non-empty title, and it shows above its default name', () => {
   const slugs = listAgents();
   assert.strictEqual(slugs.length, 21); // #3163 the Keyword Queen
-  // #3163: the order names her title THE KEYWORD QUEEN and her name "Keyword
-  // Queen", the same words, so the #2941 rule shows it once until she is renamed.
-  const SAME_BY_ORDER = { 'keyword-queen': 'The Keyword Queen' };
+  // #3163 names her title THE KEYWORD QUEEN and her name "Keyword Queen", the
+  // same words; #3310 (Mimi 11.12.2026) gives her card the title line anyway
+  // through character.title_always.
   for (const slug of slugs) {
     const d = loadAgent(slug);
     const role = d.character && d.character.role;
     assert.ok(role && String(role).trim(), `${slug}: has a title`);
-    if (SAME_BY_ORDER[slug]) { assert.strictEqual(role, SAME_BY_ORDER[slug]); assert.strictEqual(V.showEyebrow(role, d.name), false); continue; }
-    assert.strictEqual(V.showEyebrow(role, d.name), true, `${slug}: "${role}" shows above "${d.name}"`);
+    assert.strictEqual(V.showEyebrow(role, d.name, d.character.title_always), true, `${slug}: "${role}" shows above "${d.name}"`);
     assert.doesNotMatch(role, /—/, `${slug}: no em dash`);
   }
 });

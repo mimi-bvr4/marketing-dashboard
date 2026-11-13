@@ -16,8 +16,11 @@
     const norm = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/^the /, '').replace(/ /g, '');
     return norm(a) === norm(b);
   }
-  function showEyebrow(role, name) {
+  // ORDER #3310: an agent whose title and name are the same words by order
+  // (the Keyword Queen, #3163) sets "title_always" so its card still shows a title.
+  function showEyebrow(role, name, always) {
     if (!role || !String(role).trim()) return false;
+    if (always === true) return true;
     return !sameWords(role, name);
   }
   // The Producer's board states that mean someone is stuck (lib/producer.js board()).
