@@ -77,7 +77,8 @@
         ${l.body ? `<p class="meta">Why this lead: ${esc(l.body).slice(0, 2000)}</p>` : ''}
         <div class="email">${esc(l.email)}</div></details>
       ${l.handoff && l.handoff.ok ? `<p class="meta"><span class="badge good">Sent to ${esc(l.handoff.owner_name)} in HubSpot</span></p>` : ''}
-      ${l.handoff && !l.handoff.ok && !l.handoff.pending ? `<p class="meta"><span class="badge bad">Not sent to Sales</span> ${esc(l.handoff.why)}</p>` : ''}
+      ${l.handoff && l.handoff.contact_line ? `<p class="meta"><span class="badge ${l.handoff.contact_ok ? 'good' : 'bad'}">${l.handoff.contact_ok ? 'Contact for the Play' : 'No contact for the Play'}</span> ${esc(l.handoff.contact_line)}</p>` : ''}
+      ${l.handoff && !l.handoff.ok && !l.handoff.pending ?`<p class="meta"><span class="badge bad">Not sent to Sales</span> ${esc(l.handoff.why)}</p>` : ''}
     </div>`;
   }
   function batchHtml(b) {
