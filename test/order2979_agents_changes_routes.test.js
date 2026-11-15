@@ -38,7 +38,12 @@ test('ZZ_TEST routes: Katherine saves (live), Mimi sees the line and the diff, K
   const store = createMemoryStore({ lint });
   const s = await serve(app(store), t);
   const k = as(K), m = as(MIMI);
-  assert.strictEqual((await call(s, '/api/agents/changes')).status, 403, 'signed out');
+  // Signed out is refused by the page gate, which answers /api/* with 401 (not
+  // 403: 403 is "signed in, not allowed"). ORDER #3156: the original 403 here was
+  // never the gate's contract, see order1664_agent_names_portraits.test.js.
+  const out = await call(s, '/api/agents/changes');
+  assert.strictEqual(out.status, 401, 'signed out');
+  assert.strictEqual(out.json && out.json.changes, undefined, 'no change list leaks signed out');
   const saved = await call(s, '/api/agents/gbp', { headers: k, method: 'POST', body: { skill_md: '# GBP\nZZ_TEST shorter.', enabled: true, max_cards: 3, note: 'ZZ_TEST' } });
   assert.strictEqual(saved.status, 200);
   assert.strictEqual(saved.json.settings.version, 1, 'live on save, no approval step');
