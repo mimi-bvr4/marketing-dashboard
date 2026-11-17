@@ -163,11 +163,11 @@ test('Connect: the Box trades the code, saves the token to the Keychain only, wi
   const out = await pc.syncAccounts({ accounts, fetchImpl: fakePinterest().f, secrets: (n) => kc[n] || null,
     save: (item, v) => { saved.push(item); kc[item] = v; }, log: (l) => lines.push(l) });
   assert.deepStrictEqual(saved, ['pinterest-refresh-token-ecd']);
-  assert.deepStrictEqual(out, { traded: 1, connected: 3, total: PV.VENUES.length });
+  assert.deepStrictEqual(out, { traded: 1, connected: 3, total: PV.ACCOUNTS.length }); // #3495: 7 venues + 4 brands
   const conn = [...accounts._connects.values()];
   assert.ok(conn.every((c) => c.code === null), 'every code is wiped');
   assert.deepStrictEqual(conn.map((c) => c.outcome.split(':')[0]).sort(), ['connected', 'failed']);
-  assert.strictEqual(PV.connectedLine(await accounts.list()).line, `Connected: 3 of ${PV.VENUES.length} venues`);
+  assert.strictEqual(PV.connectedLine(await accounts.list()).line, `Connected: 3 of ${PV.ACCOUNTS.length} accounts`);
   // No token in the log lines or in what the dashboard can read.
   const visible = JSON.stringify(await accounts.list()) + JSON.stringify(await accounts.recentConnects()) + lines.join('\n');
   for (const s of [SECRET_SWF, SECRET_TBT, 'fake-refresh-ecd-0003']) assert.ok(!visible.includes(s), 'a token leaked');
@@ -184,8 +184,8 @@ test('saveSecret hands the token to `security` on stdin, never on the command li
 test('Settings, Pinterest accounts lists every venue; Paul\'s card says Connected: X of N with the page link', async () => {
   const rows = [{ venue: 'SWF', connected: true }, { venue: 'TBT', connected: true }];
   const c = pinterestNeed({ role: 'The pinner', needs: ['Katherine to connect our Pinterest business account to the Box once (x)', "Katherine to connect each venue's Pinterest once on y"] }, 'pinterest-paul', rows, ON);
-  assert.deepStrictEqual(c.pinterest, { connected: 2, total: PV.VENUES.length, line: `Connected: 2 of ${PV.VENUES.length} venues`, page: '/settings/pinterest' });
-  assert.deepStrictEqual(c.character.needs, [`Connected: 2 of ${PV.VENUES.length} venues: connect the rest on Settings, Pinterest accounts (/settings/pinterest)`]);
+  assert.deepStrictEqual(c.pinterest, { connected: 2, total: PV.ACCOUNTS.length, line: `Connected: 2 of ${PV.ACCOUNTS.length} accounts`, page: '/settings/pinterest' });
+  assert.deepStrictEqual(c.character.needs, [`Connected: 2 of ${PV.ACCOUNTS.length} accounts: connect the rest on Settings, Pinterest accounts (/settings/pinterest)`]);
   const off = pinterestNeed({ needs: ['Katherine to connect our Pinterest business account (x)', "Katherine to connect each venue's Pinterest once on y"] }, 'pinterest-paul', rows, OFF);
   assert.strictEqual(off.pinterest, null); assert.deepStrictEqual(off.character.needs, ['Katherine to connect our Pinterest business account (x)']);
   const page = fs.readFileSync(path.join(__dirname, '..', 'public', 'pinterest-accounts.html'), 'utf8');
