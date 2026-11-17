@@ -47,6 +47,8 @@ function createPinterestRouter({ accounts, store, env = process.env }) {
   r.post('/api/pinterest/connect/:venue', need, on, async (req, res) => {
     const v = PV.byCode(req.params.venue);
     if (!v) return res.status(404).json({ error: 'not one of our connectable accounts' });
+    // #3505: on Trial only the Infinity Hospitality Group account connects, until Standard.
+    if (!PV.connectAllowed(v.code, env)) return res.status(409).json({ error: `Our Pinterest app is on Trial: only Infinity Hospitality Group connects until Pinterest grants Standard. ${v.name} waits.` });
     if (!env.PINTEREST_APP_ID) return res.status(409).json({ error: 'The Pinterest app id is not set on the dashboard yet (PINTEREST_APP_ID).' });
     const state = PV.newState(v.code);
     const uri = redirectUri(env);

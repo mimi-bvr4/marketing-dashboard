@@ -200,6 +200,8 @@
   function handoffOther(c, h, post, pin) {
     if (pin) {
       if (!h) return c.status === 'ready' ? '<p class="meta">Waiting for the Box to pin this on Pinterest (it checks every 15 minutes; a venue that is not connected yet waits until it is).</p>' : '';
+      // #3505: on Trial the pin is a sandbox pin: only its creator can see it, so it shows its id, not a link.
+      if (h.ok && h.sandbox) return `<p class="meta"><span class="badge good">Sandbox pin ${esc(h.pin_id)}</span> on ${esc(h.board)}. Our Pinterest app is on Trial, so only its creator can see this pin; nothing is public.</p>`;
       if (h.ok) return `<p class="meta"><span class="badge good">Pinned to ${esc(h.board)}</span> <a href="${esc(h.pin_url)}" target="_blank" rel="noopener">Open the pin</a></p>`;
       return `<p class="meta"><span class="badge bad">Not pinned</span> ${esc(h.why)}</p>`;
     }
