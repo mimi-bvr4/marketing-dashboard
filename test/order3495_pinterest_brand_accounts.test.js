@@ -21,9 +21,10 @@ test('all 11 accounts have a row: the 7 canonical venues first, then the 4 brand
   assert.strictEqual(PV.ACCOUNTS.length, 11);
   assert.deepStrictEqual(PV.VENUES.map((v) => v.code), ['TBB', 'TBT', 'ECD', 'SWF', 'STE', 'COR', 'EST']);
   assert.deepStrictEqual(PV.ACCOUNTS.slice(0, 7), PV.VENUES);
-  assert.deepStrictEqual(PV.BRANDS.map((b) => b.code), ['DEC', 'NLP', 'DD', null]);
+  // #3506 (Mimi 11.17.2026, "IH as a group"): the 4th is Infinity Hospitality Group.
+  assert.deepStrictEqual(PV.BRANDS.map((b) => b.code), ['DEC', 'NLP', 'DD', 'IHG']);
   assert.deepStrictEqual(PV.BRANDS.map((b) => b.name), ['Dream Events & Catering', 'Nashville Lighting and Production', 'DailyDish',
-    'Nashville Event Bartending or Infinity Hospitality Group']);
+    'Infinity Hospitality Group']);
 });
 
 test('the brand rows are labelled as brands, never as venues; no brand code is a venue code', () => {
@@ -38,18 +39,16 @@ test('the brand rows are labelled as brands, never as venues; no brand code is a
   for (const b of PV.BRANDS.filter((x) => x.site)) assert.ok(pt.OUR_SITES.includes(b.site), b.site);
 });
 
-test('the 4th account is UNCONFIRMED: shown, never connectable, never guessed', () => {
+test('the 4th account is Infinity Hospitality Group (#3506), never Nashville Event Bartending; shared sites offer it first', () => {
   const fourth = PV.BRANDS[3];
-  assert.strictEqual(fourth.unconfirmed, true);
-  assert.strictEqual(fourth.code, null);
-  assert.deepStrictEqual(fourth.candidates, ['NEB', 'IHG']);
-  assert.match(fourth.note, /Mimi/);
+  assert.ok(!fourth.unconfirmed);
+  assert.strictEqual(fourth.code, 'IHG');
+  assert.strictEqual(fourth.shared, true);
   assert.strictEqual(PV.byCode('NEB'), null);
-  assert.strictEqual(PV.byCode('IHG'), null);
+  assert.strictEqual(PV.byCode('IHG'), fourth);
   assert.strictEqual(PV.byCode(null), null);
-  // Nashville Event Bartending's and IHG's sites stay "Katherine picks" until Mimi says which.
-  assert.deepStrictEqual(PV.venueForLink('https://nashvilleeventbartending.com/blog/x/'), { pick: true });
-  assert.deepStrictEqual(PV.venueForLink('https://infinityhospitalitygroup.com/blog/x/'), { pick: true });
+  assert.deepStrictEqual(PV.venueForLink('https://nashvilleeventbartending.com/blog/x/'), { pick: true, offer: 'IHG' });
+  assert.deepStrictEqual(PV.venueForLink('https://infinityhospitalitygroup.com/blog/x/'), { pick: true, offer: 'IHG' });
 });
 
 test('a post on a brand site offers that brand account; Keychain names follow pinterest-refresh-token-<code>', () => {
@@ -90,7 +89,7 @@ test('a brand connect is traded like a venue one, and no token is in any log or 
   assert.strictEqual(kc['pinterest-refresh-token-dd'], SECRET_NEW);
   const list = await accounts.list();
   assert.deepStrictEqual(list.filter((a) => a.connected).map((a) => a.venue).sort(), ['DD', 'DEC']);
-  assert.ok(!list.some((a) => a.venue === null || a.venue === 'NEB' || a.venue === 'IHG'), 'the unconfirmed 4th is never probed');
+  assert.ok(!list.some((a) => a.venue === null || a.venue === 'NEB'), 'no row for an account we do not have');
   const visible = JSON.stringify(list) + JSON.stringify(await accounts.recentConnects()) + lines.join('\n');
   for (const s of [SECRET_DEC, SECRET_NEW]) assert.ok(!visible.includes(s), 'a token leaked');
 });
@@ -123,17 +122,19 @@ function call(router, { method, url, body }) {
   });
 }
 
-test('the accounts API lists 11 rows, brand rows marked; the unconfirmed row cannot be connected', async () => {
+test('the accounts API lists 11 rows, brand rows marked; IHG can be connected, NEB cannot (#3506)', async () => {
   const accounts = PV.createMemoryAccounts();
   const r = createPinterestRouter({ accounts, store: null, env: ON });
   const got = await call(r, { method: 'GET', url: '/api/pinterest/accounts' });
   assert.strictEqual(got.body.venues.length, 11);
   assert.strictEqual(got.body.total, 11);
   const fourth = got.body.venues[10];
-  assert.strictEqual(fourth.brand, true); assert.strictEqual(fourth.unconfirmed, true); assert.strictEqual(fourth.code, null);
-  assert.deepStrictEqual(got.body.venues.filter((v) => v.brand).map((v) => v.code), ['DEC', 'NLP', 'DD', null]);
+  assert.strictEqual(fourth.brand, true); assert.strictEqual(fourth.unconfirmed, false); assert.strictEqual(fourth.code, 'IHG');
+  assert.deepStrictEqual(got.body.venues.filter((v) => v.brand).map((v) => v.code), ['DEC', 'NLP', 'DD', 'IHG']);
   const neb = await call(r, { method: 'POST', url: '/api/pinterest/connect/NEB' });
   assert.strictEqual(neb.statusCode, 404);
+  const ihg = await call(r, { method: 'POST', url: '/api/pinterest/connect/IHG' });
+  assert.match(ihg.body.url, /state=IHG\.[0-9a-f]{36}/);
   const dd = await call(r, { method: 'POST', url: '/api/pinterest/connect/DD' });
   assert.match(dd.body.url, /state=DD\.[0-9a-f]{36}/);
   // A two-letter brand code comes back through the callback.
