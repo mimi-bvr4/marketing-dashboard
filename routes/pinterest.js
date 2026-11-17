@@ -37,14 +37,16 @@ function createPinterestRouter({ accounts, store, env = process.env }) {
     const rows = PV.perVenueOn(env) ? await accounts.list() : [];
     const by = new Map(rows.map((a) => [a.venue, a]));
     res.json({ on: PV.perVenueOn(env), app_ready: !!env.PINTEREST_APP_ID, ...PV.connectedLine(rows),
-      venues: PV.VENUES.map((v) => { const a = by.get(v.code); return { code: v.code, name: v.name, site: v.site,
+      // #3495: all 11 accounts, the 7 venues then the 4 brands; brand and unconfirmed rows say so.
+      venues: PV.ACCOUNTS.map((v) => { const a = v.code ? by.get(v.code) : null; return { code: v.code, name: v.name, site: v.site,
+        brand: !!v.brand, unconfirmed: !!v.unconfirmed, note: v.note || null,
         connected: !!(a && a.connected), boards: a ? (a.boards || []).map((b) => b.name) : [], why: a ? a.why : null, checked_at: a ? a.checked_at : null }; }),
       recent: PV.perVenueOn(env) ? (await accounts.recentConnects()).map((c) => ({ venue: c.venue, asked_by: c.asked_by, created_at: c.created_at, came_back: c.came_back, done_at: c.done_at, outcome: c.outcome })) : [] });
   });
 
   r.post('/api/pinterest/connect/:venue', need, on, async (req, res) => {
     const v = PV.byCode(req.params.venue);
-    if (!v) return res.status(404).json({ error: 'not one of our venues' });
+    if (!v) return res.status(404).json({ error: 'not one of our connectable accounts' });
     if (!env.PINTEREST_APP_ID) return res.status(409).json({ error: 'The Pinterest app id is not set on the dashboard yet (PINTEREST_APP_ID).' });
     const state = PV.newState(v.code);
     const uri = redirectUri(env);
@@ -57,8 +59,10 @@ function createPinterestRouter({ accounts, store, env = process.env }) {
     if (!PV.perVenueOn(env)) return res.redirect(PV.PAGE);
     const state = String(req.query.state || '');
     const code = String(req.query.code || '');
-    if (req.query.error || !code) return res.redirect(`${PV.PAGE}?result=declined`);
-    if (!/^[A-Z]{3}\.[0-9a-f]{36}$/.test(state) || code.length > 2000) return res.redirect(`${PV.PAGE}?result=bad`);
+    // #3495: Pinterest's own words, if it sent any (the page shows them as text, never as HTML).
+    const why = String(req.query.error_description || '').slice(0, 300);
+    if (req.query.error || !code) return res.redirect(`${PV.PAGE}?result=declined${why ? `&why=${encodeURIComponent(why)}` : ''}`);
+    if (!/^[A-Z]{2,3}\.[0-9a-f]{36}$/.test(state) || code.length > 2000) return res.redirect(`${PV.PAGE}?result=bad`);
     const got = await accounts.setCode(state, code);
     res.redirect(`${PV.PAGE}?result=${got ? `waiting&venue=${encodeURIComponent(got.venue)}` : 'expired'}`);
   });

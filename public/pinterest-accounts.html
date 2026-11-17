@@ -31,11 +31,13 @@
   <header>
     <p class="meta"><a href="/agents">Agents</a> · Settings</p>
     <h1>Pinterest accounts</h1>
-    <p>Pinterest Paul pins each approved card to the Pinterest account of the venue the blog post belongs to. Each venue's account is connected once: sign in to that venue's Pinterest in this browser, then press <strong>Connect</strong> on its row and approve our app. Nothing pins until Katherine approves a card.</p>
+    <p>Pinterest Paul pins each approved card to the Pinterest account of the venue or brand the blog post belongs to. Each account is connected once: sign in to that account's Pinterest in this browser, then press <strong>Connect</strong> on its row and approve our app. Nothing pins until Katherine approves a card.</p>
+    <!-- ORDER #3495: the app is on Pinterest's Trial access until Pinterest approves it. -->
+    <p class="meta">Our Pinterest app is on Trial access until Pinterest approves it. Until then, Connect for accounts other than the one that owns the app may be refused by Pinterest; if it is, Pinterest's own words show on this page.</p>
     <p id="line" class="meta"></p>
     <p id="result" class="meta" hidden></p>
   </header>
-  <table><thead><tr><th>Venue</th><th>Site</th><th>Status</th><th>Boards</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="5">Loading...</td></tr></tbody></table>
+  <table><thead><tr><th>Account</th><th>Site</th><th>Status</th><th>Boards</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="5">Loading...</td></tr></tbody></table>
   <section><h2>Recent connects</h2><ul id="recent" class="meta"></ul></section>
   <p class="err" id="err" hidden></p>
 </main>
@@ -47,17 +49,18 @@
     declined: 'The approval was not given on Pinterest. Nothing changed.', expired: 'That approval link was too old or already used. Press Connect again.',
     bad: 'That approval did not come from this page. Press Connect again.' };
   const q = new URLSearchParams(location.search);
-  if (q.get('result') && RESULT[q.get('result')]) { $('#result').textContent = RESULT[q.get('result')]; $('#result').hidden = false; }
+  if (q.get('result') && RESULT[q.get('result')]) { $('#result').textContent = RESULT[q.get('result')] + (q.get('why') ? ' Pinterest said: ' + q.get('why') : ''); $('#result').hidden = false; }
   async function load() {
     const r = await fetch('/api/pinterest/accounts', { credentials: 'same-origin' });
     const j = await r.json();
     if (!r.ok) { $('#err').textContent = j.error || ('error ' + r.status); $('#err').hidden = false; return; }
     $('#line').textContent = !j.on ? 'Per-venue Pinterest is switched off (PINTEREST_PER_VENUE). Paul uses the one shared account until it is on.'
       : (j.app_ready ? j.line : j.line + '. The Pinterest app id is not set on the dashboard yet, so Connect is not available.');
-    $('#rows').innerHTML = j.venues.map((v) => `<tr data-v="${esc(v.code)}"><td>${esc(v.name)}</td><td>${esc(v.site)}</td>
-      <td>${v.connected ? '<span class="badge good">Connected</span>' : '<span class="badge">Not connected</span>'}${v.why ? `<br><span class="meta">${esc(v.why)}</span>` : ''}</td>
+    // #3495: brand rows carry a Brand label; the unconfirmed row says why and has no Connect.
+    $('#rows').innerHTML = j.venues.map((v) => `<tr data-v="${esc(v.code)}"><td>${esc(v.name)}${v.brand ? ' <span class="badge">Brand</span>' : ''}${v.unconfirmed ? `<br><span class="meta">${esc(v.note)}</span>` : ''}</td><td>${esc(v.site || '')}</td>
+      <td>${v.unconfirmed ? '<span class="badge">Not set up yet</span>' : (v.connected ? '<span class="badge good">Connected</span>' : '<span class="badge">Not connected</span>')}${v.why ? `<br><span class="meta">${esc(v.why)}</span>` : ''}</td>
       <td class="meta">${v.boards.length ? esc(v.boards.join(', ')) : ''}</td>
-      <td>${j.on && j.app_ready ? `<button data-a="connect">${v.connected ? 'Connect again' : 'Connect'}</button>` : ''}</td></tr>`).join('');
+      <td>${j.on && j.app_ready && v.code && !v.unconfirmed ? `<button data-a="connect">${v.connected ? 'Connect again' : 'Connect'}</button>` : ''}</td></tr>`).join('');
     $('#recent').innerHTML = (j.recent || []).map((c) => `<li>${esc(c.venue)}: asked by ${esc(c.asked_by)} ${esc(new Date(c.created_at).toLocaleString('en-US', { timeZone: 'America/Chicago' }))}, ${esc(c.outcome || (c.came_back ? 'waiting for the Box' : 'not finished on Pinterest'))}</li>`).join('') || '<li>None in the last 7 days.</li>';
   }
   $('#rows').addEventListener('click', async (e) => {
