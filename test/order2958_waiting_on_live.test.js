@@ -34,7 +34,8 @@ test('a pending reason whose source is connected since is dropped', () => {
 });
 
 test('a read failure shows while the run is fresh and leaves after STALE_RUN_DAYS', () => {
-  const d = { sources: [] };
+  // #3498: a run reason counts only for a source the agent still declares.
+  const d = { sources: [{ type: 'wp_posts', label: 'posts already published on our WordPress sites', sites: [] }] };
   const u = [{ label: 'posts already published on our WordPress sites', type: 'wp_posts', why: 'no public posts read (none listed)' }];
   assert.strictEqual(liveMissing(d, { started_at: daysAgo(1), unavailable: u }, NOW).length, 1);
   assert.deepStrictEqual(liveMissing(d, { started_at: daysAgo(STALE_RUN_DAYS + 17), unavailable: u }, NOW), []); // Bloggy Bob, 10.11
@@ -42,7 +43,7 @@ test('a read failure shows while the run is fresh and leaves after STALE_RUN_DAY
 });
 
 test('every static need names who it waits on, and none says the browser install', () => {
-  const owner = /^(Mimi's decision:|Mimi:|Katherine:|Katherine to |Google:)/;
+  const owner = /^(Mimi's decision:|Mimi:|Katherine:|Katherine to |Google:|The Box:)/; // #3498: a Box job's file
   for (const slug of listAgents()) {
     for (const n of (loadAgent(slug).character || {}).needs || []) assert.match(n, owner, `${slug}: "${n}"`);
   }

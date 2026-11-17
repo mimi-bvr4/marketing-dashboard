@@ -56,7 +56,7 @@ const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
 const agentVoices = require('../lib/agent-voices');
-const { applyChecks } = require('../lib/agent-checks');
+const { applyChecks, checkFor } = require('../lib/agent-checks');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
@@ -92,10 +92,14 @@ const STALE_RUN_DAYS = 7;
 function liveMissing(d, run, now) {
   if (!run) return [];
   const pending = new Map((d.sources || []).filter((s) => s.type === 'pending').map((s) => [sourceLabel(s), s.why || 'not connected yet']));
+  // #3498: a reason for a source the agent no longer reads (the Email agent's HubSpot
+  // statistics, moved to the Monthly Report by #2903) describes nothing it waits on.
+  const declared = new Set((d.sources || []).map(sourceLabel));
   const at = run.started_at ? new Date(run.started_at).getTime() : NaN;
   const fresh = Number.isFinite(at) && (now.getTime() - at) < STALE_RUN_DAYS * 86400000;
   const out = [];
   for (const u of run.unavailable || []) {
+    if (!declared.has(u.label)) continue;
     if (pending.has(u.label)) out.push(`${u.label}: ${pending.get(u.label)}`);
     else if (u.type !== 'pending' && fresh) out.push(`${u.label}: ${u.why}`);
   }
@@ -119,6 +123,15 @@ function characterOf(d, asks, run, now = new Date(), checks = null, env = proces
     ...(c.pointer ? { pointer: c.pointer } : {}),
     ...(c.title_always === true ? { title_always: true } : {}),
   };
+}
+
+// #3498: what makes a card "Partly working": a run reason still true (liveMissing),
+// or a source file the Box checks and does not have (a tree_file need). Built through
+// the same applyChecks as the Waiting box, so every gap is also a Waiting-on line and
+// the pill never stands without its reason.
+function gapsOf(d, run, now = new Date(), checks = null, env = process.env) {
+  const fileNeeds = ((d.character || {}).needs || []).filter((n) => { const k = checkFor(n); return !!k && k.kind === 'tree_file'; });
+  return applyChecks([...new Set([...fileNeeds, ...liveMissing(d, run, now)])], checks, env);
 }
 
 // #1666: a watcher with an empty list says so under Waiting on.
@@ -203,6 +216,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
         current: s ? { version: s.version, skill_md: s.skill_md, enabled: s.enabled, max_cards: s.max_cards,
           edited_by: s.edited_by, created_at: s.created_at, note: s.note } : null,
         last_run: runs.get(slug) || null,
+        gaps: gapsOf(d, runs.get(slug), clock(), checks),
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
         character: pin.character,
         guardian: sg,
@@ -450,4 +464,4 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
   return r;
 }
 
-module.exports = { createAgentsRouter, sourceView, characterOf, liveMissing, STALE_RUN_DAYS, isExec, watchNeed, pinterestNeed, REDO_MESSAGE };
+module.exports = { createAgentsRouter, sourceView, characterOf, liveMissing, gapsOf, STALE_RUN_DAYS, isExec, watchNeed, pinterestNeed, REDO_MESSAGE };

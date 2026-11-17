@@ -109,7 +109,7 @@ test('every check the fleet names is one this module can run', () => {
   for (const want of ['switch:AGENT_GALA_SCOUT', 'switch:AGENT_PLANNER_SCOUT', 'switch:AGENT_ENGAGEMENT_SLEUTH', 'switch:AI_TELL_DETECTIVE', 'keychain:marketing-fleet-key', 'mail:press-alerts']) {
     assert.ok(ids.includes(want), `${want} in ${ids.join(', ')}`);
   }
-  assert.ok(all.every((c) => ['switch', 'keychain', 'search_console', 'mail_senders'].includes(c.kind)));
+  assert.ok(all.every((c) => ['switch', 'keychain', 'search_console', 'mail_senders', 'tree_file'].includes(c.kind))); // #3498 tree_file
 });
 
 test('both Box jobs run the checks first', () => {

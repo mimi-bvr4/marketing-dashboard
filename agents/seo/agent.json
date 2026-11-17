@@ -93,6 +93,8 @@
         "instead": "Hands Bloggy Bob the keyword, the site and the post type, ready to run"
       }
     ],
-    "needs": []
+    "needs": [
+      "The Box: the Thursday Ubersuggest file (07_Marketing_and_Brand/SEO_Data/Ubersuggest_Weekly_*.md); ORDER #3489 fixes the job that writes it"
+    ]
   }
 }
