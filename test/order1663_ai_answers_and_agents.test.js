@@ -120,7 +120,7 @@ test('agent.json sources validate: every type is registered, no pending source l
       if (s.type === 'dashboard') assert.ok(Array.isArray(s.paths) && s.paths.every((p) => p.startsWith('/api/')), slug);
       if (s.type === 'file') assert.ok(s.path || s.newest, slug);
       if (s.type === 'ai_answers') {
-        assert.deepStrictEqual(s.assistants, ['claude', 'chatgpt', 'gemini', 'perplexity']);
+        assert.deepStrictEqual(s.assistants, ['claude']); // #3506 Mimi 11.17.2026: Claude only for now
         assert.ok(s.venues.length && s.venues.every((v) => v.code && v.name), slug);
       }
     }
@@ -139,7 +139,7 @@ test('agent.json sources validate: every type is registered, no pending source l
   const c = loadAgent('citations');
   assert.ok(!c.sources.some((s) => s.type === 'pending'));
   assert.ok(c.sources.some((s) => s.type === 'file' && s.newest === '07_Marketing_and_Brand/Listings/DIRECTORY_LISTINGS_'));
-  assert.ok(c.character.needs.includes("Mimi's decision: keys for ChatGPT, Gemini and Perplexity (Claude runs now)"));
+  assert.ok(!c.character.needs.some((n) => /keys for ChatGPT/.test(n))); // #3506: ruled, Claude only; nobody waits on keys
   assert.ok(dueAgents('2026-10-15').includes('citations') && !dueAgents('2026-10-14').includes('citations'));
   assert.match(c.cadence, /^the 15th of each month, 06:00 CT/); // #1699 adds the quarterly packs
 

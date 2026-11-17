@@ -69,9 +69,10 @@ test('every venue code is from Venue_Master_CANONICAL.md, and every venue site i
 test('a post picks its account from its site; a shared site asks Katherine; Paul never guesses', () => {
   assert.deepStrictEqual(PV.venueForLink(SWF_POST), { venue: 'SWF' });
   assert.deepStrictEqual(PV.venueForLink('https://www.thebelltower.com/blog/x/'), { venue: 'TBT' });
-  assert.deepStrictEqual(PV.venueForLink(IHG_POST), { pick: true });
+  // #3506 (Mimi 11.17.2026): a shared site offers the IHG account first; Katherine can still pick another.
+  assert.deepStrictEqual(PV.venueForLink(IHG_POST), { pick: true, offer: 'IHG' });
   assert.deepStrictEqual(PV.venueForLink('https://example.com/x'), { none: true });
-  assert.deepStrictEqual(PV.placePin(pinFor(IHG_POST, IHG_IMG, 'x')), { ...pinFor(IHG_POST, IHG_IMG, 'x'), venue: null, pick: true });
+  assert.deepStrictEqual(PV.placePin(pinFor(IHG_POST, IHG_IMG, 'x')), { ...pinFor(IHG_POST, IHG_IMG, 'x'), venue: 'IHG', pick: true });
   assert.strictEqual(PV.tokenItem('SWF'), 'pinterest-refresh-token-swf');
 });
 
@@ -113,9 +114,10 @@ async function draftCard(link, img, board, env = { ...ON, IHG_TREE: os.tmpdir() 
 
 test('multi-venue site: the card asks Katherine to pick; Approve waits for the pick; then it pins to the picked venue', async () => {
   const { store, card } = await draftCard(IHG_POST, IHG_IMG, '(Katherine picks)');
-  assert.strictEqual(card.payload.pin.venue, null); assert.strictEqual(card.payload.pin.pick, true);
+  // #3506: the IHG account is offered first; Approve still waits for a real board.
+  assert.strictEqual(card.payload.pin.venue, 'IHG'); assert.strictEqual(card.payload.pin.pick, true);
   const refused = await store.decide(card.id, { action: 'approve', who: 'khowe@infinityhospitality.net' });
-  assert.match(refused.error, /pick the venue/);
+  assert.match(refused.error, /pick a board/);
   const accounts = PV.createMemoryAccounts();
   await accounts.save('TBT', { connected: true, boards: BOARDS.tbt });
   await accounts.save('SWF', { connected: true, boards: BOARDS.swf });

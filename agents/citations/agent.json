@@ -31,9 +31,12 @@
     },
     {
       "type": "ai_answers",
-      "label": "AI assistant answers (Claude, ChatGPT, Gemini, Perplexity)",
+      "label": "AI assistant answers (Claude only, Mimi's ruling 11.17.2026)",
+      "ruling": "Mimi 11.17.2026 (ORDER #3506): Claude only for now. No keys for ChatGPT, Gemini or Perplexity. Their code path stays in lib/agent-sources.js, switched OFF here; to revisit, move a name from assistants_off back into assistants and store its key.",
       "assistants": [
-        "claude",
+        "claude"
+      ],
+      "assistants_off": [
         "chatgpt",
         "gemini",
         "perplexity"
@@ -79,6 +82,9 @@
     {
       "type": "ai_cited_sources",
       "label": "pages AI assistants cite for our searches",
+      "providers": [
+        "claude"
+      ],
       "max_pages": 40,
       "prompts": [
         "best event venues for rent in Nashville, TN",
@@ -159,9 +165,9 @@
     "does": [
       "Compares what our own sites say about each venue with the canonical venue facts",
       "Lists every mismatch with the fix",
-      "Asks Claude, ChatGPT, Gemini and Perplexity about each venue on the 15th and lists what they get wrong",
+      "Checks Claude's answers about each venue on the 15th and lists what Claude gets wrong (Claude only, Mimi's ruling 11.17.2026; ChatGPT, Gemini and Perplexity are switched off)",
       "Quarterly refresh packs for The Knot, WeddingWire, Zola and the rest: new description, photo picks with alt text, a review-request message",
-      "Every 15th, asks the AI assistants that show their sources the searches couples and planners type, lists the sites they cite, and flags the ones that never name our venues"
+      "Every 15th, asks Claude (with web search, so it shows its sources) the searches couples and planners type, lists the sites they cite, and flags the ones that never name our venues"
     ],
     "traits": [
       {
@@ -178,7 +184,6 @@
       }
     ],
     "needs": [
-      "Mimi's decision: keys for ChatGPT, Gemini and Perplexity (Claude runs now)",
       "Katherine: confirm which listings are paid and who owns each login (draft is in 07_Marketing_and_Brand/Listings/)"
     ]
   }
