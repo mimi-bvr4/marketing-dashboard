@@ -187,7 +187,8 @@
     if (a.card_only && !a.ask_page) return { cls: 's-part', label: 'Not running yet' }; // #2903: Site Guardian
     if (a.sources.some((s) => s.required && s.pending)) return { cls: 's-wait', label: 'Waiting on input' };
     if (a.last_run && a.last_run.status === 'failed') return { cls: 's-wait', label: 'Last run failed' };
-    if (a.sources.some((s) => s.pending) || (a.last_run && (a.last_run.unavailable || []).length)) return { cls: 's-part', label: 'Partly working' };
+    // #3498: gaps are reasons the Waiting box also shows (the API builds both the same way).
+    if (a.sources.some((s) => s.pending) || (a.gaps || []).length) return { cls: 's-part', label: 'Partly working' };
     return { cls: 's-ok', label: 'Working' };
   }
   // #2941 the eyebrow rule (public/agents-view.js): the role shows only when the name differs from it.
