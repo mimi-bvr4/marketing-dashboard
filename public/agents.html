@@ -189,6 +189,8 @@
     if (a.last_run && a.last_run.status === 'failed') return { cls: 's-wait', label: 'Last run failed' };
     // #3498: gaps are reasons the Waiting box also shows (the API builds both the same way).
     if (a.sources.some((s) => s.pending) || (a.gaps || []).length) return { cls: 's-part', label: 'Partly working' };
+    // #3563: a member with a request box and nothing asked yet is ready, not "Partly working".
+    if (a.card_request && a.card_request.state.state === 'ready') return { cls: 's-ok', label: 'Ready' };
     return { cls: 's-ok', label: 'Working' };
   }
   // #2941 the eyebrow rule (public/agents-view.js): the role shows only when the name differs from it.
@@ -213,10 +215,33 @@
       ${boxes.paused ? `<div class="need"><strong>Paused:</strong> ${esc(boxes.paused)}</div>` : ''}
       ${a.character.pointer ? `<p class="meta pointer"><a href="${esc(a.character.pointer.href)}">${esc(a.character.pointer.text)}</a></p>` : ''}
       ${a.pinterest ? `<p class="meta">Pinterest: ${esc(a.pinterest.line)}. <a href="${esc(a.pinterest.page)}">Settings, Pinterest accounts</a></p>` : ''}
-      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(cardOnlyLine(a))}</span>` : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
+      ${cardReqHtml(a)}
+      <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(cardOnlyLine(a))}</span>` : a.card_request ? '' : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
   }
+  // #3563: the one-field box on the card (the Traveler's city). One run at a time;
+  // the line under it is the newest asked run (Queued, Running, Done or Failed) or "Ready".
+  function cardReqHtml(a) {
+    if (!a.card_request) return '';
+    const c = a.card_request; const busy = ['queued', 'running'].includes(c.state.state);
+    return `<form class="row cardreq" data-cardreq novalidate>
+        <input type="text" data-f="cardreq" maxlength="${Number(c.max) || 60}" placeholder="${esc(c.label)}" aria-label="${esc(c.label)}" ${busy ? 'disabled' : ''}>
+        <button class="btn primary" type="submit" data-a="cardreq" ${busy ? 'disabled' : ''}>${esc(c.button)}</button></form>
+      <p class="meta ${c.state.state === 'failed' ? 'err' : ''}" data-cardreq-line>${esc(a.card_request.state.line)}</p>`;
+  }
+  main.addEventListener('submit', async (e) => {
+    const f = e.target.closest('form[data-cardreq]'); if (!f) return;
+    e.preventDefault();
+    const b = f.querySelector('button[data-a="cardreq"]'); if (b.disabled) return;
+    const slug = f.closest('[data-slug]').dataset.slug;
+    b.disabled = true;
+    try {
+      const r = await api(`/api/agents/${slug}/request`, { method: 'POST', body: JSON.stringify({ value: f.querySelector('[data-f="cardreq"]').value }) });
+      await load();
+      const card = main.querySelector(`[data-slug="${slug}"]`); if (card) say(card, `${r.line}. Drafts land on Review.`, true);
+    } catch (x) { b.disabled = false; say(f, x.message); }
+  });
   // The "say something" button: off unless the switch is on (GET /api/agent-voices).
   // Plays only on a click, one clip at a time, never loops; the line shows as a
   // caption while it plays.

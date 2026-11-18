@@ -8,6 +8,8 @@
 //   POST /api/agents/:slug/revert       { version }  -> a new version copying that one
 //   POST /api/agents/:slug/run          { ask }  -> queued; the Box runs it within 15 minutes
 //                                       (409 for an agent with an ask_page, #1688: asked on that page)
+//   POST /api/agents/:slug/request      { value }  -> #3563 the card's one-field box (the Traveler's
+//                                       city): one queued run with that value as its ask
 //   POST /api/agents/:slug/cards/:id/redo { words } -> #2914 one revised draft of that card, queued
 //   POST /api/agents/keyword-queen/cards/:id/topics/:n/approve -> #3163 one Bloggy Bob request for that topic
 //   POST /api/agents/:slug/asks         { ask }  -> Katherine asks the bot for a new ability
@@ -57,6 +59,7 @@ const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
 const agentVoices = require('../lib/agent-voices');
 const { applyChecks, checkFor } = require('../lib/agent-checks');
+const cardReq = require('../lib/card-request');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
@@ -100,6 +103,8 @@ function liveMissing(d, run, now) {
   const out = [];
   for (const u of run.unavailable || []) {
     if (!declared.has(u.label)) continue;
+    // #3563: "needs a request (--ask)" for a member whose card has the box is not a wait.
+    if (cardReq.isAskWait(d, u)) continue;
     if (pending.has(u.label)) out.push(`${u.label}: ${pending.get(u.label)}`);
     else if (u.type !== 'pending' && fresh) out.push(`${u.label}: ${u.why}`);
   }
@@ -218,6 +223,8 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
         last_run: runs.get(slug) || null,
         gaps: gapsOf(d, runs.get(slug), clock(), checks),
         waiting: queued.filter((q) => q.agent === slug && ['queued', 'running'].includes(q.status)).length,
+        // #3563: the one-field box on the card (the Traveler's city) and what it last did.
+        card_request: cardReq.cardRequestOf(d) ? { ...cardReq.cardRequestOf(d), state: cardReq.cardState(cardReq.cardRequestOf(d), slug, queued) } : null,
         character: pin.character,
         guardian: sg,
         pinterest: pin.pinterest,
@@ -344,6 +351,27 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     const out = await store.queueRun(req.params.slug, String((req.body || {}).ask || '').trim() || null, personOf(req));
     if (out.error) return res.status(out.status || 400).json({ error: out.error });
     res.json({ request: out.request });
+  });
+
+  // #3563: the card's one-field box (the Traveler's city). Same queue and same ask
+  // as Run now with that text typed, i.e. a manual `--ask "<city>"`. One at a time:
+  // a second submit while one waits is refused and names the waiting one.
+  r.post('/api/agents/:slug/request', need, known, async (req, res) => {
+    const slug = req.params.slug;
+    const cfg = cardReq.cardRequestOf(loadAgent(slug));
+    if (!cfg) return res.status(404).json({ error: 'this team member has no request box' });
+    const c = cardReq.checkValue((req.body || {}).value, cfg);
+    if (c.error) return res.status(c.status).json({ error: c.error });
+    const out = await store.queueRun(slug, c.value, personOf(req));
+    if (out.error) {
+      if (out.status === 409) {
+        const st = cardReq.cardState(cfg, slug, await store.runRequests(50));
+        const waitingFor = st && st.value && ['queued', 'running'].includes(st.state) ? `Already queued for ${st.value}. ` : '';
+        return res.status(409).json({ error: `${waitingFor}One at a time: the next can be asked once it finishes.`, state: st });
+      }
+      return res.status(out.status || 400).json({ error: out.error });
+    }
+    res.json({ request: out.request, line: `Queued for ${c.value} · ${cardReq.ct(out.request.created_at)}` });
   });
 
   // #2914: "this missed X" / "redo it this way" on one draft card. Same queue as
