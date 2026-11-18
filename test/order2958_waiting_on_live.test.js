@@ -43,7 +43,7 @@ test('a read failure shows while the run is fresh and leaves after STALE_RUN_DAY
 });
 
 test('every static need names who it waits on, and none says the browser install', () => {
-  const owner = /^(Mimi's decision:|Mimi:|Katherine:|Katherine to |Google:|The Box:)/; // #3498: a Box job's file
+  const owner = /^(Mimi's decision:|Mimi:|Katherine:|Katherine\/K&M:|Katherine to |Google:|The Box:)/; // #3498: a Box job's file; #3567: Katherine with the agency
   for (const slug of listAgents()) {
     for (const n of (loadAgent(slug).character || {}).needs || []) assert.match(n, owner, `${slug}: "${n}"`);
   }
