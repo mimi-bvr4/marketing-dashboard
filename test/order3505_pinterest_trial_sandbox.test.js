@@ -106,7 +106,7 @@ test('sandbox ON: Connect is only for the IHG account until Standard', () => {
   assert.match(route, /connectAllowed\(/, 'the Connect route asks connectAllowed');
 });
 
-test('sandbox ON: the Box trades only the IHG code, reads sandbox boards, never makes a board, and logs no token or code', async () => {
+test('sandbox ON: the Box trades only the IHG code, reads sandbox boards, makes only the one sandbox board (#3539), and logs no token or code', async () => {
   const env = { PINTEREST_SANDBOX: 'on', PINTEREST_PER_VENUE: 'on' };
   const accounts = PV.createMemoryAccounts();
   await accounts.addConnect({ state: 'IHG.' + 'a'.repeat(36), venue: 'IHG', who: 'mimi@', redirectUri: 'https://x/cb' });
@@ -126,11 +126,13 @@ test('sandbox ON: the Box trades only the IHG code, reads sandbox boards, never 
   assert.ok(!calls.some((c) => String(c.body || '').includes('good-code-swf-1')), 'the refused code is never sent to Pinterest');
   const ihg = (await accounts.list()).find((a) => a.venue === 'IHG');
   assert.strictEqual(ihg.connected, true);
-  assert.deepStrictEqual(ihg.boards, [], 'an empty sandbox stays empty');
-  assert.strictEqual(ihg.why, pt.NO_SANDBOX_BOARD, 'the row says why there is nothing to pin to');
+  // #3539 (Mimi 11.17.2026 YES, sandbox only) superseded "never makes a board": an
+  // empty IHG sandbox now gets exactly ONE board, on the sandbox host only.
+  assert.deepStrictEqual(ihg.boards.map((b) => b.name), ['IH Pin Publisher demo'], 'the empty sandbox gets the one demo board');
+  assert.strictEqual(ihg.why, null);
   assert.deepStrictEqual(notProdWrite(calls), [], 'boards come from the sandbox host');
   assert.ok(calls.some((c) => c.m === 'GET' && c.u === `${SANDBOX}/boards`));
-  assert.ok(!calls.some((c) => c.m === 'POST' && c.u.endsWith('/boards')), 'the Box never makes a board, sandbox or real');
+  assert.deepStrictEqual(calls.filter((c) => c.m === 'POST' && c.u.endsWith('/boards')).map((c) => c.u), [`${SANDBOX}/boards`], 'one board, sandbox host only, never a real one');
   // Only the IHG account is checked on Trial.
   assert.deepStrictEqual((await accounts.list()).map((a) => a.venue), ['IHG']);
   const all = logs.join('\n');
