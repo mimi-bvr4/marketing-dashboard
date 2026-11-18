@@ -52,7 +52,7 @@ test('a Keychain item present clears the key wait, and the check never reads the
   const ok = rows({ id: 'keychain:marketing-fleet-key', ok: true, reason: 'x', checked_at: NOW.toISOString() });
   const needs = characterOf(loadAgent('monthly-report'), [], null, NOW, ok, {}).needs;
   assert.ok(!needs.some((n) => /marketing-fleet-key/.test(n)));
-  assert.ok(needs.some((n) => /^Katherine: the Google \+ Meta ads export Sheet/.test(n)), 'an unchecked need stays');
+  assert.ok(needs.some((n) => /^Katherine\/K&M: create the ads export Sheet per the spec/.test(n)), 'a need whose check has no row yet stays'); // #3568
 });
 
 test('a run reason whose check now passes is dropped; one line per failing check', () => {
