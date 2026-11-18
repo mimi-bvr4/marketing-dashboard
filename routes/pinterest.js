@@ -53,7 +53,7 @@ function createPinterestRouter({ accounts, store, env = process.env }) {
     const state = PV.newState(v.code);
     const uri = redirectUri(env);
     await accounts.addConnect({ state, venue: v.code, who: personOf(req), redirectUri: uri });
-    res.json({ url: PV.authorizeUrl({ appId: env.PINTEREST_APP_ID, redirectUri: uri, state }) });
+    res.json({ url: PV.authorizeUrl({ appId: env.PINTEREST_APP_ID, redirectUri: uri, state, env }) });
   });
 
   r.get('/settings/pinterest/callback', async (req, res) => {
