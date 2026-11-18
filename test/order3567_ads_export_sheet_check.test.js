@@ -28,7 +28,7 @@ test('the check is in the fleet list the Box job runs', () => {
   const all = C.fleetChecks(listAgents().map((s) => [s, loadAgent(s)]));
   const c = all.find((x) => x.id === 'sheet:ads-export');
   assert.ok(c, 'sheet:ads-export is checked');
-  assert.deepStrictEqual(c.agents, ['paid-ads']);
+  assert.deepStrictEqual([...c.agents].sort(), ['monthly-report', 'paid-ads']); // #3568: the Monthly Report waits on the same Sheet
 });
 
 test('no Sheet id set: fails, and never asks Google', async () => {
