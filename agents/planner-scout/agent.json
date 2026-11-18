@@ -6,6 +6,13 @@
   "max_tokens": 10000,
   "sales_fields": true,
   "copy_prepass": true,
+  "card_request": {
+    "kind": "city",
+    "label": "Which city? (e.g. Atlanta)",
+    "button": "Start research",
+    "max": 60,
+    "ready": "Ready: type a city to start"
+  },
   "seen_before": {
     "key": ["company", "city"],
     "source": ["planner"]
