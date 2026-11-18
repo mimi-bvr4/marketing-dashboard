@@ -10,7 +10,7 @@
       "required": true,
       "label": "Google + Meta ads export Sheet",
       "since": "2026-10-13",
-      "why": "the export Sheet (Google Ads script + scheduled Meta report, #1011 Amd C) has not been created and shared to the service account yet; Katherine owns it"
+      "why": "the export Sheet has never existed: K&M build it per 07_Marketing_and_Brand/Ads_Export_Spec_for_KM.md (#3567), share it to the Brain, and its id goes in ADS_EXPORT_SHEET_ID; Katherine owns the ask"
     },
     {
       "type": "file",
@@ -33,7 +33,7 @@
       }
     ],
     "needs": [
-      "Katherine: the Google + Meta ads export Sheet, shared to the service account"
+      "Katherine/K&M: create the ads export Sheet per the spec (07_Marketing_and_Brand/Ads_Export_Spec_for_KM.md) and share it to the Brain"
     ]
   }
 }
