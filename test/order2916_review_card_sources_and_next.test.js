@@ -46,20 +46,27 @@ test('source names are escaped', () => {
   assert.ok(!html.includes('<b>x</b>'));
 });
 
+// #3570 replaced the page's own "After Approve:" wording with the server's
+// "Approve will:" line (lib/approve-will.js), so the card is given it here the
+// way routes/review.js gives it.
+const { approveWill } = require('../lib/approve-will');
+const withWill = (c) => ({ ...c, approve_will: approveWill(c) });
+
 test('every card kind says what Approve does', () => {
   const { cardHtml } = renderers();
-  const pin = cardHtml(base({ payload: { pin: { board: 'Barn Weddings', title: 't', image_url: 'https://x/i.jpg', link: 'https://x' } } }));
-  assert.match(pin, /After Approve: pinned live on Pinterest, board Barn Weddings\./);
-  const post = cardHtml(base({ payload: { post: { site: 'infinityhospitality.net', content_md: 'x' } } }));
-  assert.match(post, /After Approve: saved as an unpublished WordPress draft on infinityhospitality\.net\. Nothing is published\./);
-  for (const kind of [{ agent_name: 'Google Business' }, { agent_name: 'Convention Connector', job: 'outreach email' }, { agent_name: 'Scout' }]) {
-    assert.match(cardHtml(base(kind)), /After Approve: marked ready for you to use\. Nothing is posted or sent\./, kind.agent_name);
+  const pin = cardHtml(withWill(base({ payload: { pin: { board: 'Barn Weddings', title: 't', image_url: 'https://x/i.jpg', link: 'https://x' } } })));
+  assert.match(pin, /Approve will: queue this pin for the Box(&#39;|')s next run \(it checks every 15 minutes\), board Barn Weddings\./);
+  const post = cardHtml(withWill(base({ payload: { post: { site: 'infinityhospitality.net', content_md: 'x' } } })));
+  assert.match(post, /Approve will: save it as an unpublished WordPress draft on infinityhospitality\.net, on the Box(&#39;|')s next run\. Nothing is published/);
+  for (const kind of [{ agent: 'gbp', agent_name: 'Google Business' }, { agent: 'email', agent_name: 'Email Agent', job: 'nurture email' }]) {
+    assert.match(cardHtml(withWill(base(kind))), /Approve will: file it as done, marked ready for you to use\. Nothing is posted, sent or saved anywhere else\./, kind.agent_name);
   }
+  assert.match(cardHtml(withWill(base({ agent: 'scout' }))), /data-a="archive">Got it</, 'a Scout report says Got it');
 });
 
 test('the what-next line is only on drafts, where Approve is offered', () => {
   const { cardHtml } = renderers();
-  for (const status of ['ready', 'rejected', 'archived']) assert.doesNotMatch(cardHtml(base({ status })), /After Approve:/, status);
+  for (const status of ['ready', 'rejected', 'archived']) assert.doesNotMatch(cardHtml(withWill(base({ status }))), /Approve will:/, status);
 });
 
 test('no order number on anything she sees', () => {

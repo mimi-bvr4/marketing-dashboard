@@ -4,7 +4,7 @@
 //   GET  /api/review/cards?status=  draft (default) | ready | rejected | archived | reference (#2993); &agent=
 //   GET  /api/review/handover       the HANDOVER_AT line (#2993), or { on: false }
 //   GET  /api/review/runs           each agent's last run (done / failed / missing sources)
-//   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit' | 'restore', reason?, body? }
+//   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit' | 'restore' | 'archive' (#3570), reason?, body? }
 //   POST /api/review/lint           { text } -> the AI-tells lint ("Check text")
 //   POST /api/review/detective      { text } -> the AI Tell Detective (#3008; 404 while AI_TELL_DETECTIVE is off)
 //   GET  /api/review/ai-tell-cards  ids of proposed-tell cards on Drafts (#3015; 404 while AI_TELL_HUNT is off)
@@ -27,6 +27,7 @@ const outreach = require('../lib/outreach');
 const maryDesk = require('../lib/mary-desk');
 const detective = require('../lib/ai-tell-detective');
 const tellReview = require('../lib/ai-tell-review');
+const { approveWill } = require('../lib/approve-will');
 const fs = require('fs');
 
 const PAGE = path.join(__dirname, '..', 'public', 'review.html');
@@ -69,11 +70,13 @@ function createReviewRouter({ store }) {
     // card carries her state instead ("Waiting on Mary to pick a salesperson",
     // "Assigned to X by Mary Topp, date", "Sent back to Katherine by ...").
     const viaMary = maryDesk.on();
-    const named = (c) => {
+    const shaped = (c) => {
       const o = names.has(c.agent) ? { ...c, agent_name: names.get(c.agent) } : c;
       if (viaMary && c.payload && c.payload.sales) return { ...o, mary: maryDesk.leadState(c), sales_owner: maryDesk.DESK };
       return c.payload && c.payload.sales && owners.has(c.agent) ? { ...o, sales_owner: owners.get(c.agent) } : o;
     };
+    // #3570: the one line saying what Approve will do (or Got it), from the card's real next step.
+    const named = (c) => { const o = shaped(c); const w = approveWill(o); return w ? { ...o, approve_will: w } : o; };
     // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
     // newest first. Empty while the line is unset. Each card stays openable,
     // copyable and approvable; none of them counts.

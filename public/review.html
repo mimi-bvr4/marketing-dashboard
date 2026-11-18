@@ -45,7 +45,7 @@
   <nav><a href="/">Dashboard</a> · <a href="/agents">Katherine's Team</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
-  <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong> Approve is refused on any card with an em dash, a hard venue capacity (no range or "depending on"), or an internal venue code like TBB; it says which line.</p>
+  <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong> Approve is refused on any card with an em dash, a hard venue capacity (no range or "depending on"), or an internal venue code like TBB; it says which line. Each card says what its Approve will do. <strong>Archive (no action)</strong> takes a card off your pile without approving or rejecting it: nothing is sent, the agent is not told it was a bad draft, and the card stays under Archived. Report cards show <strong>Got it</strong>, which does the same.</p>
   <div class="runs" id="runs"></div>
   <div class="tabs" role="group" aria-label="Show">
     <button data-s="draft" aria-pressed="true">Drafts</button>
@@ -132,7 +132,7 @@
     const p = c.payload && c.payload.pin; if (!p) return '';
     return `<div class="pin" style="display:flex;gap:1rem;align-items:flex-start;border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
       <img src="${esc(p.image_url)}" alt="${esc(p.alt_text || '')}" style="width:140px;max-width:40%;border-radius:8px;object-fit:cover">
-      <div><p class="meta">The pin${c.status === 'draft' ? ' (Approve pins it live on Pinterest)' : ''}. ${pinAccountHtml(c, p)}</p>
+      <div><p class="meta">The pin${c.status === 'draft' ? ', as it will go up (the line above the buttons says where Approve sends it)' : ''}. ${pinAccountHtml(c, p)}</p>
       <p style="margin:.25rem 0"><strong>${esc(p.title)}</strong></p><p style="margin:.25rem 0">${esc(p.description || '')}</p>
       <p class="meta">Links to <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link)}</a></p></div></div>`;
   }
@@ -218,20 +218,15 @@
       ? `<span class="badge bad">${esc(s.label)} (unavailable)</span>`
       : `<span>${esc(s.label)}</span>`).join(', ')}</p>`;
   }
-  // One line per card kind saying what Approve does. Only pins and blog posts leave this page.
+  // One line per draft card saying what Approve will do. The server writes it
+  // from the card's real next step (lib/approve-will.js); a card with no next
+  // step has no line and shows Got it instead of Approve.
   function nextHtml(c) {
-    if (c.status !== 'draft') return '';
-    const post = c.payload && c.payload.post; const pin = c.payload && c.payload.pin;
-    let what;
-    const sales = c.payload && c.payload.sales;
-    if (sales && viaMary(c)) what = `sent to Mary Topp's Sales Hand-off desk. ${WAITING}; nothing goes to HubSpot until she picks.`;
-    else if (sales && noOwner(c)) what = `kept in Ready. ${NO_OWNER}, so no HubSpot task is made until Mimi or Katherine sets one.`;
-    else if (sales) what = `sent to ${esc(salesWho(c))} (Sales) as a HubSpot task with this email word for word${sales.company ? `, linked to ${esc(sales.company)}` : ''}. ${salesWho(c) === 'Cameron Creasy' ? 'Cameron' : 'The salesperson'} sends it.`;
-    else if (pin) what = `pinned live on Pinterest${pin.board ? `, board ${esc(pin.board)}` : ''}.`;
-    else if (post) what = `saved as an unpublished WordPress draft on ${esc(post.site || 'the site')}. Nothing is published.`;
-    else what = 'marked ready for you to use. Nothing is posted or sent.';
-    return `<p class="meta next">After Approve: ${what}</p>`;
+    const w = c.approve_will;
+    if (c.status !== 'draft' || !w || !w.line) return '';
+    return `<p class="meta next">Approve will: ${esc(w.line)}</p>`;
   }
+  function gotIt(c) { return !!(c.approve_will && c.approve_will.got_it); }
   function cardHtml(c) {
     const tells = (c.checks && c.checks.ai_tells_summary) || '';
     const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
@@ -249,15 +244,15 @@
       ${salesHtml(c)}
       ${topicsHtml(c)}
       ${handoffHtml(c)}
-      ${nextHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
-      ${c.status === 'archived' ? `<p class="meta">Archived ${fmt(c.decided_at)} without a decision. Nothing was approved, rejected or deleted. Restore puts it back on Drafts.</p>` : ''}
+      ${c.status === 'archived' ? `<p class="meta">Archived${c.decided_by ? ` by ${esc(c.decided_by)}` : ''} ${fmt(c.decided_at)} without a decision. Nothing was approved, rejected or deleted. Restore puts it back on Drafts.</p>` : ''}
       ${c.redo && c.status === 'draft' ? `<p class="meta redo-note"><span class="badge">Redo asked</span> Redo asked. The new version lands here within about 15 minutes. You said: ${esc(c.redo.words)}</p>` : ''}
       ${c.redo_of ? '<p class="meta"><span class="badge">Revised version</span> This replaces an earlier draft; the earlier one is kept under Rejected.</p>' : ''}
+      ${nextHtml(c)}
       <div class="actions">
         <button data-a="copy">Copy text</button>
-        ${c.status === 'draft' ? `<button data-a="approve">Approve</button><button data-a="edit">Edit</button>
+        ${c.status === 'draft' ? `${gotIt(c) ? '<button data-a="archive">Got it</button>' : '<button data-a="approve">Approve</button><button data-a="archive">Archive (no action)</button>'}<button data-a="edit">Edit</button>
         <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>
         <input data-f="redo" placeholder="This missed X, or redo it this way" aria-label="What to redo"><button data-a="redo">Redo</button>` : ''}
         ${c.status === 'archived' ? '<button data-a="restore">Restore to Drafts</button>' : ''}
@@ -300,6 +295,8 @@
     if (b.dataset.a === 'copy') { await navigator.clipboard.writeText(c.payload && c.payload.post ? c.payload.post.content_md : c.body); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy text'), 1500); }
     if (b.dataset.a === 'approve') act({ action: 'approve' });
     if (b.dataset.a === 'restore') act({ action: 'restore' });
+    // Archive (no action) and Got it: off the pile, not approved, not rejected, nothing sent.
+    if (b.dataset.a === 'archive') act({ action: 'archive' });
     if (b.dataset.a === 'reject') act({ action: 'reject', reason: el.querySelector('[data-f=reason]').value });
     // #2914: one revised draft of this card, by the same agent, through the Run now queue.
     if (b.dataset.a === 'redo') {
