@@ -51,7 +51,11 @@ test('#3522 pg runs(): 31+ agents, the one that sorts last still gets its newest
 test('#3522 pg runs(): same row shape (whole agent_runs row, DISTINCT ON agent)', async () => {
   const pool = fakePool(seed(3));
   const runs = await createPgStore(pool, { lint }).runs();
-  assert.match(pool.seen[0].sql, /SELECT DISTINCT ON \(agent\) \* FROM agent_runs ORDER BY agent, started_at DESC/);
+  // #3071 rebase 11.17: the store is department-scoped, so a WHERE department
+  // clause may sit between FROM and ORDER BY. What #3522 pins is unchanged:
+  // the whole row, DISTINCT ON agent, newest first, and no LIMIT.
+  assert.match(pool.seen[0].sql, /SELECT DISTINCT ON \(agent\) \* FROM agent_runs (WHERE department = \$\d+ )?ORDER BY agent, started_at DESC/);
+  assert.doesNotMatch(pool.seen[0].sql, /LIMIT/);
   assert.deepStrictEqual(Object.keys(runs[0]).sort(), ['agent', 'cards', 'id', 'note', 'started_at', 'status', 'unavailable']);
 });
 
