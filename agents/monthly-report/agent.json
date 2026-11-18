@@ -42,7 +42,8 @@
       "label": "the W1 email audit (the 12-month baseline)"
     },
     {
-      "type": "pending",
+      "type": "ads_sheet",
+      "env": "ADS_EXPORT_SHEET_ID",
       "label": "Google + Meta ads export Sheet",
       "why": "the export Sheet has not been created and shared yet"
     }

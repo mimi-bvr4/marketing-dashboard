@@ -6,7 +6,8 @@
   "max_cards": 1,
   "sources": [
     {
-      "type": "pending",
+      "type": "ads_sheet",
+      "env": "ADS_EXPORT_SHEET_ID",
       "required": true,
       "label": "Google + Meta ads export Sheet",
       "since": "2026-10-13",
