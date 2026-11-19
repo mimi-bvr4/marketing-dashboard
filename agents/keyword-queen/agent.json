@@ -71,7 +71,7 @@
     "needs": [
       "Mimi: switch it on (AGENT_KEYWORD_QUEEN)",
       "Google: Search Console access for the Box (ORDER #2958)",
-      "Mimi: load the weekly Ubersuggest job (ORDER #1803); it is not loaded on the Box, so no Thursday file exists yet"
+      "The Box: the Thursday Ubersuggest file (07_Marketing_and_Brand/SEO_Data/Ubersuggest_Weekly_*.md); ORDER #3489 fixes the job that writes it"
     ]
   }
 }
