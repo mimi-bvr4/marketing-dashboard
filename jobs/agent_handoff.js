@@ -92,7 +92,19 @@ async function main({ env = process.env, log = console.log } = {}) {
         await require('../lib/pinterest-connect').syncAccounts({ accounts: PV.createPgAccounts(pool), log, env });
       } catch (e) { log(`pinterest accounts: not checked this run (${e.message})`); }
     }
-    await handoff({ store: createPgStore(pool, { lint }), fetchImpl: globalThis.fetch, env, log });
+    const store = createPgStore(pool, { lint });
+    // #3627: the ONE IHG demo card for the Pinterest Standard video (sandbox only;
+    // lib/pinterest-demo-card.js holds the fences). Queue it once IHG is Connected
+    // with the demo board, then put the demo board on its card. Never fails the run.
+    if (PV.perVenueOn(env)) {
+      try {
+        const demo = require('../lib/pinterest-demo-card');
+        const accounts = await PV.createPgAccounts(pool).list();
+        await demo.queueDemo({ store, accounts, env, fetchImpl: globalThis.fetch, log });
+        await demo.pickDemoBoard({ store, accounts, env, log });
+      } catch (e) { log(`pinterest demo: not checked this run (${e.message})`); }
+    }
+    await handoff({ store, fetchImpl: globalThis.fetch, env, log });
     return 0;
   } finally { await pool.end(); }
 }
