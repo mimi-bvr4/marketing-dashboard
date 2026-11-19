@@ -7,7 +7,8 @@
 // The code is parked in canva_connects with its PKCE verifier; the Box trades it
 // for the refresh token on its next cadet run and keeps that in its Keychain
 // (lib/canva.js tradeCodes). This server never holds the client secret or a token.
-// The client id is not a secret (it is in the sign-in link itself): CANVA_CLIENT_ID.
+// The client id is not a secret (it is in the sign-in link itself): CANVA_CLIENT_ID if
+// set, else the one the Box publishes to canva_app from its Keychain (#3625).
 'use strict';
 
 const express = require('express');
@@ -19,16 +20,19 @@ const page = (title, body) => `<!doctype html><meta charset="utf-8"><title>${esc
 
 function createCanvaRouter({ connects, env = process.env }) {
   const r = express.Router();
+  // #3625: a CANVA_CLIENT_ID variable wins; otherwise the id the Box published from its Keychain.
+  const clientIdOf = async () => env.CANVA_CLIENT_ID || (connects.clientId ? await connects.clientId() : null) || null;
 
   r.get(C.CONNECT_PAGE, async (req, res) => {
     const who = personOf(req);
     if (!who) return res.status(403).send('Signed-in leadership only.');
-    if (!env.CANVA_CLIENT_ID) return res.status(409).send(page('Canva sign-in not ready', 'The Canva integration id is not set on the dashboard yet (CANVA_CLIENT_ID).'));
+    const clientId = await clientIdOf();
+    if (!clientId) return res.status(409).send(page('Canva sign-in not ready', 'The Canva integration id has not reached the dashboard yet. The Box sends it on its next Archivist run (within 15 minutes) once canva-client-id is in its Keychain.'));
     const state = C.newState();
     const verifier = C.newVerifier();
     const uri = C.redirectUri(env);
     await connects.addConnect({ state, who, redirectUri: uri, verifier });
-    res.redirect(C.authorizeUrl({ clientId: env.CANVA_CLIENT_ID, redirectUri: uri, state, verifier }));
+    res.redirect(C.authorizeUrl({ clientId, redirectUri: uri, state, verifier }));
   });
 
   r.get(C.CALLBACK, async (req, res) => {
@@ -47,7 +51,7 @@ function createCanvaRouter({ connects, env = process.env }) {
 
   r.get('/api/canva/connects', async (req, res) => {
     if (!personOf(req)) return res.status(403).json({ error: 'Signed-in leadership only.' });
-    res.json({ ready: !!env.CANVA_CLIENT_ID, read_on_box: 'CADET_CANVA_READ is set on the Box, not here', recent: await connects.recentConnects() });
+    res.json({ ready: !!(await clientIdOf()), read_on_box: 'CADET_CANVA_READ is set on the Box, not here', recent: await connects.recentConnects() });
   });
 
   return r;

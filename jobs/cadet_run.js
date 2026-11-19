@@ -57,7 +57,8 @@ async function main({ env = process.env, log = console.log } = {}) {
     // #3622: a brain@ Canva sign-in parked on the dashboard is traded here (switch
     // or not, so the sign-in can come before the flip); the read needs the switch.
     const C = require('../lib/canva');
-    try { await C.ensureCanvaTables(pool); await C.tradeCodes({ connects: C.createPgConnects(pool), log }); }
+    // #3625: first, the Box hands the dashboard the (non-secret) client id from its Keychain.
+    try { await C.ensureCanvaTables(pool); const cx = C.createPgConnects(pool); await C.publishClientId({ connects: cx, log }); await C.tradeCodes({ connects: cx, log }); }
     catch (e) { log(`canva connect: NOT RUN (${e.message})`); }
     const canva = C.readOn(env) ? C.createReader({ budget: 20, log }) : null;
     await runOnce({ store: createPgStore(pool), drive: createDriveClient(), log, canva });
