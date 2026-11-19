@@ -43,7 +43,7 @@
   <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/agents">Katherine's Team</a> · <a href="/competitors">Competitors</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
-  <p class="lede">Ask the Collateral Cadet where a word or phrase appears. He looks in every material on the Collateral Map he can read and on our 11 websites, and lists each place with the line quoted. Anything he could not read says <strong>Not checked</strong>, so a short list never means the rest is clean. He never changes a material.</p>
+  <p class="lede">Ask the Collateral Cadet where a word or phrase appears, or ask a plain question ("where is The Estate at Cherokee Dock pricing listed?"). He looks in every material on the Collateral Map he can read and on our 11 websites, and lists each place with the line quoted. Anything he could not read says <strong>Not checked</strong>, so a short list never means the rest is clean. He never changes a material.</p>
   <form class="bar" id="ask" autocomplete="off">
     <input id="phrase" type="search" maxlength="120" placeholder="sparkling white wine" aria-label="Word or phrase to look for" required>
     <button class="btn primary" type="submit" id="go">Ask the Cadet</button>
@@ -63,8 +63,11 @@
   const quotes = (lines) => (lines || []).map((l) => `<blockquote>${esc(l)}</blockquote>`).join('');
   let timer = null;
 
+  // #3617: the Box writes the summary (Canva materials say why they were not
+  // read); a search stored before #3617 falls back to the old counts.
   function tallyText(t) {
     if (!t) return '';
+    if (t.summary) return t.summary.replace(/\.$/, ''); // the page adds the closing period
     return `${t.materials.found} material${t.materials.found === 1 ? '' : 's'} and ${t.sites.found} site${t.sites.found === 1 ? '' : 's'} found; ${t.materials.not_checked + t.sites.not_checked} not checked`;
   }
 
@@ -79,7 +82,8 @@
 
   function drawAsks(list) {
     $('#asks').innerHTML = list.length ? `<ul class="plain">${list.map((a) => `<li><button data-id="${a.id}"><strong>"${esc(a.phrase)}"</strong>
-      <span class="meta">${a.status === 'done' ? esc(tallyText(a.tally)) : a.status === 'failed' ? 'Did not finish: ' + esc(a.error || '') : 'Waiting for the Box (every 15 minutes)'} · asked by ${esc(a.asked_by)} ${esc(when(a.created_at))}</span></button></li>`).join('')}</ul>`
+      ${a.status === 'done' && a.tally && a.tally.answer ? `<blockquote>${esc(a.tally.answer)}</blockquote>` : ''}
+      <span class="meta">${a.status === 'done' ? esc(tallyText(a.tally)) :a.status === 'failed' ? 'Did not finish: ' + esc(a.error || '') : 'Waiting for the Box (every 15 minutes)'} · asked by ${esc(a.asked_by)} ${esc(when(a.created_at))}</span></button></li>`).join('')}</ul>`
       : '<p class="empty">No searches yet. Type a phrase above.</p>';
   }
 
@@ -100,7 +104,12 @@
   function site(s) {
     return `<li><strong>${esc(s.site)}</strong> ${tag(s.status)} <span class="meta">${esc(s.platform)}${s.how ? ' · ' + esc(s.how) : ''}</span>
       ${s.why ? `<div class="meta">${esc(s.why)}</div>` : ''}
-      ${(s.pages || []).map((p) => `<div><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.page)}</a>${p.title ? ` <span class="meta">${esc(p.title)}</span>` : ''}${quotes(p.lines)}</div>`).join('')}</li>`;
+      ${(s.pages || []).map((p) => { const rest = p.line ? (p.lines || []).filter((l) => l !== p.line) : p.lines; return `<div><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.page)}</a>${p.title ? ` <span class="meta">${esc(p.title)}</span>` : ''}${p.line ? `<blockquote>${esc(p.line)}</blockquote>` : ''}${rest && rest.length ? (p.line ? `<details><summary class="meta">${rest.length} more line(s) on this page</summary>${quotes(rest)}</details>` : quotes(rest)) : ''}</div>`; }).join('')}</li>`;
+  }
+  // #3617: one honest line for the Canva materials, with the Sheet to open them.
+  function mapPointer(t) {
+    if (!t || !t.map_url) return '';
+    return `<p class="meta" style="margin:0"><a href="${esc(t.map_url)}" target="_blank" rel="noopener">Open the Collateral Map Sheet</a> to open the Canva guides yourself.</p>`;
   }
 
   async function open(id) {
@@ -114,7 +123,7 @@
     const found = res.materials.filter((m) => m.status === 'FOUND');
     const unchecked = res.materials.filter((m) => m.status === 'NOT CHECKED');
     const clean = res.materials.filter((m) => m.status === 'NOT FOUND');
-    box.innerHTML = head + `<p class="meta" style="margin:0">Searched ${esc(when(res.searched_at))} for ${esc(a.asked_by)}. ${esc(tallyText(res.tally))}.</p>
+    box.innerHTML = head + `${res.tally.answer ? `<blockquote>${esc(res.tally.answer)}</blockquote>` : ''}<p class="meta" style="margin:0">Searched ${esc(when(res.searched_at))} for ${esc(a.asked_by)}. ${esc(tallyText(res.tally))}.</p>${mapPointer(res.tally)}
       <div class="bar"><a class="btn primary" href="${esc(a.change_log.marketing)}" target="_blank" rel="noopener">Post to the Change Log (Marketing)</a>
         <a class="btn" href="${esc(a.change_log.menus)}" target="_blank" rel="noopener">Post to the Change Log (Menus)</a>
         <span class="meta">Opens Dispatch's Change Log with these places filled in. You check it and post it; nothing is posted for you.</span></div>
