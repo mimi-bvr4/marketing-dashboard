@@ -121,6 +121,11 @@ app.use(pageGate);
     const cadet = require('./lib/cadet-store');
     cadet.ensureCadetTables(reviewPool).catch(e => console.error('[cadet] ensureCadetTables:', e.message));
     app.use(require('./routes/cadet').createCadetRouter({ store: cadet.createPgStore(reviewPool), agentStore }));
+    // ORDER #3622: the brain@ Canva sign-in for the Archivist (code parked here, traded on the Box).
+    // The read itself is behind CADET_CANVA_READ on the Box (default OFF). Rollback: delete these three lines.
+    const canvaLib = require('./lib/canva');
+    canvaLib.ensureCanvaTables(reviewPool).catch(e => console.error('[canva] ensureCanvaTables:', e.message));
+    app.use(require('./routes/canva').createCanvaRouter({ connects: canvaLib.createPgConnects(reviewPool) }));
     // ORDER #1717: Katherine's own dashboards (her files, read nightly on the Box; same gate).
     const her = require('./lib/katherine-store');
     her.ensureKatherineTables(reviewPool).catch(e => console.error('[her-numbers] ensureKatherineTables:', e.message));
@@ -132,7 +137,7 @@ app.use(pageGate);
   } else {
     app.get(['/review', '/review.html', '/api/review/*', '/agents', '/agents.html', '/api/agents', '/api/agents/*', '/competitors', '/competitors.html', '/api/competitors', '/api/competitors/*',
       '/cadet', '/cadet.html', '/api/cadet', '/api/cadet/*', '/her-numbers', '/her-numbers.html', '/api/her-numbers', '/web', '/web.html', '/api/web', '/api/web/*',
-      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch', '/settings/pinterest', '/api/pinterest/*', '/handoff', '/handoff.html', '/api/handoff', '/api/handoff/*'],
+      '/reviewer-watch', '/reviewer-watch.html', '/api/reviewer-watch', '/settings/pinterest', '/api/pinterest/*', '/settings/canva/*', '/api/canva/*', '/handoff', '/handoff.html', '/api/handoff', '/api/handoff/*'],
       (req, res) => res.status(503).json({ error: 'The Review tab needs the marketing database' }));
   }
 }
