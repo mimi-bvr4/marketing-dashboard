@@ -15,6 +15,18 @@ const { runChecks } = require('../jobs/agent_checks');
 const NOW = new Date('2026-11-11T18:00:00-06:00');
 const rows = (...r) => new Map(r.map((x) => [x.id, x]));
 
+// #3606: every runChecks here reads a tree this test owns (IHG_TREE), never the
+// real project tree, so a tree_file check answers the same on every machine.
+// files: paths under the tree to create (empty .md files). Removed after the test.
+const os = require('os');
+function ownTree(t, files = []) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'md3606-tree-'));
+  for (const f of files) { fs.mkdirSync(path.join(root, path.dirname(f)), { recursive: true }); fs.writeFileSync(path.join(root, f), ''); }
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+const UBER = '07_Marketing_and_Brand/SEO_Data/Ubersuggest_Weekly_2026-11-19.md';
+
 test('a switch-on env makes the "switch it on" line vanish', async () => {
   const c = C.checkFor('Mimi: switch it on (AGENT_GALA_SCOUT)');
   assert.strictEqual(c.id, 'switch:AGENT_GALA_SCOUT');
@@ -76,12 +88,12 @@ test('press alerts: each sender must have reached brain@ in 14 days', async () =
   assert.strictEqual((await C.runCheck(c, { mailCount: async () => 1 })).ok, true);
 });
 
-test('a check that fails twice texts once, and never again while it keeps failing', async () => {
+test('a check that fails twice texts once, and never again while it keeps failing', async (tc) => {
   const store = createMemoryStore({ lint: () => ({}) });
   const alerts = [];
-  let t = NOW.getTime();
-  const opts = { ctx: { env: {}, keychainHas: () => false, searchConsoleSites: async () => 2, mailCount: async () => 1 },
-    now: () => new Date(t += 900000), env: { AGENT_CHECK_ALERTS: 'on' }, log: () => {}, requestAlert: (l) => alerts.push(l) };
+  let clock = NOW.getTime();
+  const opts = { ctx: { env: { IHG_TREE: ownTree(tc) }, keychainHas: () => false, searchConsoleSites: async () => 2, mailCount: async () => 1 },
+    now: () => new Date(clock += 900000), env: { AGENT_CHECK_ALERTS: 'on' }, log: () => {}, requestAlert: (l) => alerts.push(l) };
   for (let i = 0; i < 5; i++) await runChecks(store, opts);
   const keyAlerts = alerts.filter((l) => /marketing-fleet-key/.test(l));
   assert.strictEqual(keyAlerts.length, 1, alerts.join('\n'));
@@ -94,13 +106,37 @@ test('a check that fails twice texts once, and never again while it keeps failin
   assert.strictEqual(alerts.filter((l) => /marketing-fleet-key/.test(l)).length, 2);
 });
 
-test('alerts ship OFF: with no AGENT_CHECK_ALERTS nothing is requested', async () => {
+async function alertsOffRows(tree) {
   const store = createMemoryStore({ lint: () => ({}) });
   const alerts = [];
-  const opts = { ctx: { env: {}, keychainHas: () => false, searchConsoleSites: async () => 0, mailCount: async () => 0 }, env: {}, log: () => {}, requestAlert: (l) => alerts.push(l) };
+  const opts = { ctx: { env: { IHG_TREE: tree }, keychainHas: () => false, searchConsoleSites: async () => 0, mailCount: async () => 0 }, env: {}, log: () => {}, requestAlert: (l) => alerts.push(l) };
   await runChecks(store, opts); await runChecks(store, opts);
+  return { alerts, rows: await store.checkRows() };
+}
+
+test('alerts ship OFF: with no AGENT_CHECK_ALERTS nothing is requested', async (t) => {
+  const { alerts, rows: got } = await alertsOffRows(ownTree(t));
   assert.deepStrictEqual(alerts, []);
-  assert.ok((await store.checkRows()).every((r) => r.ok === false && r.alerted_at), 'the due alert is still recorded');
+  assert.ok(got.every((r) => r.ok === false && r.alerted_at), 'the due alert is still recorded');
+});
+
+// #3606: the result above no longer depends on what the machine's own tree holds.
+test('the live checks read the test-owned tree, never ~/Full_IH_Project', async (t) => {
+  // A fake home whose Full_IH_Project HAS the Ubersuggest file: the empty owned tree still decides.
+  const home = ownTree(t, [path.join('Full_IH_Project', UBER)]);
+  const was = process.env.HOME;
+  process.env.HOME = home;
+  t.after(() => { process.env.HOME = was; });
+  assert.strictEqual(os.homedir(), home);
+  const { alerts, rows: got } = await alertsOffRows(ownTree(t));
+  assert.deepStrictEqual(alerts, []);
+  const uber = got.find((r) => r.id === 'tree-file:ubersuggest-weekly');
+  assert.ok(uber, 'the fleet still names the Ubersuggest file check');
+  assert.strictEqual(uber.ok, false, uber.reason);
+  assert.ok(got.every((r) => r.ok === false && r.alerted_at));
+  // And an owned tree holding a fake file makes exactly that row pass.
+  const withFile = await alertsOffRows(ownTree(t, [UBER]));
+  assert.deepStrictEqual(withFile.rows.filter((r) => r.ok).map((r) => r.id), ['tree-file:ubersuggest-weekly']);
 });
 
 test('every check the fleet names is one this module can run', () => {
