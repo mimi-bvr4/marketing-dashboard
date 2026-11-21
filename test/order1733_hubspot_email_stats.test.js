@@ -92,7 +92,7 @@ test('last month is the Nashville calendar month, daylight or standard time', ()
 
 async function serve(router) {
   const app = express(); app.use(router);
-  const srv = await new Promise((ok) => { const s = app.listen(0, () => ok(s)); });
+  const srv = await new Promise((ok) => { const s = app.listen(0, '127.0.0.1', () => ok(s)); });
   return { base: `http://127.0.0.1:${srv.address().port}`, close: () => srv.close() };
 }
 

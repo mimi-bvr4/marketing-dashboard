@@ -30,7 +30,7 @@ const as = (email) => ({ Cookie: `mkt_session=${jwt.sign({ role: 'sso', email, m
 function serve(store, t) {
   const a = express(); a.use(express.json()); a.use(pageGate); a.use(createAgentsRouter({ store }));
   return new Promise((resolve) => {
-    const srv = http.createServer(a).listen(0, () => {
+    const srv = http.createServer(a).listen(0, '127.0.0.1', () => {
       t.after(() => new Promise((r) => srv.close(r)));
       const port = srv.address().port;
       resolve(async (url, { body, headers = as(KATH), method } = {}) => {

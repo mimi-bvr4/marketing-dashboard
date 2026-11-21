@@ -108,7 +108,7 @@ test('windows are Nashville dates; weeks start Monday', () => {
 // ---- the route -----------------------------------------------------------
 function serve(a, t) {
   return new Promise((resolve) => {
-    const srv = http.createServer(a).listen(0, () => {
+    const srv = http.createServer(a).listen(0, '127.0.0.1', () => {
       t.after(() => srv.close());
       const port = srv.address().port;
       resolve(async (url, body) => {

@@ -47,7 +47,7 @@ const http = require('node:http');
 // reports nothing, which is indistinguishable from every guard holding.
 function serve(a, t) {
   return new Promise(resolve => {
-    const s = http.createServer(a).listen(0, () => {
+    const s = http.createServer(a).listen(0, '127.0.0.1', () => {
       if (t && t.after) t.after(() => new Promise(r => s.close(r)));
       resolve(s);
     });

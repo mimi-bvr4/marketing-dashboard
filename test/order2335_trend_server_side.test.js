@@ -242,7 +242,7 @@ test('route: warm cache answers under 2 seconds with 400 ms pages, ?refresh=1 re
   const cache = TR.createTrendCache({ search, now: () => NOW });
   const a = express(); a.use(createTrendRouter({ cache }));
   const bad = express(); bad.use(createTrendRouter({ cache: TR.createTrendCache({ search: async () => { throw new Error('HubSpot answered 500'); }, now: () => NOW }) }));
-  const serve = (app) => new Promise((r) => { const s = http.createServer(app).listen(0, () => { t.after(() => new Promise((x) => s.close(x))); r(s); }); });
+  const serve = (app) => new Promise((r) => { const s = http.createServer(app).listen(0, '127.0.0.1', () => { t.after(() => new Promise((x) => s.close(x))); r(s); }); });
   const get = (s, p) => new Promise((res) => http.get({ host: '127.0.0.1', port: s.address().port, path: p }, (r) => { let b = ''; r.on('data', (d) => (b += d)); r.on('end', () => res({ status: r.statusCode, json: JSON.parse(b), cache: r.headers['x-cache'] })); }));
   const s = await serve(a);
   await cache.warm(); // what the server does at boot and every 15 minutes

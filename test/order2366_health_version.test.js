@@ -22,7 +22,7 @@ function serve(t) {
   a.use(pageGate);
   a.use('/', fleet);
   return new Promise(resolve => {
-    const s = http.createServer(a).listen(0, () => {
+    const s = http.createServer(a).listen(0, '127.0.0.1', () => {
       t.after(() => new Promise(r => s.close(r)));
       resolve(s);
     });
@@ -30,7 +30,7 @@ function serve(t) {
 }
 function getHealth(s) {
   return new Promise((resolve, reject) => {
-    http.get({ port: s.address().port, path: '/health' }, res => {
+    http.get({ host: '127.0.0.1', port: s.address().port, path: '/health' }, res => {
       let body = '';
       res.on('data', c => { body += c; });
       res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(body) }));

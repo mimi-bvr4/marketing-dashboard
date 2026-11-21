@@ -161,7 +161,7 @@ test('no line on a card that is not a draft', () => {
 // ---------- the route ----------
 
 function serve(app, t) {
-  return new Promise((resolve) => { const s = http.createServer(app).listen(0, () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); });
+  return new Promise((resolve) => { const s = http.createServer(app).listen(0, '127.0.0.1', () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); });
 }
 function call(server, p, { method = 'GET', body } = {}) {
   return new Promise((resolve, reject) => {

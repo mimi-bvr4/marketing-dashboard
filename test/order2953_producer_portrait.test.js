@@ -20,7 +20,7 @@ const { createMemoryStore } = require('../lib/agent-store');
 const { lint } = require('../lib/ai-tells');
 
 function serve(a, t) {
-  return new Promise((resolve) => { const s = http.createServer(a).listen(0, () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); });
+  return new Promise((resolve) => { const s = http.createServer(a).listen(0, '127.0.0.1', () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); });
 }
 function call(server, urlPath, { headers = {}, method = 'GET', raw, type } = {}) {
   return new Promise((resolve, reject) => {
