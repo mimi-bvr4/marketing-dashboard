@@ -31,7 +31,7 @@ const ROOT = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
 function serve(a, t) {
-  return new Promise((resolve) => { const s = http.createServer(a).listen(0, () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); });
+  return new Promise((resolve) => { const s = http.createServer(a).listen(0, '127.0.0.1', () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); });
 }
 function call(server, urlPath, { headers = {}, method = 'GET', body } = {}) {
   return new Promise((resolve, reject) => {

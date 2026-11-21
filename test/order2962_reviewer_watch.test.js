@@ -135,11 +135,11 @@ function serve(opts) {
   if (opts.recorder) app.use(opts.recorder);
   app.use(createReviewerWatchRouter(opts));
   app.get('/review', (req, res) => res.send('review page'));
-  return new Promise((ok) => { const s = app.listen(0, () => ok(s)); });
+  return new Promise((ok) => { const s = app.listen(0, '127.0.0.1', () => ok(s)); });
 }
 function get(s, p, who) {
   return new Promise((ok, no) => {
-    http.get({ port: s.address().port, path: p, headers: who ? { 'x-who': who } : {} }, (res) => {
+    http.get({ host: '127.0.0.1', port: s.address().port, path: p, headers: who ? { 'x-who': who } : {} }, (res) => {
       let b = ''; res.on('data', (c) => { b += c; }); res.on('end', () => ok({ status: res.statusCode, body: b }));
     }).on('error', no);
   });

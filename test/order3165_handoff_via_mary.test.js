@@ -86,7 +86,8 @@ async function withApp(store, who, fn) {
   app.use((req, res, next) => { req.mktUser = who; next(); });
   app.use(createHandoffRouter({ store, identity: IDENTITY, roster: async () => ({ people: ROSTER, why: null, where: 'sandbox' }), env: {} }));
   app.use(createReviewRouter({ store }));
-  const srv = app.listen(0);
+  const srv = app.listen(0, '127.0.0.1');
+  await new Promise((r) => srv.once('listening', r));
   const base = `http://127.0.0.1:${srv.address().port}`;
   const post = (p, body) => fetch(base + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   try { return await fn({ base, post }); } finally { srv.close(); }
@@ -243,7 +244,8 @@ test('Mary\'s seat: a login to /handoff and a read-only Review, nothing else', a
     const app = express();
     app.use(pageGate);
     app.get('*', (req, res) => res.json({ reached: req.path, who: req.mktUser && req.mktUser.email }));
-    const srv = app.listen(0);
+    const srv = app.listen(0, '127.0.0.1');
+    await new Promise((r) => srv.once('listening', r));
     const base = `http://127.0.0.1:${srv.address().port}`;
     const get = (p) => fetch(base + p, { headers: { Authorization: `Bearer ${tok}` }, redirect: 'manual' });
     try {
@@ -266,7 +268,8 @@ test('HANDOFF_VIA_MARY=off puts the #3012 path back exactly; the desk refuses to
   app.use(express.json());
   app.use((req, res, next) => { req.mktUser = MARY; next(); });
   app.use(createHandoffRouter({ store, identity: IDENTITY, roster: async () => ({ people: ROSTER }), env: { HANDOFF_VIA_MARY: 'off' } }));
-  const srv = app.listen(0);
+  const srv = app.listen(0, '127.0.0.1');
+  await new Promise((r) => srv.once('listening', r));
   try {
     const r = await fetch(`http://127.0.0.1:${srv.address().port}/api/handoff/assign`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_ids: ids, owner_id: '79905153' }) });
     assert.strictEqual(r.status, 409);

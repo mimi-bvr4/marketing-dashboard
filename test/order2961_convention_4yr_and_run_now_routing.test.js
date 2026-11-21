@@ -81,7 +81,7 @@ test('every Run-now request box carries the note and a Make this permanent butto
   assert.match(HTML, /b\.dataset\.a === 'permanent'[\s\S]{0,300}\/asks`[\s\S]{0,120}permanent: true/);
 });
 
-function serve(a, t) { return new Promise((resolve) => { const s = http.createServer(a).listen(0, () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); }); }
+function serve(a, t) { return new Promise((resolve) => { const s = http.createServer(a).listen(0, '127.0.0.1', () => { t.after(() => new Promise((r) => s.close(r))); resolve(s); }); }); }
 function call(server, urlPath, { headers = {}, method = 'GET', body } = {}) {
   return new Promise((resolve, reject) => {
     const payload = body === undefined ? null : JSON.stringify(body);

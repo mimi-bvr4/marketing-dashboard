@@ -83,7 +83,7 @@ test('route: /api/agents carries the guardian view on the Site Guardian card onl
   const store = createMemoryStore({ lint });
   await store.putGuardianState(state(3));
   const a = express(); a.use(express.json()); a.use(pageGate); a.use(createAgentsRouter({ store, clock: () => NOW }));
-  const s = await new Promise((res) => { const x = http.createServer(a).listen(0, () => res(x)); });
+  const s = await new Promise((res) => { const x = http.createServer(a).listen(0, '127.0.0.1', () => res(x)); });
   try {
     const body = await new Promise((resolve, reject) => {
       const req = http.request({ host: '127.0.0.1', port: s.address().port, path: '/api/agents', headers: {

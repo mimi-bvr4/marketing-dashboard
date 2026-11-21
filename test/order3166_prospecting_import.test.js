@@ -59,7 +59,8 @@ async function withApp(store, who, fn) {
   app.use(express.json());
   app.use((req, res, next) => { req.mktUser = who; next(); });
   app.use(createHandoffRouter({ store, identity: IDENTITY, roster: async () => ({ people: ROSTER, why: null, where: 'sandbox' }), env: {}, now: () => NOW }));
-  const srv = app.listen(0);
+  const srv = app.listen(0, '127.0.0.1');
+  await new Promise((r) => srv.once('listening', r));
   const base = `http://127.0.0.1:${srv.address().port}`;
   const post = (p, body) => fetch(base + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   try { return await fn({ base, post }); } finally { srv.close(); }

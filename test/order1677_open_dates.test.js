@@ -56,7 +56,7 @@ test('route: cached, months clamped, HubSpot failure is a 502 sentence', async (
   a.use(createOpenDatesRouter({ search: async () => { n++; return { results: [] }; }, now: () => NOW }));
   const bad = express();
   bad.use(createOpenDatesRouter({ search: async () => { throw new Error('HubSpot answered 500'); }, now: () => NOW }));
-  const serve = (app) => new Promise((r) => { const s = http.createServer(app).listen(0, () => { t.after(() => new Promise((x) => s.close(x))); r(s); }); });
+  const serve = (app) => new Promise((r) => { const s = http.createServer(app).listen(0, '127.0.0.1', () => { t.after(() => new Promise((x) => s.close(x))); r(s); }); });
   const get = (s, p) => new Promise((res) => http.get({ host: '127.0.0.1', port: s.address().port, path: p }, (r) => { let b = ''; r.on('data', (d) => (b += d)); r.on('end', () => res({ status: r.statusCode, json: JSON.parse(b), cache: r.headers['x-cache'] })); }));
   const s = await serve(a);
   const one = await get(s, '/api/open-dates?months=99');

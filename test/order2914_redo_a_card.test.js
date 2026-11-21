@@ -46,7 +46,7 @@ const revised = [{ title: 'Reply to Ana P. on Google (warmer)', target: 'The Bri
 
 function serve(app, t) {
   return new Promise((resolve) => {
-    const srv = http.createServer(app).listen(0, () => {
+    const srv = http.createServer(app).listen(0, '127.0.0.1', () => {
       t.after(() => srv.close());
       const port = srv.address().port;
       resolve(async (url, body) => {

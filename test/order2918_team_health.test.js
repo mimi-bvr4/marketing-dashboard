@@ -210,7 +210,7 @@ test('schedule: agent_run --due ends with the health line (and on Sunday the wee
 // ---- the page --------------------------------------------------------------
 function serve(a, t) {
   return new Promise((resolve) => {
-    const srv = http.createServer(a).listen(0, () => {
+    const srv = http.createServer(a).listen(0, '127.0.0.1', () => {
       t.after(() => srv.close());
       resolve(async (url) => { const r = await fetch(`http://127.0.0.1:${srv.address().port}${url}`); return { status: r.status, json: await r.json() }; });
     });
