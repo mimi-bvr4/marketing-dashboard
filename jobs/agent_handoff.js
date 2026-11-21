@@ -15,6 +15,7 @@ const { lint } = require('../lib/ai-tells');
 const { sendToSales, target: salesTarget } = require('../lib/hubspot-sales-task');
 const { salesOwner, NO_OWNER } = require('../lib/outreach');
 const maryDesk = require('../lib/mary-desk');
+const conventionContact = require('../lib/hubspot-convention-contact');
 
 async function handoff({ store, fetchImpl, login, secrets, env = process.env, log = console.log, now = () => new Date() }) {
   const viaMary = maryDesk.on(env);
@@ -44,7 +45,19 @@ async function handoff({ store, fetchImpl, login, secrets, env = process.env, lo
       const at = now().toISOString();
       // #3165: the card records who picked the salesperson, and when.
       const by = picked ? { assigned_by: picked.by_name || picked.by, assigned_at: picked.at } : {};
-      if (r.ok) { await store.finishHandoff(c.id, { at, ...r, ...by }); log(`card ${c.id}: HubSpot task ${r.task_id} for ${r.owner_name} in ${r.where} ${r.portal}${r.company_created ? `, company ${r.company_id} created` : ''}`); done++; }
+      // #3344: only on Mary's assign, only after the task step succeeded, only
+      // with CONVENTION_CONTACT_ON_ASSIGN on: one contact, flag written last.
+      let contact = null;
+      if (r.ok && picked && conventionContact.on(env)) {
+        const t = salesTarget(env, secrets || undefined);
+        try {
+          contact = t && t.token && t.portal === r.portal
+            ? await conventionContact.contactOnAssign({ card: c, ownerId: r.owner_id, ownerName: r.owner_name, companyId: r.company_id, token: t.token, fetchImpl })
+            : { ok: false, skip: true, why: 'NO CONTACT MADE: the HubSpot switch or token changed during this run', line: 'NO CONTACT MADE: the HubSpot switch or token changed during this run' };
+        } catch (e) { contact = { ok: false, alarm: true, why: e.message, line: `ALARM: contact step stopped: ${e.message}` }; }
+        log(`card ${c.id}: ${contact.line}`);
+      }
+      if (r.ok) { await store.finishHandoff(c.id, { at, ...r, ...by, ...(contact ? { contact } : {}) }); log(`card ${c.id}: HubSpot task ${r.task_id} for ${r.owner_name} in ${r.where} ${r.portal}${r.company_created ? `, company ${r.company_id} created` : ''}`); done++; }
       else if (r.skip || r.alarm) { await store.finishHandoff(c.id, { at, ok: false, alarm: !!r.alarm, why: r.why, to: 'hubspot-sales', company_id: r.company_id || null, ...by }); log(`card ${c.id}: ${r.alarm ? 'ALARM ' : 'not sent to Sales: '}${r.why}`); }
       else { await store.finishHandoff(c.id, null); log(`card ${c.id}: will retry, ${r.why}`); }
       continue;
