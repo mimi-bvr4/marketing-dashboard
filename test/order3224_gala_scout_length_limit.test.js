@@ -101,9 +101,10 @@ test('a model that ignores the cap: one FAILED line, and no half-written card is
     fetchImpl: async () => { throw new Error('no network'); } });
   assert.strictEqual(r.ok, false);
   assert.strictEqual(lines.filter((l) => /FAILED/.test(l)).length, 1);
-  assert.strictEqual(r.cards.length, 1);
-  assert.match(r.cards[0].title, /run failed/);
-  assert.match(r.cards[0].body, /cut off before it finished/);
+  // #3753: the failure notice is returned as r.notice, not counted in r.cards.
+  assert.strictEqual(r.cards.length, 0);
+  assert.match(r.notice.title, /run failed/);
+  assert.match(r.notice.body, /cut off before it finished/);
 });
 
 test('a cut answer that holds whole cards keeps them, drops the unfinished one, and logs it', async () => {
