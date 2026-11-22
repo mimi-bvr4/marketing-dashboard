@@ -77,6 +77,7 @@ test('guard 4: status and service are unchanged, and version is the only field a
     const r = await getHealth(s);
     assert.strictEqual(r.body.status, 'ok');
     assert.strictEqual(r.body.service, 'marketing-dashboard');
-    assert.deepStrictEqual(Object.keys(r.body).sort(), ['service', 'status', 'version']);
+    // ORDER #3752 adds `models` (the resolved Claude ids); nothing else.
+    assert.deepStrictEqual(Object.keys(r.body).sort(), ['models', 'service', 'status', 'version']);
   });
 });

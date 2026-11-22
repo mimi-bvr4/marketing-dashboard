@@ -25,7 +25,16 @@ function deployedVersion(){
   const sha = process.env.RAILWAY_GIT_COMMIT_SHA;
   return sha ? String(sha).slice(0, 7) : 'unknown';
 }
-router.get('/health', (req,res)=> res.json({ status:'ok', service:'marketing-dashboard', version: deployedVersion() }));
+// ORDER #3752 (ruling-3637 item 3): the Claude model ids the code will call,
+// from each module's own resolver (read per request, so a Railway variable
+// change shows on the next GET). Ids only: no other env value goes out here.
+const { fastModel } = require('../lib/fast-model');
+const { agentModel } = require('../lib/agent-llm');
+const { PICK_MODEL } = require('../lib/photo-tagger');
+function resolvedModels(){
+  return { fast: fastModel(), agent: agentModel(), pick: PICK_MODEL };
+}
+router.get('/health', (req,res)=> res.json({ status:'ok', service:'marketing-dashboard', version: deployedVersion(), models: resolvedModels() }));
 router.get('/api/contract', (req,res)=>{
   const base = baseUrl(req);
   res.json({ service:'marketing-dashboard', contract_version:'v0',
