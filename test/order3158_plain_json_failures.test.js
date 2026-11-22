@@ -122,7 +122,8 @@ test('two unreadable answers: each logs its bytes, one FAILED line, the card say
   assert.match(near[0], /^scout: first answer unreadable \(stop end_turn\), near the break: .*broken one/);
   assert.match(near[1], /^scout: second answer unreadable .*broken two/);
   assert.strictEqual(lines.filter((l) => /FAILED/.test(l)).length, 1);
-  const card = r.cards.find((c) => /run failed/.test(c.title));
+  // #3753: the failure notice is returned as r.notice, not counted in r.cards.
+  const card = r.notice && /run failed/.test(r.notice.title) ? r.notice : null;
   assert.ok(card, 'the failure notice card');
   assert.match(card.body, /The run stopped: The model's answer came back garbled/);
   assert.doesNotMatch(card.body, /in JSON at position|Expected ','/);

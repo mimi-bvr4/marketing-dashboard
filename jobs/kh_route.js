@@ -150,7 +150,8 @@ async function route({ inbox, runOne, now = () => new Date(), log = console.log,
       ...['TITLE', 'WHY', 'DATA', 'OUTPUT', 'DUE'].filter((k) => fields[k]).map((k) => `${k}: ${fields[k]}`)].join('\n');
     let r;
     try { r = await runOne(agent, ask); } catch (e) { r = { ok: false, error: e.message, cards: [] }; }
-    const ids = (r.cards || []).map((c) => `#${c.id}`).join(', ') || 'none';
+    // #3753: a failed run returns its failure notice as r.notice, not in r.cards.
+    const ids = [...(r.cards || []), ...(r.notice ? [r.notice] : [])].map((c) => `#${c.id}`).join(', ') || 'none';
     const body = [`# REPLY #${o.number} (marketing agent ${agent}, Box job kh_route)`,
       `CLAIMED: ${ctStamp(t)} by jobs/kh_route.js (O_EXCL)`,
       r.ok ? `STATUS: DONE. ${agent} ran on Katherine's request; card(s) ${ids} are DRAFTS in the Marketing Dashboard Review tab. Nothing was published or sent.`

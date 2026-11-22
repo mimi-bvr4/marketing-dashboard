@@ -123,7 +123,9 @@ test('when the retry is unreadable too: one clear FAILED line and no partial car
   const failed = lines.filter((l) => /FAILED/.test(l));
   assert.strictEqual(failed.length, 1);
   assert.match(failed[0], /^scout: FAILED the model's answer was not valid JSON twice/);
-  assert.deepStrictEqual(r.cards.map((c) => c.title), ['Scout run failed'], 'only the failure notice, never a half card');
+  // #3753: the failure notice is returned as r.notice, not counted in r.cards.
+  assert.deepStrictEqual(r.cards.map((c) => c.title), [], 'never a half card');
+  assert.strictEqual(r.notice.title, 'Scout run failed', 'only the failure notice');
 });
 
 test('safeReason strips links with keys, emails and tokens', () => {
