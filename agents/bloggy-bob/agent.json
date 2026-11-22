@@ -46,6 +46,12 @@
       "path": "05_AI_and_Brain/Venue_Master_CANONICAL.md"
     },
     {
+      "type": "file",
+      "path": "07_Marketing_and_Brand/Claims_Register_11.18.2026.md",
+      "claims_register": true,
+      "label": "claims register: allowed provenance and history claims (rows Mimi marked TRUE, ORDER #3575 step 5)"
+    },
+    {
       "type": "wp_posts",
       "label": "posts already published on our WordPress sites",
       "sites": [
