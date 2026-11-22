@@ -105,7 +105,9 @@ test('Google is still the one the run depends on: no Google, no drafts, even wit
   const store = createMemoryStore({ lint });
   const r = await runAgent({ def: loadAgent('gbp'), store, llm: model(CARDS), env: tree(t, PULSE), fetchImpl: web({ google: false }), now: () => NOW, scheduled: true, ...google });
   assert.ok(r.ok, r.error);
-  assert.match(r.cards[0].title, /could not run: a required source is missing/);
+  // #3755: the "could not run" notice is returned in r.notices, and no draft is counted.
+  assert.strictEqual(r.cards.length, 0);
+  assert.match(r.notices[0].title, /could not run: a required source is missing/);
 });
 
 test('#1758 key unchanged: a pulse card and a Google card stay distinct; one Google review is one item', () => {

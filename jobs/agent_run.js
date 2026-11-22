@@ -125,7 +125,8 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     if (r.skipped) { log(`${slug}: skipped (${r.skipped})`); return r; }
     if (r.blocked) { log(`${slug}: waiting on ${r.blocked.join('; ')} (on the board)`); return r; }
     log(`${slug}: ${r.ok ? 'done' : 'FAILED ' + r.error}, ${r.cards.length} card(s)${r.seen_skipped ? `, ${r.seen_skipped} skipped as already seen` : ''}${r.unavailable.length ? `, ${r.unavailable.length} source(s) unavailable` : ''}`);
-    if (args.dry) for (const c of r.cards) log(`\n----- ${c.title} -----\n${c.body}\n`);
+    // #3755: a dry run still prints its notice cards (r.notices), which are not counted above.
+    if (args.dry) for (const c of [...r.cards, ...(r.notices || [])]) log(`\n----- ${c.title} -----\n${c.body}\n`);
     if (!r.ok) failed++;
     return r;
   };

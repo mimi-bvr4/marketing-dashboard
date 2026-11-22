@@ -164,9 +164,11 @@ test('Bloggy Bob: a Run now for a keyword already drafted answers with one card 
   const r1 = await runAgent({ def, store, llm, ask: 'a post on Nashville rooftop wedding venues', fetchImpl: web() });
   assert.strictEqual(r1.cards.length, 1);
   const r2 = await runAgent({ def, store, llm, ask: 'a post on Nashville rooftop wedding venues', fetchImpl: web() });
-  assert.strictEqual(r2.cards.length, 1);
-  assert.match(r2.cards[0].title, /already drafted, nothing new/);
-  assert.match(r2.cards[0].body, /Nashville rooftop wedding venues: on the Review tab/);
+  // #3755: the "already drafted, nothing new" notice is returned in r2.notices, not counted in r2.cards.
+  assert.strictEqual(r2.cards.length, 0);
+  assert.strictEqual(r2.notices.length, 1);
+  assert.match(r2.notices[0].title, /already drafted, nothing new/);
+  assert.match(r2.notices[0].body, /Nashville rooftop wedding venues: on the Review tab/);
 });
 
 test('an agent with no seen_before spec is unchanged', async (t) => {

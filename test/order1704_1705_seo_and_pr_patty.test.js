@@ -160,7 +160,8 @@ test('PR Patty: an empty inbox on a weekday writes no card; a broken inbox says 
   const broken = async () => json(403, { error: { message: 'Delegation denied' } });
   store = createMemoryStore({ lint }); llm = fakeLlm();
   r = await runAgent({ slug: 'pr-patty', store, llm, env, log: () => {}, fetchImpl: broken, now: () => new Date('2026-10-13T12:00:00Z'), saKey: KEY, saToken: async () => 'tok' });
-  assert.strictEqual(r.cards.length, 1); assert.match(r.cards[0].title, /PR Patty could not run: a required source is missing/);
+  // #3755: the "could not run" notice is returned in r.notices, not counted in r.cards.
+  assert.strictEqual(r.cards.length, 0); assert.strictEqual(r.notices.length, 1); assert.match(r.notices[0].title, /PR Patty could not run: a required source is missing/);
   assert.strictEqual(llm.calls.length, 0);
 });
 
@@ -168,7 +169,9 @@ test('SEO: Search Console closed means a "could not run" card, never a draft wri
   const { f } = scFetch({ sitesStatus: 403 });
   const store = createMemoryStore({ lint }); const llm = fakeLlm();
   const r = await runAgent({ slug: 'seo', store, llm, env: { IHG_TREE: require('os').tmpdir() }, log: () => {}, fetchImpl: f, saKey: KEY, saToken: async () => 'tok' });
-  assert.strictEqual(r.cards.length, 1);
-  assert.match(r.cards[0].title, /SEO could not run: a required source is missing/);
+  // #3755: the "could not run" notice is returned in r.notices, not counted in r.cards.
+  assert.strictEqual(r.cards.length, 0);
+  assert.strictEqual(r.notices.length, 1);
+  assert.match(r.notices[0].title, /SEO could not run: a required source is missing/);
   assert.strictEqual(llm.calls.length, 0);
 });
