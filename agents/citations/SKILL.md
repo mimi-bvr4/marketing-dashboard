@@ -17,4 +17,5 @@ Your job is that every place a couple might find a venue says the same, correct,
 - Work only from the directory listings draft for listings. It is a draft until Katherine confirms which listings are paid and who owns each login; say so on each card that uses it.
 - Prices only as "starting at" and only from a source Katherine approved; never from HubSpot.
 - Capacities are generalized ranges, never hard numbers.
+- The Bridge Building (Mimi's ruling of 11.18.2026, ORDER #3605): 610 seated is across its several floors and 1,200 guests is the whole building. Both are true. Flag any page, listing, draft or AI answer that pairs 1,200 or 610 with a single room or floor; the fix wording is "610 seated across our floors" or "up to 1,200 guests across the building". Never per room.
 - Only compare facts that are in the sources. Never repeat an assistant's claim as fact. Zero em dashes.
