@@ -22,7 +22,8 @@ async function takeAndRun({ store, runOne, log = console.log, env = process.env 
     // #2914: a redo is a person's request (no chain) that names its card.
     const redoOf = !q.chain && q.from_card ? q.from_card : null;
     try { r = await runOne(q.agent, q.ask, { redoOf }); } catch (e) { r = { ok: false, error: e.message, cards: [] }; }
-    const ids = (r.cards || []).map((c) => `#${c.id}`).join(', ');
+    // #3755: a notice card ("already drafted, nothing new") is returned in r.notices, not in r.cards.
+    const ids = [...(r.cards || []), ...(r.notices || [])].map((c) => `#${c.id}`).join(', ');
     await store.finishRunRequest(q.id, r.ok, r.ok ? `card(s) ${ids || 'none'}` : r.error);
     log(`request ${q.id} (${q.agent}, by ${q.requested_by}): ${r.ok ? 'done' : 'FAILED ' + r.error}`);
   }

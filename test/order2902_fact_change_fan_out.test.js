@@ -151,7 +151,8 @@ test('REPLAY: "sparkling white wine" to "Prosecco", end to end, drafts only', as
   const results = [];
   await takeAndRun({ store: s, env, log: () => {}, runOne: async (slug, ask) => {
     const out = await runAgent({ slug, store: s, llm, ask, env, fetchImpl });
-    results.push({ slug, ok: out.ok, blocked: out.blocked, error: out.error, cards: (out.cards || []).length });
+    // #3755: a notice card is returned in out.notices; a re-check puts one card on Review either way.
+    results.push({ slug, ok: out.ok, blocked: out.blocked, error: out.error, cards: (out.cards || []).length + (out.notices || []).length });
     return out;
   } });
   assert.deepStrictEqual(results.map((x) => x.slug), ['email', 'citations', 'gbp']);

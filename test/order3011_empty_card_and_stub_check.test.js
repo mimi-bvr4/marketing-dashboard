@@ -50,10 +50,11 @@ test('KNOWN-BAD (11.05.2026): a "..." card is saved as "<agent> run produced an 
   const lines = [];
   const r = await runAgent({ def: defFor('convention-connector'), store, llm, env: tree(t), log: (l) => lines.push(l), fetchImpl: noNet });
   assert.strictEqual(r.ok, true, r.error);
-  const titles = r.cards.map((c) => c.title);
+  // #3755: the empty-card notice is returned in r.notices; r.cards holds the one real draft.
+  assert.deepStrictEqual(r.cards.map((c) => c.title), ['Draft emails, 11.05.2026']);
   // #3000 renamed the agent "Convention Charles"; the title uses the agent's own name (#3012 rebase 11.06).
-  assert.deepStrictEqual(titles, [`${defFor('convention-connector').name} run produced an empty card`, 'Draft emails, 11.05.2026']);
-  const empty = r.cards[0];
+  assert.deepStrictEqual(r.notices.map((c) => c.title), [`${defFor('convention-connector').name} run produced an empty card`]);
+  const empty = r.notices[0];
   assert.match(empty.body, /drafted "Conventions coming to Nashville, 11\.05\.2026" but the text is only "\.\.\."/);
   assert.match(empty.body, /not saved as a draft/);
   assert.strictEqual(empty.checks.empty_card, true);
