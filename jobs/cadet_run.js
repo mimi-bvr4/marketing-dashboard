@@ -9,7 +9,10 @@
 const { readMap, parseMap, summarize } = require('../lib/collateral-map');
 const { search } = require('../lib/cadet-search');
 
-async function runOnce({ store, drive, fetch = globalThis.fetch, log = console.log }) {
+// `canva` (#3622): the Canva reader (lib/canva.js), only while CADET_CANVA_READ is
+// on. The waiting searches read first; what is left of its budget then reads the
+// Canva materials checked longest ago, so all 114 are read within a few runs.
+async function runOnce({ store, drive, fetch = globalThis.fetch, log = console.log, canva = null }) {
   let materials = [];
   try {
     const tabs = await readMap(drive);
@@ -25,7 +28,7 @@ async function runOnce({ store, drive, fetch = globalThis.fetch, log = console.l
   const asks = await store.takeAsks(3);
   for (const a of asks) {
     try {
-      const r = await search({ phrase: a.phrase, materials, drive, fetch });
+      const r = await search({ phrase: a.phrase, materials, drive, fetch, canva });
       if (r.error) { await store.finishAsk(a.id, { error: r.error }); log(`search ${a.id}: refused, ${r.error}`); continue; }
       await store.finishAsk(a.id, { result: r });
       const t = r.tally;
@@ -36,6 +39,10 @@ async function runOnce({ store, drive, fetch = globalThis.fetch, log = console.l
     }
   }
   log(`cadet: ${asks.length} search(es) run`);
+  if (canva) {
+    try { const p = await canva.prime(materials); log(`canva: ${p.read} design(s) checked this run`); }
+    catch (e) { log(`canva: read pass FAILED ${e.message}`); }
+  }
   return asks.length;
 }
 
@@ -47,7 +54,14 @@ async function main({ env = process.env, log = console.log } = {}) {
   const pool = new Pool({ connectionString: env.MARKETING_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   try {
     await ensureCadetTables(pool);
-    await runOnce({ store: createPgStore(pool), drive: createDriveClient(), log });
+    // #3622: a brain@ Canva sign-in parked on the dashboard is traded here (switch
+    // or not, so the sign-in can come before the flip); the read needs the switch.
+    const C = require('../lib/canva');
+    // #3625: first, the Box hands the dashboard the (non-secret) client id from its Keychain.
+    try { await C.ensureCanvaTables(pool); const cx = C.createPgConnects(pool); await C.publishClientId({ connects: cx, log }); await C.tradeCodes({ connects: cx, log }); }
+    catch (e) { log(`canva connect: NOT RUN (${e.message})`); }
+    const canva = C.readOn(env) ? C.createReader({ budget: 20, log }) : null;
+    await runOnce({ store: createPgStore(pool), drive: createDriveClient(), log, canva });
     return 0;
   } finally { await pool.end(); }
 }
