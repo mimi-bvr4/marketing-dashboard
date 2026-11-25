@@ -5,7 +5,8 @@
 // A card is handed off at most once: success, a skip (not a WordPress site)
 // and an ALARM are recorded on the card and never retried. A refusal that can
 // clear (no Keychain item yet, WordPress down) is logged and tried again on the
-// next run. Never publishes: lib/wp-draft.js sends status "draft" only.
+// next run. lib/wp-draft.js sends status "draft" only; publishing live is
+// lib/wp-publish.js, only with BLOG_PUBLISH_ON_APPROVE on (#3817, Mimi 11.25.2026).
 'use strict';
 
 const { createPgStore, createMemoryStore, ensureAgentTables } = require('../lib/agent-store');
@@ -21,9 +22,12 @@ const gbpPost = require('../lib/gbp-post');
 // #3807 the Executioner: result stamp (link, id, time CT); with EXECUTIONER on,
 // one retry at most and a failed card goes back to Review with the error.
 const EX = require('../lib/executioner');
+// #3817: publish live on Approve, behind BLOG_PUBLISH_ON_APPROVE (default OFF).
+const wpPublish = require('../lib/wp-publish');
 
 // gbpAuth = { saKey, saToken } for tests; the Box reads its own key.
-async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = process.env, log = console.log, now = () => new Date() }) {
+// register = the claims register text for tests (#3817); the Box reads the tree.
+async function handoff({ store, fetchImpl, login, secrets, gbpAuth, register, env = process.env, log = console.log, now = () => new Date() }) {
   const viaMary = maryDesk.on(env);
   const cards = await store.readyForHandoff(20, { viaMary });
   let done = 0;
@@ -97,11 +101,25 @@ async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = proces
       continue;
     }
     const post = c.payload.post;
+    // #3817: with BLOG_PUBLISH_ON_APPROVE on, the gates are checked before the
+    // draft is made; any fail leaves it a draft and the card says why.
+    const pubOn = wpPublish.on(env);
+    const gate = pubOn ? wpPublish.publishGate(c, { register: register !== undefined ? register : await wpPublish.readRegister(env) }) : [];
     const r = await createDraft({ post, fetchImpl, login });
     const at = now().toISOString();
     if (r.ok) {
-      await store.setHandoff(c.id, { at, ok: true, wp_id: r.id, edit_link: r.edit_link, status: r.status, note: r.note || null, ...EX.result('post', r, at) });
-      log(`card ${c.id}: WordPress draft ${r.id} on ${post.site} ${r.edit_link}`);
+      let pub = {};
+      let res = r;
+      if (pubOn) {
+        const live = gate.length ? null
+          : r.status === 'draft' ? await wpPublish.publishDraft({ site: post.site, id: r.id, env, fetchImpl, login })
+            : { ok: false, why: `the draft read-back was not confirmed (${r.status})` };
+        if (live && live.ok) { pub = { published: true, status: 'publish', live_link: live.link }; res = { ...r, live_link: live.link }; }
+        else pub = { published: false, publish_why: gate.length ? gate.join('; ') : live.why };
+      }
+      await store.setHandoff(c.id, { at, ok: true, wp_id: r.id, edit_link: r.edit_link, status: r.status, note: r.note || null, ...pub, ...EX.result('post', res, at) });
+      log(pub.published ? `card ${c.id}: published live ${r.id} on ${post.site} ${pub.live_link}`
+        : `card ${c.id}: WordPress draft ${r.id} on ${post.site} ${r.edit_link}${pubOn ? `; not published: ${pub.publish_why}` : ''}`);
       done++;
     } else if (!(r.alarm && r.id) && await EX.afterFailure({ store, card: c, kind: 'post', r, at, env, log })) {
       // #3807: waiting, one retry, or back to Review. An ALARM with a draft id
