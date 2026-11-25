@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  ORDER #3794. The hourly Google Ads monitor: jobs/ads_monitor.sh.
+  ORDER #3794. The Google Ads monitor: jobs/ads_monitor.sh.
+  ORDER #3821 (Mimi, 11.25.2026): not hourly. "Checks Google Ads daily at
+  6:15 AM, quick health check at 1:15 PM." The job picks which run it is from
+  the CT hour (before noon = the daily pull, from noon on = the midday check).
 
   SHIPPED NOT LOADED, and its switch ships OFF. FEATURE FLAG: ADS_API_LIVE
   default OFF: it is not set below, so even a loaded job reads nothing. Turning
@@ -11,7 +14,8 @@
   It reads Google Ads (GAQL SELECTs only) and writes DRAFT cards to Review; it
   never changes a bid, budget, ad or setting, and sends nothing.
 
-  TIME: every hour. RunAtLoad is false: loading must not fire a run.
+  TIME: 06:15 and 13:15 CT (the Box's clock is CT). RunAtLoad is false:
+  loading must not fire a run.
   WHERE IT LOGS: the two paths below, red runs too.
 -->
 <plist version="1.0">
@@ -34,8 +38,21 @@
 	<string>/Users/infinitybrain/repos/marketing-dashboard</string>
 	<key>RunAtLoad</key>
 	<false/>
-	<key>StartInterval</key>
-	<integer>3600</integer>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Hour</key>
+			<integer>6</integer>
+			<key>Minute</key>
+			<integer>15</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>13</integer>
+			<key>Minute</key>
+			<integer>15</integer>
+		</dict>
+	</array>
 	<key>StandardOutPath</key>
 	<string>/Users/infinitybrain/Library/Logs/ihg_ads_monitor.out</string>
 	<key>StandardErrorPath</key>

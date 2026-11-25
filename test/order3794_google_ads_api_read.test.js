@@ -107,7 +107,8 @@ test('ADS_API_LIVE ships OFF: off, a poll reads nothing and writes nothing', asy
   assert.strictEqual(R.flagOn({ ADS_API_LIVE: 'on' }), true);
   const plist = fs.readFileSync(path.join(__dirname, '..', 'jobs', 'launchd', 'com.infinitybrain.ads-monitor.plist'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
   assert.ok(!/<key>ADS_API_LIVE<\/key>/.test(plist), 'the shipped plist does not turn the switch on');
-  assert.match(plist, /<key>StartInterval<\/key>\s*<integer>3600<\/integer>/);
+  // #3821 replaced the hourly StartInterval with 06:15 and 13:15 (test/order3821_*).
+  assert.match(plist, /<key>StartCalendarInterval<\/key>/);
 });
 
 test('--accounts lists customer id and name only, with the switch off', async () => {
@@ -244,7 +245,7 @@ test('the Paid Ads Auditor waits on the API, not the Sheet; its weekly source re
   assert.match(got.text, /never write a spend amount/);
   assert.match(got.text, /Fontanel \(1234567890\)/);
   for (const amt of AMOUNTS) assert.ok(!got.text.includes(amt));
-  const stale = await S.googleAdsApiSource(src, { env: { ADS_API_LIVE: 'on' }, now: () => new Date(NOW.getTime() + 7 * 3600000), adsSnapshot: async () => snap });
+  const stale = await S.googleAdsApiSource(src, { env: { ADS_API_LIVE: 'on' }, now: () => new Date(NOW.getTime() + 31 * 3600000), adsSnapshot: async () => snap });
   assert.match(stale.why, /stale/);
   const off = await S.googleAdsApiSource(src, { env: {}, adsSnapshot: async () => snap });
   assert.strictEqual(off.ok, false);
