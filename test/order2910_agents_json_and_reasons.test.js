@@ -86,8 +86,10 @@ test('Scout and Convention Connector runs with the logged answers save a card, n
     const lines = [];
     const r = await runAgent({ def: defFor(slug), store, llm, env: tree(t), log: (l) => lines.push(l), fetchImpl: async () => { throw new Error('no network'); } });
     assert.strictEqual(r.ok, true, `${slug}: ${r.error}`);
-    assert.ok(r.cards.length >= 1);
-    assert.doesNotMatch(r.cards[0].title, /run failed/);
+    // #3814: the Scout's information-only report is folded into the Monday digest, not a card.
+    const saved = [...r.cards, ...(r.folded || [])];
+    assert.ok(saved.length >= 1);
+    assert.doesNotMatch(saved[0].title, /run failed/);
     assert.ok(!lines.some((l) => /FAILED/.test(l)), lines.join('\n'));
   }
 });
@@ -100,7 +102,8 @@ test('an unreadable answer is asked again once; the second answer is used', asyn
   assert.strictEqual(r.ok, true);
   assert.strictEqual(llm.calls.length, 2);
   assert.match(llm.calls[1].user, /YOUR LAST ANSWER COULD NOT BE READ/);
-  assert.strictEqual(r.cards[0].title, 'Scout: second try');
+  // #3814: the Scout's information-only report is folded into the Monday digest, not a card.
+  assert.strictEqual([...r.cards, ...(r.folded || [])][0].title, 'Scout: second try');
 });
 
 test('a cut-off at the length limit is asked for fewer, shorter cards', async (t) => {

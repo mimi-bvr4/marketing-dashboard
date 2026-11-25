@@ -253,7 +253,7 @@
   // what Approve does in plain words; everything else on the card is detail.
   function actionHtml(c) {
     const a = c.action; if (!a || !a.line) return '';
-    return `<p class="action" style="font-size:1.05rem;margin:.35rem 0"><strong>${a.info_only ? 'No action' : 'Action'}:</strong> ${esc(a.line)}</p>`;
+    return `<p class="action" style="font-size:1.05rem;margin:.35rem 0"><strong>${a.info_only && !a.has_action ? 'No action' : 'Action'}:</strong> ${esc(a.line)}</p>`;
   }
   // #3797: "reads like AI" says WHERE and WHAT, with a suggested replacement. Never a bare count.
   function tellsHtml(c) {
