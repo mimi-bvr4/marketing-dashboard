@@ -155,7 +155,9 @@ test('env unset: no read, no crash, and the source answers the same waiting line
 test('env unset: both cards look exactly as today (source view, pause, Waiting on line)', () => {
   const NOW = new Date('2026-11-18T18:00:00Z');
   const run = { started_at: '2026-11-18T12:00:00Z', unavailable: [{ label: 'Google + Meta ads export Sheet', type: 'pending', why: 'old run reason' }] };
-  for (const slug of ['paid-ads', 'monthly-report']) {
+  // #3794: the Auditor no longer reads the Sheet (Google Ads API read); the Monthly Report still waits on it.
+  assert.strictEqual(adsSrc(loadAgent('paid-ads', undefined, {})), undefined);
+  for (const slug of ['monthly-report']) {
     const now = loadAgent(slug, undefined, {});
     const before = { ...now, sources: now.sources.map((s) => (s.label === 'Google + Meta ads export Sheet' ? TODAY[slug] : s)) };
     assert.deepStrictEqual(adsSrc(now), TODAY[slug], `${slug} resolves to today's pending source`);
@@ -164,19 +166,18 @@ test('env unset: both cards look exactly as today (source view, pause, Waiting o
     assert.deepStrictEqual(liveMissing(now, run, NOW), liveMissing(before, run, NOW));
     assert.deepStrictEqual(characterOf(now, [], run, NOW, null, {}), characterOf(before, [], run, NOW, null, {}));
   }
-  assert.strictEqual(pausedFor(loadAgent('paid-ads', undefined, {})), 'paused until the Google + Meta ads export Sheet exists; waiting since 10.13');
 });
 
-test('env set: the sheet source takes over and the Auditor pause lifts by itself', async () => {
+test('env set: the sheet source takes over for the Monthly Report; the Auditor stays paused on the API read', async () => {
   const env = { ADS_EXPORT_SHEET_ID: ID };
   const pa = loadAgent('paid-ads', undefined, env);
-  assert.strictEqual(adsSrc(pa).type, 'ads_sheet');
-  assert.strictEqual(pausedFor(pa), null);
+  assert.strictEqual(adsSrc(pa), undefined, '#3794');
+  assert.strictEqual(pausedFor(pa), 'paused until the Google Ads API read exists; waiting since 11.24');
   const mr = loadAgent('monthly-report', undefined, env);
   const g = await S.gather([adsSrc(mr)], { env, agent: 'monthly-report', adsSheetValues: async () => fixture() });
   assert.strictEqual(g.got.length, 1);
   for (const c of COSTS) assert.ok(!g.got[0].text.includes(c));
   // A Google 403 names the account to share to; it never crashes the run.
-  const no = await S.gather([adsSrc(pa)], { env, agent: 'paid-ads', adsSheetValues: async () => { const e = new Error('forbidden'); e.status = 403; throw e; } });
+  const no = await S.gather([adsSrc(mr)], { env, agent: 'monthly-report', adsSheetValues: async () => { const e = new Error('forbidden'); e.status = 403; throw e; } });
   assert.match(no.unavailable[0].why, /share it to infinity-brain@ihg-sales-brain\.iam\.gserviceaccount\.com as Viewer/);
 });

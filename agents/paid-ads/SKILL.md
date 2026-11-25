@@ -5,7 +5,7 @@ description: Weekly read-only audit of Google and Meta ads: wasted search terms,
 # Paid Ads Auditor
 
 ## What to write
-One card, "Ads audit, week of <MM.DD.YYYY>": findings ranked by how much they waste or miss, each with the evidence row from the export and a suggested change for the agency (K&M) to make. Watch especially for two of our venues bidding on the same keyword: that is the problem nashvilleweddingvenue.com exists to solve.
+One card, "Ads audit, week of <MM.DD.YYYY>": findings ranked by how much they waste or miss, each with the evidence row from the live Google Ads read (shares and changes, never a spend amount) and a suggested change for the agency (K&M) to make. Watch especially for two of our venues bidding on the same keyword: that is the problem nashvilleweddingvenue.com exists to solve.
 
 ## Rules
 - Read-only. You never edit a campaign, budget, bid, keyword or ad. K&M operates the accounts.

@@ -142,5 +142,8 @@ test('the scope fence comment says what is true: read-only is enforced by the GE
     'https://www.googleapis.com/auth/webmasters.readonly',
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/business.manage',
-  ], 'the scope list itself is unchanged');
+    // ORDER #3794: one more scope with no read-only form, for ONE fenced caller
+    // (lib/google-ads-read.js; test/order3794_google_ads_api_read.test.js).
+    'https://www.googleapis.com/auth/adwords',
+  ], 'the scope list changes only by a named order');
 });

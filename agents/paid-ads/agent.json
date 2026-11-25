@@ -1,17 +1,17 @@
 {
   "name": "Paid Ads Auditor",
   "job": "weekly ads audit",
-  "cadence": "Weekly, once the ads export Sheet exists (paused until then)",
-  "paused_until": "Google + Meta ads export Sheet",
+  "cadence": "Weekly, plus an hourly Google Ads monitor once the API read is on (paused until then)",
+  "paused_until": "Google Ads API read",
   "max_cards": 1,
   "sources": [
     {
-      "type": "ads_sheet",
-      "env": "ADS_EXPORT_SHEET_ID",
+      "type": "google_ads_api",
+      "env": "ADS_API_LIVE",
       "required": true,
-      "label": "Google + Meta ads export Sheet",
-      "since": "2026-10-13",
-      "why": "the export Sheet has never existed: K&M build it per https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit (#3567), share it to the Brain, and its id goes in ADS_EXPORT_SHEET_ID; Katherine owns the ask"
+      "label": "Google Ads API read",
+      "since": "2026-11-24",
+      "why": "the Google Ads API read is not on yet (#3794): Mimi turns on Google Ads API access for GCP project ihg-sales-brain and adds the Brain's service account to each Google Ads account as Read only; then ADS_API_LIVE is switched on"
     },
     {
       "type": "file",
@@ -21,7 +21,8 @@
   "character": {
     "role": "The auditor",
     "does": [
-      "Weekly audit of Google and Meta ads: wasted search terms, wrong landing pages, our venues bidding against each other"
+      "Weekly audit of Google ads: wasted search terms, wrong landing pages, our venues bidding against each other",
+      "Watches Google Ads every hour: spend with no conversions, impressions dropping to zero, disapproved ads, limited or paused campaigns, landing pages that 404, two venues on one search term"
     ],
     "traits": [
       {
@@ -34,7 +35,7 @@
       }
     ],
     "needs": [
-      "Katherine/K&M: create the ads export Sheet per the spec (https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit) and share it to the Brain"
+      "Mimi: turn on Google Ads API access for GCP project ihg-sales-brain and add the Brain's service account to each Google Ads account as Read only (#3794)"
     ]
   }
 }

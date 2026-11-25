@@ -62,7 +62,8 @@ test('REPLAY 10.13 to 10.19, drafts decided as they come: the same agents run, s
   assert.strictEqual(a, 22); // 15 GBP + 5 Citations + 2 Convention Connector; Paid Ads is a board line now
   assert.strictEqual(b, 6);
   // The Paid Ads day is recorded as paused (#2903; it was 'waiting' under #2900), never as a card.
-  assert.ok(store.producerRows.some((r) => r.agent === 'paid-ads' && r.decision === 'paused' && /export Sheet/.test(r.why)));
+  // #3794: the pause now names the Google Ads API read (the Sheet plan was replaced).
+  assert.ok(store.producerRows.some((r) => r.agent === 'paid-ads' && r.decision === 'paused' && /Google Ads API read/.test(r.why)));
 });
 
 test('REPLAY 10.13 to 10.19, nothing decided (as it really went): the 15-waiting hold stops Monday 10.19, Patty and Google Business still run', async () => {
@@ -117,7 +118,7 @@ test('the board shows Paid Ads paused until the ads export Sheet exists, waiting
   const b = P.board({ ymd: '2026-11-03', defs: [pa], history });
   assert.strictEqual(b.length, 1);
   assert.strictEqual(b[0].state, 'paused');
-  assert.strictEqual(b[0].line, 'paused until the Google + Meta ads export Sheet exists; waiting since 10.13');
+  assert.strictEqual(b[0].line, 'paused until the Google Ads API read exists; waiting since 11.24'); // #3794
   assert.doesNotMatch(b[0].line, /#\d/, 'no order numbers in what Katherine sees');
 });
 
