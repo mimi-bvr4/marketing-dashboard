@@ -10,7 +10,7 @@ const { characterOf } = require('../routes/agents');
 const { loadAgent, listAgents } = require('../lib/agent-runner');
 
 const NOW = new Date('2026-11-18T15:30:00-06:00');
-const SPEC = '07_Marketing_and_Brand/Ads_Export_Spec_for_KM.md';
+const SPEC = 'https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit'; // #3815: the spec's Drive copy
 const rows = (...r) => new Map(r.map((x) => [x.id, x]));
 const adsNeed = (slug) => loadAgent(slug).character.needs.find((n) => /ads export Sheet/.test(n));
 

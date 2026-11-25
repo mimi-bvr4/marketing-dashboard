@@ -133,7 +133,7 @@ test('agent.json sources validate: every type is registered, no pending source l
   // #2958: every need names its owner.
   assert.deepStrictEqual(mr.character.needs, ['Mimi: mint a read-only key at /settings/api-tokens and store it in the Box Keychain as marketing-fleet-key (one command, it never shows the key)',
     "Mimi: the HubSpot private app's marketing-email statistics scope (HubSpot names the exact scope once the key above exists)",
-    'Katherine/K&M: create the ads export Sheet per the spec (07_Marketing_and_Brand/Ads_Export_Spec_for_KM.md) and share it to the Brain']); // #2903 the email scorecard; #3568 same ask as the Auditor
+    'Katherine/K&M: create the ads export Sheet per the spec (https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit) and share it to the Brain']); // #2903 the email scorecard; #3568 same ask as the Auditor
   assert.ok(!/Katherine's call|stages count/i.test(mr.skill));
 
   const c = loadAgent('citations');

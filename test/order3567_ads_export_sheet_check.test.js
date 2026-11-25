@@ -17,7 +17,7 @@ const need = () => loadAgent('paid-ads').character.needs.find((n) => /ads export
 
 test('the Auditor names the real ask, with the spec, and no dollar figure', () => {
   const n = need();
-  assert.strictEqual(n, 'Katherine/K&M: create the ads export Sheet per the spec (07_Marketing_and_Brand/Ads_Export_Spec_for_KM.md) and share it to the Brain');
+  assert.strictEqual(n, 'Katherine/K&M: create the ads export Sheet per the spec (https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit) and share it to the Brain');
   assert.doesNotMatch(n, /\$|\d+\s*(dollars|usd)/i);
   assert.strictEqual(C.checkFor(n).id, 'sheet:ads-export');
   // The pause still reads the same source label (#2903).

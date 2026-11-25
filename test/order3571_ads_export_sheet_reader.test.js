@@ -135,7 +135,7 @@ test('FENCE: the Auditor reads spend for math, and its note and card show no cur
 
 const TODAY = {
   'paid-ads': { type: 'pending', required: true, label: 'Google + Meta ads export Sheet', since: '2026-10-13',
-    why: 'the export Sheet has never existed: K&M build it per 07_Marketing_and_Brand/Ads_Export_Spec_for_KM.md (#3567), share it to the Brain, and its id goes in ADS_EXPORT_SHEET_ID; Katherine owns the ask' },
+    why: 'the export Sheet has never existed: K&M build it per https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit (#3567), share it to the Brain, and its id goes in ADS_EXPORT_SHEET_ID; Katherine owns the ask' },
   'monthly-report': { type: 'pending', label: 'Google + Meta ads export Sheet', why: 'the export Sheet has not been created and shared yet' },
 };
 const adsSrc = (d) => d.sources.find((s) => s.label === 'Google + Meta ads export Sheet');
