@@ -53,7 +53,7 @@ function parseArgs(argv) {
   return a;
 }
 
-async function main({ argv = process.argv.slice(2), log = console.log, pool, llm, env = process.env, fetchImpl, driveFactory } = {}) {
+async function main({ argv = process.argv.slice(2), log = console.log, pool, llm, env = process.env, fetchImpl, driveFactory, now } = {}) {
   const args = parseArgs(argv);
   if (args.list) { listAgents().forEach((s) => { const d = loadAgent(s); log(`${s.padEnd(15)} ${d.name}: ${d.cadence}`); }); return 0; }
   const competitorsOnly = !args.due && args.agents.length === 1 && args.agents[0] === 'competitors';
@@ -118,10 +118,13 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   // #3047: `scout --dry --watch-list` prints the sites the Scout will watch and
   // stops: no site is fetched, no model is called, nothing is saved.
   if (args.watchList) {
-    const { scoutWatchList } = require('../lib/agent-sources');
-    const w = await scoutWatchList(store, 'scout');
+    const { scoutWatchList, rotationLine } = require('../lib/agent-sources');
+    const w = await scoutWatchList(store, 'scout', { now: now || new Date() });
     log(`scout watch list: ${w.list.length} competitor site(s), ${w.fromSheet} from the IHG Competitors sheet, ${w.fromPage} added on the Scout's page`);
-    for (const x of w.list) log(`  ${x.from_sheet ? 'sheet' : 'page '}  ${x.label ? `${x.label} (${x.site})` : x.site}`);
+    // #3800: the whole sheet is watched; the plan says who is read this week and who comes round later.
+    if (w.rotation) log(rotationLine(w));
+    for (const x of w.list) log(`  ${x.from_sheet ? 'sheet' : 'page '}  ${x.label ? `${x.label} (${x.site})` : x.site}  every ${x.every || 'week'}`);
+    for (const x of (w.rotation ? w.rotation.later : [])) log(`  later  ${x.label ? `${x.label} (${x.site})` : x.site}  in ${x.weeksAway} week(s)`);
     return w.list.length ? 0 : 1;
   }
   // #2909: opts.only comes from the Producer while its hold is on (Google Business: RED replies only).
