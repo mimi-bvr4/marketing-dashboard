@@ -87,6 +87,9 @@
   textarea.code { min-height: 22rem; font: 13px/1.5 ui-monospace, Menlo, monospace; }
   .asks { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; font-size: 14px; }
   .asks li { border-left: 3px solid var(--line); padding-left: 10px; }
+  /* #3806 homework box on every card */
+  .hw { font-size: 14px; } .hw summary { cursor: pointer; }
+  .hwform { display: grid; gap: 6px; margin-top: 8px; } .hwform textarea, .hwform input[type=url] { width: 100%; box-sizing: border-box; }
   .st-applied, .st-built { border-left-color: #1d6b42 !important; }
   .st-cant, .st-declined, .st-failed { border-left-color: #b42318 !important; }
   .st-awaiting_exec, .st-building, .st-new, .st-sorting { border-left-color: #8a5300 !important; }
@@ -222,6 +225,7 @@
       ${a.character.pointer ? `<p class="meta pointer"><a href="${esc(a.character.pointer.href)}">${esc(a.character.pointer.text)}</a></p>` : ''}
       ${a.pinterest ? `<p class="meta">Pinterest: ${esc(a.pinterest.line)}. <a href="${esc(a.pinterest.page)}">Settings, Pinterest accounts</a></p>` : ''}
       ${cardReqHtml(a)}
+      ${hwHtml(a)}
       <div class="acts">${a.ask_page ? `<a class="btn primary" href="${esc(a.ask_page)}">Ask ${esc(a.name)}</a>` : a.card_only ? `<span class="meta">${esc(cardOnlyLine(a))}</span>` : a.card_request ? '' : `<button class="btn primary" data-a="run" ${a.waiting ? 'disabled' : ''}>${a.waiting ? 'Run waiting' : 'Run now'}</button>`}<a class="btn ghost" href="#${a.slug}">Open profile</a></div>
       <p class="msg" hidden></p>
     </article>`;
@@ -236,6 +240,62 @@
         <button class="btn primary" type="submit" data-a="cardreq" ${busy ? 'disabled' : ''}>${esc(c.button)}</button></form>
       <p class="meta ${c.state.state === 'failed' ? 'err' : ''}" data-cardreq-line>${esc(a.card_request.state.line)}</p>`;
   }
+  // #3806 homework: on every card, Katherine or Mimi hands the agent a link, a file
+  // or a note, with an optional due date. "Homework: 1 open" shows on the card; the
+  // agent reads it on its next run and closes it with a one-line result and its cards.
+  const mdy = (ymd) => (ymd ? `${ymd.slice(5, 7)}.${ymd.slice(8, 10)}.${ymd.slice(0, 4)}` : '');
+  function hwItemHtml(x) {
+    const head = x.status === 'done' ? '<strong>Done:</strong> ' : (x.due ? `<strong>Due ${esc(mdy(x.due))}:</strong> ` : '<strong>Open:</strong> ');
+    const what = [x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">${esc(x.link)}</a>` : '',
+      x.file ? `<a href="${esc(x.file.url)}">${esc(x.file.name)}</a> <span class="meta">(${esc(x.file.kind)})</span>` : '',
+      x.note ? esc(x.note) : ''].filter(Boolean).join(' · ');
+    const done = x.status === 'done' ? `<div class="meta" data-hw-result>${esc(x.result || '')}${x.cards.length ? ` Cards: ${x.cards.map((id) => `<a href="/review#card-${Number(id)}">#${Number(id)}</a>`).join(', ')}` : ''}</div>` : '';
+    const close = x.status === 'open' ? ` <button type="button" class="btn ghost" style="min-height:28px;font-size:12px" data-hw-close="${x.id}">Mark done</button>` : '';
+    return `<li data-hw-item="${x.id}">${head}${what} <span class="meta">#${x.id}, ${esc(x.added_by)}</span>${close}${done}</li>`;
+  }
+  function hwHtml(a) {
+    const h = a.homework || { open: 0, line: null, items: [] };
+    return `<details class="hw" data-hw ${h.open ? 'open' : ''}><summary><strong data-hw-line>${esc(h.line || 'Homework: none')}</strong> · Add homework</summary>
+      ${h.items.length ? `<ul class="asks">${h.items.map(hwItemHtml).join('')}</ul>` : ''}
+      <form class="hwform" data-hwform novalidate>
+        <input type="url" data-f="hwlink" placeholder="Paste a link (optional)" aria-label="Homework link" maxlength="1000">
+        <textarea data-f="hwnote" rows="2" placeholder="Note, e.g. pull every gala in here" aria-label="Homework note" maxlength="2000"></textarea>
+        <input type="file" data-f="hwfile" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.txt,.csv,.md,application/pdf,image/*,text/plain,text/csv,text/markdown" aria-label="Homework file (up to 8 MB)">
+        <label class="meta">Due (optional) <input type="date" data-f="hwdue" aria-label="Homework due date"></label>
+        <button class="btn ghost" type="submit" data-a="hwadd">Add homework</button>
+        <p class="meta" style="margin:0">Read as information on its next run (or Run now). It never changes ${esc(a.name)}'s rules: drafts only, nothing sent or posted.</p>
+      </form></details>`;
+  }
+  main.addEventListener('submit', async (e) => {
+    const f = e.target.closest('form[data-hwform]'); if (!f) return;
+    e.preventDefault();
+    const b = f.querySelector('button[data-a="hwadd"]'); if (b.disabled) return;
+    const slug = f.closest('[data-slug]').dataset.slug;
+    const v = (k) => f.querySelector(`[data-f="${k}"]`);
+    const file = v('hwfile').files && v('hwfile').files[0];
+    b.disabled = true;
+    try {
+      let r;
+      if (file) {
+        if (file.size > 8 * 1024 * 1024) throw new Error('Files up to 8 MB; for a bigger one, paste a link to it instead.');
+        const qs = new URLSearchParams({ name: file.name, link: v('hwlink').value, note: v('hwnote').value, due: v('hwdue').value });
+        const res = await fetch(`/api/agents/${slug}/homework/file?${qs}`, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file });
+        r = await res.json().catch(() => ({})); if (!res.ok) throw new Error(r.error || ('error ' + res.status));
+      } else {
+        r = await api(`/api/agents/${slug}/homework`, { method: 'POST', body: JSON.stringify({ link: v('hwlink').value, note: v('hwnote').value, due: v('hwdue').value }) });
+      }
+      await load();
+      const card = main.querySelector(`[data-slug="${slug}"]`); if (card) say(card, r.line, true);
+    } catch (x) { b.disabled = false; say(f, x.message); }
+  });
+  main.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-hw-close]'); if (!b) return;
+    const slug = b.closest('[data-slug]').dataset.slug;
+    const result = prompt('In one line, what was done?'); if (!result) return;
+    b.disabled = true;
+    try { await api(`/api/agents/${slug}/homework/${b.dataset.hwClose}/done`, { method: 'POST', body: JSON.stringify({ result }) }); await load(); }
+    catch (x) { b.disabled = false; say(b, x.message); }
+  });
   main.addEventListener('submit', async (e) => {
     const f = e.target.closest('form[data-cardreq]'); if (!f) return;
     e.preventDefault();
