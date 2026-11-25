@@ -3,6 +3,7 @@
   "job": "listing consistency, AI answers and quarterly directory refresh packs",
   "cadence": "the 15th of each month, 06:00 CT; the January, April, July and October runs also write the directory refresh packs",
   "max_cards": 5,
+  "fix_cards": true,
   "sources": [
     {
       "type": "file",

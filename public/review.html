@@ -267,6 +267,8 @@
     if (c.status !== 'ready') return '';
     const p = c.payload || {};
     if (p.post || p.pin || p.sales) return '';
+    // #3808: a listing fix is made by a person, never by the Box.
+    if (c.action && c.action.kind === 'fix') return `<p class="meta result"><span class="badge good">Result</span> Marked done ${fmt(c.decided_at)}. The Box changed no listing; the person who approved it made the change.</p>`;
     return `<p class="meta result"><span class="badge good">Result</span> Filed ${fmt(c.decided_at)} as ready to use. Nothing was posted or sent from here.</p>`;
   }
   function cardHtml(c) {
