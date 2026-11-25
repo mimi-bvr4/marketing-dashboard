@@ -29,6 +29,7 @@
 //                                       (#2918 .health: this morning's team health check)
 //   POST /api/producer/calendar/:slug   { days: ['tue'] }  move a weekly team member (logged)
 //   POST /api/producer/name             { name }  Katherine names the Producer ('' = default)
+//   GET  /api/executioner               #3807 the Executioner's card: done today, failed, waiting
 //   GET  /api/agent-voices              #2955 { on: false } unless AGENT_VOICES is on; then
 //                                       { on: true, voices: { slug: [{ src, line }] } }
 //   GET  /api/agents/:slug/homework     #3806 open homework + the last 30 days' done items
@@ -504,6 +505,12 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
       handoffs_on: require('../lib/handoff-map').handoffsOn(),
       handoffs: require('../lib/handoff-map').rows({ nameOf: (slug) => (defs.find((d) => d.slug === slug) || {}).name || require('../lib/handoff-map').agentName(slug) }),
     });
+  });
+  // #3807 the Executioner's card: actions done today, failed today, waiting. Read only.
+  r.get('/api/executioner', need, async (req, res) => {
+    const EX = require('../lib/executioner');
+    const rows = store.execRows ? await store.execRows() : [];
+    res.json(EX.summary(rows, { now: clock() }));
   });
   r.post('/api/producer/calendar/:slug', need, async (req, res) => {
     const P = require('../lib/producer');

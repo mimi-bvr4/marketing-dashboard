@@ -18,6 +18,9 @@ const maryDesk = require('../lib/mary-desk');
 const conventionContact = require('../lib/hubspot-convention-contact');
 
 const gbpPost = require('../lib/gbp-post');
+// #3807 the Executioner: result stamp (link, id, time CT); with EXECUTIONER on,
+// one retry at most and a failed card goes back to Review with the error.
+const EX = require('../lib/executioner');
 
 // gbpAuth = { saKey, saToken } for tests; the Box reads its own key.
 async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = process.env, log = console.log, now = () => new Date() }) {
@@ -74,8 +77,10 @@ async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = proces
       if (!(await store.claimHandoff(c.id, { at: now().toISOString(), pending: true, to: 'google-business' }))) { log(`card ${c.id}: already taken`); continue; }
       const r = await gbpPost.createPost({ post: c.payload.gbp_post, env, fetchImpl, ...(gbpAuth || {}) });
       const at = now().toISOString();
-      if (r.ok) { await store.finishHandoff(c.id, { at, ok: true, to: 'google-business', venue: r.venue, post_url: r.post_url, post_name: r.post_name, state: r.state }); log(`card ${c.id}: posted to ${r.venue} Google Business Profile ${r.post_url || r.post_name}`); done++; }
-      else if (r.skip) { await store.finishHandoff(c.id, { at, ok: false, to: 'google-business', why: r.why }); log(`card ${c.id}: not posted: ${r.why}`); }
+      if (r.ok) { await store.finishHandoff(c.id, { at, ok: true, to: 'google-business', venue: r.venue, post_url: r.post_url, post_name: r.post_name, state: r.state, ...EX.result('gbp_post', r, at) }); log(`card ${c.id}: posted to ${r.venue} Google Business Profile ${r.post_url || r.post_name}`); done++; continue; }
+      // #3807: with EXECUTIONER on, the claim is released and the card either waits, retries once or goes back to Review.
+      if (EX.on(env)) { await store.finishHandoff(c.id, null); await EX.afterFailure({ store, card: c, kind: 'gbp_post', r, at, env, log }); continue; }
+      if (r.skip) { await store.finishHandoff(c.id, { at, ok: false, to: 'google-business', why: r.why }); log(`card ${c.id}: not posted: ${r.why}`); }
       else { await store.finishHandoff(c.id, null); log(`card ${c.id}: will retry, ${r.why}`); }
       continue;
     }
@@ -85,7 +90,8 @@ async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = proces
       // unconnected venue or an unpicked venue waits here (retry), never fails.
       const r = await createPin({ pin: c.payload.pin, evidence: c.payload.evidence, fetchImpl, env, ...(secrets ? { secrets } : {}) });
       const at = now().toISOString();
-      if (r.ok) { await store.setHandoff(c.id, { at, ok: true, pin_id: r.id, pin_url: r.url, board: r.board, ...(r.venue ? { venue: r.venue } : {}), ...(r.sandbox ? { sandbox: true } : {}) }); log(r.sandbox ? `card ${c.id}: pinned in the SANDBOX (Trial, visible only to its creator) to ${r.venue ? `${r.venue} ` : ''}${r.board}, pin id ${r.id}` : `card ${c.id}: pinned to ${r.venue ? `${r.venue} ` : ''}${r.board} ${r.url}`); done++; }
+      if (r.ok) { await store.setHandoff(c.id, { at, ok: true, pin_id: r.id, pin_url: r.url, board: r.board, ...(r.venue ? { venue: r.venue } : {}), ...(r.sandbox ? { sandbox: true } : {}), ...EX.result('pin', r, at) }); log(r.sandbox ? `card ${c.id}: pinned in the SANDBOX (Trial, visible only to its creator) to ${r.venue ? `${r.venue} ` : ''}${r.board}, pin id ${r.id}` : `card ${c.id}: pinned to ${r.venue ? `${r.venue} ` : ''}${r.board} ${r.url}`); done++; }
+      else if (await EX.afterFailure({ store, card: c, kind: 'pin', r, at, env, log })) { /* #3807: waiting, one retry, or back to Review */ }
       else if (r.skip) { await store.setHandoff(c.id, { at, ok: false, why: r.why }); log(`card ${c.id}: not pinned: ${r.why}`); }
       else log(`card ${c.id}: will retry, ${r.why}`);
       continue;
@@ -94,9 +100,13 @@ async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = proces
     const r = await createDraft({ post, fetchImpl, login });
     const at = now().toISOString();
     if (r.ok) {
-      await store.setHandoff(c.id, { at, ok: true, wp_id: r.id, edit_link: r.edit_link, status: r.status, note: r.note || null });
+      await store.setHandoff(c.id, { at, ok: true, wp_id: r.id, edit_link: r.edit_link, status: r.status, note: r.note || null, ...EX.result('post', r, at) });
       log(`card ${c.id}: WordPress draft ${r.id} on ${post.site} ${r.edit_link}`);
       done++;
+    } else if (!(r.alarm && r.id) && await EX.afterFailure({ store, card: c, kind: 'post', r, at, env, log })) {
+      // #3807: waiting, one retry, or back to Review. An ALARM with a draft id
+      // already made something in WordPress, so it stays recorded below and is
+      // never sent back (a second Approve would make a second draft).
     } else if (r.skip || r.alarm) {
       await store.setHandoff(c.id, { at, ok: false, alarm: !!r.alarm, wp_id: r.id || null, edit_link: r.edit_link || null, why: r.why });
       log(`card ${c.id}: ${r.alarm ? 'ALARM ' : 'not handed off: '}${r.why}`);
