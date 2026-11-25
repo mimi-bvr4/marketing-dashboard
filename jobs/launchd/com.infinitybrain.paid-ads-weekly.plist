@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ORDER #3804. The Monday paid ads report: jobs/paid_ads_weekly.sh.
+
+  SHIPPED NOT LOADED, and its switch ships OFF. FEATURE FLAG: PAID_ADS_WEEKLY
+  default OFF: it is not set below, so even a loaded job reads nothing. Turning
+  it on is Mimi's: add <key>PAID_ADS_WEEKLY</key><string>on</string> and
+  <key>ADS_API_LIVE</key><string>on</string> here (the Google half reads the
+  hourly #3794 snapshot), and META_AD_ACCOUNT_IDS once the Meta token exists.
+  It reads Google Ads (from the snapshot) and Meta (GET only, ads_read) and
+  writes ONE DRAFT card to Review; it changes nothing and sends nothing.
+
+  TIME: Mondays 07:00 CT. RunAtLoad is false: loading must not fire a run.
+  WHERE IT LOGS: the two paths below, red runs too.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.infinitybrain.paid-ads-weekly</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/infinitybrain/repos/marketing-dashboard/jobs/paid_ads_weekly.sh</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TZ</key>
+		<string>America/Chicago</string>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>/Users/infinitybrain/repos/marketing-dashboard</string>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Weekday</key>
+		<integer>1</integer>
+		<key>Hour</key>
+		<integer>7</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_paid_ads_weekly.out</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_paid_ads_weekly.err</string>
+</dict>
+</plist>
