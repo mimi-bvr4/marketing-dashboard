@@ -60,6 +60,8 @@ const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
 const agentVoices = require('../lib/agent-voices');
 const { applyChecks, checkFor } = require('../lib/agent-checks');
 const cardReq = require('../lib/card-request');
+// #3801: each crawling agent's page cap, and who crawls what and when.
+const crawlPlan = require('../lib/crawl-plan');
 
 const PAGE = path.join(__dirname, '..', 'public', 'agents.html');
 // #2914: what the card says once a redo is asked (the request job runs every 15 minutes).
@@ -209,7 +211,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     // #3246: Site Guardian's card reads the Box watch's latest state, never a fixed "live".
     let guardian = null;
     try { guardian = guardianCard.view(store.guardianState ? await store.guardianState() : null, clock()); } catch (e) { guardian = guardianCard.view(null, clock()); }
-    res.json({ exec, agents: listAgents().map((slug) => {
+    res.json({ exec, crawl_rotation: crawlPlan.ROTATION, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
       const asks = allAsks.filter((a) => a.agent === slug);
@@ -220,6 +222,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
       return { slug, name: displayName(d, p), default_name: d.name, job: d.job,
         portrait: p && p.portrait_at ? `/api/agents/${slug}/portrait?v=${new Date(p.portrait_at).getTime()}` : null,
         named_by: p && p.display_name ? p.updated_by : null, cadence: d.cadence, ask_page: d.ask_page || null, ask_note: d.ask_note || null, sources: (d.sources || []).map(sourceView),
+        crawl_limits: crawlPlan.crawlLimits(d),
         // #2903: paused until a source exists (Paid Ads), or a card only (Web Agent, Site Guardian).
         // #3000: a new member that ships OFF shows the same "Paused:" line, naming its switch.
         paused: switchOff(d) || pausedFor(d), card_only: cardOnly(d),
