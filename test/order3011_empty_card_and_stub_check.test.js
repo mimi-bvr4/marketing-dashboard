@@ -126,10 +126,10 @@ test('Detective: an empty or "..." text is Needs changes, never Sounds human; a 
   assert.match(page, /d\.count \|\| d\.stub \? 'bad' : 'good'/);
 });
 
-test('Convention Connector: 16000 output tokens, up to 3 cards, and the skill says split, never truncate', () => {
+test('Convention Connector: 24000 output tokens, up to 8 cards (#3803: table cards plus one per prospect), and the skill says split, never truncate', () => {
   const a = loadAgent('convention-connector');
-  assert.strictEqual(a.max_tokens, 16000);
-  assert.strictEqual(a.max_cards, 3);
+  assert.strictEqual(a.max_tokens, 24000);
+  assert.strictEqual(a.max_cards, 8);
   assert.match(a.skill, /Split, never truncate/);
   assert.match(a.skill, /later years/);
   assert.match(a.skill, /Rest of <that year>/, 'the months between the 9-month table and the next January get a heading (the 11.05.2026 dry run skipped 08.2027 to 12.2027)');

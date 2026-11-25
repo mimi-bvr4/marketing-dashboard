@@ -1,9 +1,10 @@
 {
   "name": "Convention Charles",
   "job": "conventions coming to Nashville",
-  "cadence": "Mondays 06:00 CT",
-  "max_cards": 3,
-  "max_tokens": 16000,
+  "cadence": "Tuesdays 06:00 CT",
+  "max_cards": 8,
+  "prospect_cards": true,
+  "max_tokens": 24000,
   "sales_fields": true,
   "copy_prepass": true,
   "seen_before": {
@@ -50,9 +51,10 @@
   "character": {
     "role": "The convention scout",
     "does": [
-      "Every Monday, finds the conventions, trade shows and big corporate meetings coming to Nashville in the next 4 years, soonest first, with dates, host venue, size and organizer",
+      "Every Tuesday, finds the conventions, trade shows and big corporate meetings coming to Nashville in the next 4 years, soonest first, with dates, host venue, size and organizer",
       "Finds the companies that work them and hire out the extras: destination management companies, meeting planners, production and decor contractors",
       "For each convention, names the visitors bureau contact and the conference's own vendor, sponsorship and rep contacts, each with its public page",
+      "Posts one action card per prospect, \"Assign to Mary: <convention>, <dates>\", so each lead lands on Mary's Sales Hand-off desk",
       "Drafts a short, specific email to each one offering our venues, catering, bar and lighting for their receptions, dinners and offsite nights",
       "Every item carries the link it came from"
     ],
