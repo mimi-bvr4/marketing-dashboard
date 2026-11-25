@@ -1,9 +1,20 @@
 #!/usr/bin/env node
-// ORDER #3794: the hourly Google Ads monitor (read-only). Google Ads access:
+// ORDER #3794: the Google Ads monitor (read-only). Google Ads access:
 // Standard (writes disabled in code), ORDER #3819.
+// ORDER #3821 (Mimi, 11.25.2026): not hourly. "Checks Google Ads daily at
+// 6:15 AM, quick health check at 1:15 PM."
 //
 //   node jobs/ads_monitor.js --accounts   every account the Brain can see: customer id and name only
-//   node jobs/ads_monitor.js [--dry]      one poll: read, flag, card what is new
+//   node jobs/ads_monitor.js --daily      the 6:15 AM full pull: every account, today plus the
+//                                         trailing 13 weeks; every flag; writes the snapshot the
+//                                         Auditor and the Monday report (#3804) read
+//   node jobs/ads_monitor.js --midday     the 1:15 PM health check, alerts only: a disapproved ad,
+//                                         a campaign that stopped serving, a final URL that does
+//                                         not load, spend well ahead of normal with 0 conversions.
+//                                         Reads the last 7 days only; no card unless one fires;
+//                                         never rewrites the snapshot.
+//   neither flag: --daily before noon CT, --midday from noon on (launchd passes none)
+//   --dry                                 read and flag, write nothing
 //
 // FEATURE FLAG: ADS_API_LIVE default OFF. Off, a poll reads nothing and writes
 // nothing (exit 0, one line saying so). --accounts runs with the flag off: it is
@@ -52,6 +63,15 @@ async function main(opts = {}) {
   }
 }
 
+// #3821: which run this is. An explicit flag wins; otherwise the CT hour picks.
+function modeFor(argv = [], now = new Date()) {
+  if (argv.includes('--midday')) return 'midday';
+  if (argv.includes('--daily')) return 'daily';
+  const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hourCycle: 'h23' }).format(now));
+  return h >= 12 ? 'midday' : 'daily';
+}
+const MIDDAY_READS = Object.freeze(['campaignDaily', 'campaignStatus', 'adsStatus', 'keywordWeekly']);
+
 async function run({ argv = process.argv.slice(2), log = console.log, env = process.env, client, store, now = new Date(), checkUrl } = {}) {
   const dry = argv.includes('--dry');
   R.startupCheck(); // #3819: before anything, flag on or off
@@ -67,15 +87,16 @@ async function run({ argv = process.argv.slice(2), log = console.log, env = proc
   const c = client || R.createClient({ env });
   const dir = stateDir(env);
   const prior = readJson(path.join(dir, 'state.json'), null);
-  const win = R.windowFor(now);
+  const midday = modeFor(argv, now) === 'midday';
+  const win = midday ? R.middayWindowFor(now) : R.windowFor(now);
   const accounts = [];
-  for (const a of await R.listAccounts(c)) accounts.push(await R.readAccount(c, a, win));
-  const flags = M.flagsFor(accounts, prior, { now, env });
+  for (const a of await R.listAccounts(c)) accounts.push(await R.readAccount(c, a, win, midday ? { only: MIDDAY_READS } : {}));
+  const flags = midday ? M.middayFlags(accounts, prior, { now, env }) : M.flagsFor(accounts, prior, { now, env });
   const u = await M.checkUrls(M.finalUrls(accounts), prior, { now, ...(checkUrl ? { check: checkUrl } : {}) });
   flags.push(...u.flags);
   const fresh = M.newFlags(flags, prior);
-  const card = M.cardFor(fresh, { now });
-  log(`read ${accounts.length} account(s), ${win.from} to ${win.to}; ${flags.length} flag(s), ${fresh.length} new`);
+  const card = M.cardFor(fresh, { now, midday });
+  log(`${midday ? 'midday check' : 'daily pull'}: read ${accounts.length} account(s), ${win.from} to ${win.to}; ${flags.length} flag(s), ${fresh.length} new`);
   if (dry) { if (card) log(`${card.title}\n${card.body}`); return 0; }
 
   if (card) {
@@ -93,15 +114,17 @@ async function run({ argv = process.argv.slice(2), log = console.log, env = proc
     if (s) { const row = await s.insert(card); log(`carded ${fresh.length} new flag(s) as card ${row && row.id}`); }
     else fresh.length = 0; // nothing carded: do not remember these keys
   }
-  writeJson(path.join(dir, 'snapshot.json'), R.snapshot(accounts, { now }));
+  // The snapshot is the daily pull's alone: the midday read is 7 days, not 13 weeks.
+  if (!midday) writeJson(path.join(dir, 'snapshot.json'), R.snapshot(accounts, { now }));
   writeJson(path.join(dir, 'state.json'), {
     at: now.toISOString(),
     flagged: [...new Set([...((prior && prior.flagged) || []), ...fresh.map((f) => f.key)])].slice(-2000),
     campaigns: M.campaignState(accounts),
-    urls: u.urls,
+    // the daily pull sees every final URL and resets the list; midday adds to it
+    urls: midday ? { ...((prior && prior.urls) || {}), ...u.urls } : u.urls,
   });
   return 0;
 }
 
 if (require.main === module) main().then((code) => process.exit(code), (e) => { console.error(String(e.message || e)); process.exit(1); });
-module.exports = { main, stateDir };
+module.exports = { main, stateDir, modeFor, MIDDAY_READS };

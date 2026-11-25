@@ -1,5 +1,7 @@
 #!/bin/bash
-# ORDER #3794: the hourly Google Ads monitor (read-only), on the Box.
+# ORDER #3794: the Google Ads monitor (read-only), on the Box.
+# ORDER #3821: runs twice a day, 6:15 AM CT (daily full pull) and 1:15 PM CT
+# (midday health check); jobs/ads_monitor.js picks which from the CT hour.
 # Run by com.infinitybrain.ads-monitor.plist (shipped NOT loaded). With
 # ADS_API_LIVE off (the default) jobs/ads_monitor.js reads nothing and exits 0.
 set -u

@@ -1,7 +1,7 @@
 {
   "name": "Paid Ads Auditor",
   "job": "weekly ads audit",
-  "cadence": "Weekly, plus an hourly Google Ads monitor once the API read is on (paused until then)",
+  "cadence": "Checks Google Ads daily at 6:15 AM, quick health check at 1:15 PM.",
   "paused_until": "Google Ads API read",
   "max_cards": 1,
   "sources": [
@@ -22,7 +22,8 @@
     "role": "The auditor",
     "does": [
       "Weekly audit of Google ads: wasted search terms, wrong landing pages, our venues bidding against each other",
-      "Watches Google Ads every hour: spend with no conversions, impressions dropping to zero, disapproved ads, limited or paused campaigns, landing pages that 404, two venues on one search term",
+      "Checks Google Ads daily at 6:15 AM: spend with no conversions, impressions dropping to zero, disapproved ads, limited or paused campaigns, landing pages that 404, two venues on one search term",
+      "Quick health check at 1:15 PM, a card only if something is wrong: a disapproved ad, a campaign that stopped serving, a landing page that 404s, spend running well ahead of normal with no conversions",
       "Every Monday, per venue: the Google keywords and search terms and the Meta ads that led to conversions that week, the ones that spent with none, and drafted changes for K&M"
     ],
     "traits": [
