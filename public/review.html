@@ -37,6 +37,11 @@
   .err { color: #b42318; font-size: var(--ihg-text-sm, 14px); }
   details.check textarea { min-height: 8rem; }
   .empty { color: var(--ihg-color-text-muted, #6d6e71); }
+  .today { border: 2px solid var(--ihg-color-accent, #8a6d3b); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-surface, #fff); padding: var(--ihg-space-4, 16px); }
+  .today h2 { margin: 0 0 var(--ihg-space-2, 8px); }
+  .today ol { margin: 0; padding-left: 1.4em; display: grid; gap: var(--ihg-space-2, 8px); font-size: var(--ihg-text-sm, 14px); }
+  .today .agent { font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); }
+  .today .why { margin: var(--ihg-space-2, 8px) 0 0; font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); }
 </style>
 </head>
 <body>
@@ -46,6 +51,12 @@
 </div></header>
 <main class="container wrap">
   <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong> Approve is refused on any card with an em dash, a hard venue capacity (no range or "depending on"), or an internal venue code like TBB; it says which line. Each card says what its Approve will do. <strong>Archive (no action)</strong> takes a card off your pile without approving or rejecting it: nothing is sent, the agent is not told it was a bad draft, and the card stays under Archived. Report cards show <strong>Got it</strong>, which does the same.</p>
+  <!-- #3826: "Katherine's Today", at most 5 actions, ranked. Each line jumps to its card. -->
+  <section class="today" id="today" aria-labelledby="todayH">
+    <h2 id="todayH">Today</h2>
+    <ol id="todayList"><li class="empty">Loading…</li></ol>
+    <p class="why" id="todayWhy"></p>
+  </section>
   <div class="runs" id="runs"></div>
   <div class="tabs" role="group" aria-label="Show">
     <button data-s="draft" aria-pressed="true">Drafts</button>
@@ -338,6 +349,33 @@
       if (hit) { hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
     } catch (e) { $('#list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
+  // #3826: "Today", the top 5 actions on Drafts. Reloaded after every action on
+  // a card, and again at the next 07:00 CT (next_refresh) if the page stays open.
+  let todayTimer = null;
+  async function loadToday() {
+    try {
+      const t = await api('/api/review/today');
+      $('#todayList').innerHTML = t.items.length
+        ? t.items.map((i) => `<li><a href="#card-${i.id}" data-today="${i.id}">${esc(i.line)}</a> <span class="agent">${esc(i.agent_name)}</span></li>`).join('')
+        : `<li class="empty">${esc(t.empty)}</li>`;
+      $('#todayWhy').textContent = t.items.length ? t.why : '';
+      clearTimeout(todayTimer);
+      const wait = t.next_refresh ? new Date(t.next_refresh).getTime() - Date.now() : 0;
+      if (wait > 0) todayTimer = setTimeout(loadToday, wait + 1000);
+    } catch (e) { $('#todayList').innerHTML = `<li class="err">${esc(e.message)}</li>`; }
+  }
+  $('#todayList').addEventListener('click', async (e) => {
+    const a = e.target.closest('a[data-today]'); if (!a) return;
+    e.preventDefault();
+    if (status !== 'draft') {
+      status = 'draft';
+      document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.s === 'draft')));
+      await load();
+    }
+    history.replaceState(null, '', '#card-' + a.dataset.today);
+    const hit = document.getElementById('card-' + a.dataset.today);
+    if (hit) { hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
+  });
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-s]'); if (!b) return;
     status = b.dataset.s;
@@ -348,7 +386,7 @@
     const b = e.target.closest('button[data-a]'); if (!b) return;
     const el = b.closest('.card'); const id = Number(el.dataset.id); const c = cache.find((x) => x.id === id);
     const err = el.querySelector('.err'); err.hidden = true;
-    const act = async (body) => { try { await api('/api/review/cards/' + id, { method: 'POST', body: JSON.stringify(body) }); await load(); await loadRuns(); } catch (x) { err.textContent = x.message; err.hidden = false; } };
+    const act = async (body) => { try { await api('/api/review/cards/' + id, { method: 'POST', body: JSON.stringify(body) }); await load(); await loadToday(); await loadRuns(); } catch (x) { err.textContent = x.message; err.hidden = false; } };
     if (b.dataset.a === 'copy') { await navigator.clipboard.writeText(c.payload && c.payload.post ? c.payload.post.content_md : c.body); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy text'), 1500); }
     if (b.dataset.a === 'approve') act({ action: 'approve' });
     if (b.dataset.a === 'restore') act({ action: 'restore' });
@@ -400,7 +438,7 @@
   });
   // #2993: the reference tab shows only while HANDOVER_AT is set.
   api('/api/review/handover').then((h) => { if (h && h.on) $('#refTab').hidden = false; }).catch(() => {});
-  load(); loadRuns();
+  load(); loadToday(); loadRuns();
 })();
 </script>
 <script src="https://dispatch.infinityhospitalitygroup.com/ihg-nav.js" defer></script>
