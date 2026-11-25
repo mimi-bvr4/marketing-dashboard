@@ -17,7 +17,10 @@ const { salesOwner, NO_OWNER } = require('../lib/outreach');
 const maryDesk = require('../lib/mary-desk');
 const conventionContact = require('../lib/hubspot-convention-contact');
 
-async function handoff({ store, fetchImpl, login, secrets, env = process.env, log = console.log, now = () => new Date() }) {
+const gbpPost = require('../lib/gbp-post');
+
+// gbpAuth = { saKey, saToken } for tests; the Box reads its own key.
+async function handoff({ store, fetchImpl, login, secrets, gbpAuth, env = process.env, log = console.log, now = () => new Date() }) {
   const viaMary = maryDesk.on(env);
   const cards = await store.readyForHandoff(20, { viaMary });
   let done = 0;
@@ -62,6 +65,20 @@ async function handoff({ store, fetchImpl, login, secrets, env = process.env, lo
       else { await store.finishHandoff(c.id, null); log(`card ${c.id}: will retry, ${r.why}`); }
       continue;
     }
+    // #3799 (Mimi 11.24.2026, "Approve actually POSTS it"): an approved Google
+    // Business card is posted to that venue's profile, word for word. Switch
+    // GBP_POST_ON_APPROVE off: left exactly as it is. Claimed first, so it can
+    // never post twice; a refusal that cannot clear is recorded and never retried.
+    if (c.payload.gbp_post) {
+      if (!gbpPost.postOn(env)) { log(`card ${c.id}: ${gbpPost.OFF_WHY} (ORDER #3799), left as is`); continue; }
+      if (!(await store.claimHandoff(c.id, { at: now().toISOString(), pending: true, to: 'google-business' }))) { log(`card ${c.id}: already taken`); continue; }
+      const r = await gbpPost.createPost({ post: c.payload.gbp_post, env, fetchImpl, ...(gbpAuth || {}) });
+      const at = now().toISOString();
+      if (r.ok) { await store.finishHandoff(c.id, { at, ok: true, to: 'google-business', venue: r.venue, post_url: r.post_url, post_name: r.post_name, state: r.state }); log(`card ${c.id}: posted to ${r.venue} Google Business Profile ${r.post_url || r.post_name}`); done++; }
+      else if (r.skip) { await store.finishHandoff(c.id, { at, ok: false, to: 'google-business', why: r.why }); log(`card ${c.id}: not posted: ${r.why}`); }
+      else { await store.finishHandoff(c.id, null); log(`card ${c.id}: will retry, ${r.why}`); }
+      continue;
+    }
     // #1710: an approved Pinterest Paul card is pinned live (Mimi 10.13.2026, "Post live on approve").
     if (c.payload.pin) {
       // #3164: with PINTEREST_PER_VENUE on, to the pin's venue's own account; an
@@ -87,7 +104,7 @@ async function handoff({ store, fetchImpl, login, secrets, env = process.env, lo
       log(`card ${c.id}: will retry, ${r.why}`);
     }
   }
-  log(`handoff: ${cards.length} ready card(s) with a post, pin or Sales email, ${done} handed off`);
+  log(`handoff: ${cards.length} ready card(s) with a post, pin, Google post or Sales email, ${done} handed off`);
   return { seen: cards.length, done };
 }
 

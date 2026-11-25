@@ -68,9 +68,12 @@ async function waitingDrafts(store, n) {
 }
 
 test('the RED rule is the agent\'s own title mark, quoted from its SKILL', () => {
-  const skill = fs.readFileSync(path.join(__dirname, '..', 'agents', 'gbp', 'SKILL.md'), 'utf8').split('\n');
-  assert.match(skill[11], /3 stars or below, or any review that mentions pricing, staff or a problem/);
-  assert.match(skill[11], /Mark the card title "RED"/);
+  // #3799 (Mimi 11.24.2026, "Drop review work entirely"): the SKILL no longer
+  // drafts review replies, so it no longer writes a RED mark. isRedCard() stays
+  // the hold's rule for any RED card already waiting.
+  const skill = fs.readFileSync(path.join(__dirname, '..', 'agents', 'gbp', 'SKILL.md'), 'utf8');
+  assert.match(skill, /No review work/);
+  assert.doesNotMatch(skill, /Mark the card title "RED"/);
   assert.strictEqual(P.isRedCard(RED), true);
   assert.strictEqual(P.isRedCard(KIND), false);
   assert.strictEqual(P.isRedCard(POST), false);

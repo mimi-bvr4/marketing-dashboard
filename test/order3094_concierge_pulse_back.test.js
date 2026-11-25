@@ -66,39 +66,37 @@ const CARDS = () => [{ title: 'Reply draft: The Bell Tower, Ana, Google', target
 
 const PULSE = { [`${PULSE_STEM}2026-11.md`]: '# Customer Pulse\n- Saddle Woods Farm, The Knot, Ben R., 11.02.2026: "Great team."\n- The Bell Tower, WeddingWire, Sam, 11.03.2026: "Lovely night."' };
 
-test('KNOWN-BAD: the Concierge reads the review pulse again, as an optional second source after Google', () => {
+// ORDER #3799 (Mimi 11.24.2026, "Drop review work entirely") supersedes #3094's
+// pulse source: the Concierge reads no review, from Google or from the pulse.
+test('#3799: the Concierge has no review pulse source; Google stays first and required', () => {
   const def = loadAgent('gbp');
   const i = def.sources.findIndex((s) => s.type === 'gbp_reviews');
-  const j = def.sources.findIndex((s) => s.type === 'file' && s.newest === PULSE_STEM);
-  assert.ok(j >= 0, 'the Concierge has a review pulse source');
-  assert.ok(i >= 0 && i < j, 'Google stays the first source');
+  assert.ok(!def.sources.some((s) => s.type === 'file' && s.newest === PULSE_STEM), 'no review pulse source');
+  assert.strictEqual(i, 0, 'Google stays the first source');
   assert.strictEqual(def.sources[i].required, true, 'Google stays required');
-  assert.ok(!def.sources[j].required, 'the pulse is optional: never required');
-  assert.match(sourceLabel(def.sources[j]), /WeddingWire/);
-  assert.match(sourceLabel(def.sources[j]), /The Knot/);
-  assert.ok(!def.character.traits.some((tr) => /WeddingWire|The Knot/.test(tr.cant)), 'the Agents page no longer says it cannot read them');
+  assert.strictEqual(def.sources[i].posts_only, true, 'Google is read for posts only');
 });
 
-test('KNOWN-BAD: WeddingWire and The Knot reviews reach the model when a pulse is on disk', async (t) => {
+test('#3799: no review reaches the model, from Google or from a pulse on disk', async (t) => {
   const store = createMemoryStore({ lint });
   const llm = model(CARDS);
   const r = await runAgent({ def: loadAgent('gbp'), store, llm, env: tree(t, PULSE), fetchImpl: web(), now: () => NOW, scheduled: true, ...google });
   assert.ok(r.ok, r.error);
-  assert.match(llm.calls[0].user, /Saddle Woods Farm, The Knot, Ben R\./);
-  assert.match(llm.calls[0].user, /The Bell Tower, WeddingWire, Sam/);
-  assert.match(llm.calls[0].user, /review_id: AbC-new1/, 'Google is read too');
+  assert.doesNotMatch(llm.calls[0].user, /The Knot|WeddingWire/);
+  assert.doesNotMatch(llm.calls[0].user, /AbC-new1|rooftop/);
+  assert.match(llm.calls[0].user, /\| The Bell Tower \| 0 \| none \|/, 'Google posts are read');
 });
 
-test('a missing pulse never blocks or fails the run: Google cards are still drafted', async (t) => {
+test('missing optional files (keyword map, GAPS list) never block or fail the run', async (t) => {
   const store = createMemoryStore({ lint });
   const def = loadAgent('gbp');
-  const pulseLabel = sourceLabel(def.sources.find((s) => s.newest === PULSE_STEM));
+  const gapsLabel = sourceLabel(def.sources.find((s) => s.newest === '07_Marketing_and_Brand/SEO_Data/GSC_Content_Gaps_'));
   const r = await runAgent({ def, store, llm: model(CARDS), env: tree(t, {}), fetchImpl: web(), now: () => NOW, scheduled: true, blockedToBoard: true, ...google });
   assert.ok(r.ok, r.error);
   assert.ok(!r.blocked, 'not a board "waiting on" line');
   assert.strictEqual(r.cards.length, 1);
   assert.doesNotMatch(r.cards[0].title, /could not run/);
-  assert.ok(r.unavailable.some((u) => u.label === pulseLabel), 'the missing pulse is named, not hidden');
+  assert.ok(r.unavailable.some((u) => u.label === gapsLabel), 'the missing GAPS list is named, not hidden');
 });
 
 test('Google is still the one the run depends on: no Google, no drafts, even with a pulse', async (t) => {

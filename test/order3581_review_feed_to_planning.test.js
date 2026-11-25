@@ -82,7 +82,9 @@ test('switch OFF: the Concierge reads as before and nothing is sent to planning'
   const w = fakeWorld();
   const { got, unavailable } = await gather([SRC], ctx(w, { PLANNING_REVIEW_FEED_URL: URL, REVIEW_FEED_WRITE_TOKEN: TOKEN }));
   assert.deepStrictEqual(unavailable, []);
-  assert.ok(got[0].text.includes('review_id: R-long'));
+  // #3799: the agent's read is posts only (no review reaches it); the feed below still gets every review.
+  assert.match(got[0].text, /\| The Bell Tower \| 0 \| none \|/);
+  assert.ok(!got[0].text.includes('R-long'));
   assert.strictEqual(w.planning.length, 0);
 });
 
@@ -99,7 +101,7 @@ test('switch ON: every review read, from every profile, reaches planning whole, 
   const long = sent.find((r) => r.source_review_id === 'R-long' && r.venue_name === 'The Bell Tower');
   assert.strictEqual(long.text, LONG);
   assert.ok(sent.some((r) => r.venue_name === 'The Harding House'));
-  assert.ok(got[0].text.includes('review_id: R-long'), 'the morning read is unchanged');
+  assert.match(got[0].text, /\| The Bell Tower \| 0 \| none \|/, 'the morning read still succeeds (posts only since #3799)');
   assert.ok(!JSON.stringify(got).includes(TOKEN), 'the token is in no return value');
 });
 
@@ -122,7 +124,7 @@ test('planning down: the morning read still succeeds and the feed says why', asy
   const w = fakeWorld({ planningStatus: 503 });
   const { got, unavailable } = await gather([SRC], ctx(w, ON));
   assert.deepStrictEqual(unavailable, []);
-  assert.ok(got[0].text.includes('review_id: R-long'));
+  assert.match(got[0].text, /\| The Bell Tower \| 0 \| none \|/);
   const r = await RF.sendFeed({ profiles: [{ title: 'The Bell Tower', reviews: [{ reviewId: 'z', createTime: '2026-11-01T18:00:00Z', comment: 'ok' }] }], env: ON, fetchImpl: w.fetchImpl });
   assert.strictEqual(r.ok, false);
   assert.match(r.why, /503/);
