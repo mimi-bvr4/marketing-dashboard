@@ -69,7 +69,7 @@ test('the board: one plain line for each new card, and Paid Ads paused (not a ca
   assert.deepStrictEqual([line('web').state, line('web').line], ['own', 'works on its own page, Web: upload a page there']);
   assert.deepStrictEqual([line('site-guardian').state, line('site-guardian').line], ['own', "watched by the Box every 5 minutes; this card shows the watch's own last check"]); // #3246: the watch is built
   assert.strictEqual(line('paid-ads').state, 'paused');
-  assert.strictEqual(line('paid-ads').line, 'paused until the Google + Meta ads export Sheet exists; waiting since 10.13');
+  assert.strictEqual(line('paid-ads').line, 'paused until the Google Ads API read exists; waiting since 11.24'); // #3794 replaced the Sheet
   for (const x of b) assert.doesNotMatch(x.line, ORDER_NO);
 });
 

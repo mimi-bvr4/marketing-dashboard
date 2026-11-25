@@ -13,22 +13,23 @@ const { loadAgent, listAgents } = require('../lib/agent-runner');
 const NOW = new Date('2026-11-18T13:40:00-06:00');
 const ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-ab';
 const rows = (...r) => new Map(r.map((x) => [x.id, x]));
-const need = () => loadAgent('paid-ads').character.needs.find((n) => /ads export Sheet/.test(n));
+// #3794: the Auditor no longer waits on the Sheet (it reads Google Ads through
+// the API); the Monthly Report (#3568) still does, so the check is proven on its line.
+const need = () => loadAgent('monthly-report').character.needs.find((n) => /ads export Sheet/.test(n));
 
-test('the Auditor names the real ask, with the spec, and no dollar figure', () => {
+test('the Monthly Report names the real ask, with the spec, and no dollar figure; the Auditor no longer waits on it', () => {
   const n = need();
   assert.strictEqual(n, 'Katherine/K&M: create the ads export Sheet per the spec (https://docs.google.com/document/d/1N0KqATZq3EBNT_OO7rNZpVF0kym5qqIQbM17A98GCxM/edit) and share it to the Brain');
   assert.doesNotMatch(n, /\$|\d+\s*(dollars|usd)/i);
   assert.strictEqual(C.checkFor(n).id, 'sheet:ads-export');
-  // The pause still reads the same source label (#2903).
-  assert.strictEqual(loadAgent('paid-ads').paused_until, 'Google + Meta ads export Sheet');
+  assert.ok(!loadAgent('paid-ads').character.needs.some((x) => /ads export Sheet/.test(x)), '#3794');
 });
 
 test('the check is in the fleet list the Box job runs', () => {
   const all = C.fleetChecks(listAgents().map((s) => [s, loadAgent(s)]));
   const c = all.find((x) => x.id === 'sheet:ads-export');
   assert.ok(c, 'sheet:ads-export is checked');
-  assert.deepStrictEqual([...c.agents].sort(), ['monthly-report', 'paid-ads']); // #3568: the Monthly Report waits on the same Sheet
+  assert.deepStrictEqual([...c.agents].sort(), ['monthly-report']); // #3794: the Auditor moved to the API read
 });
 
 test('no Sheet id set: fails, and never asks Google', async () => {
@@ -56,7 +57,7 @@ test('id set and readable: passes, and the card line disappears', async () => {
   const r = await C.runCheck(C.checkFor(need()), { env: { ADS_EXPORT_SHEET_ID: ` ${ID} ` }, sheetTabs: async (id) => { got = id; return ['Google Ads', 'Meta']; } });
   assert.deepStrictEqual(r, { ok: true, reason: 'the Brain reads the Sheet (2 tabs: Google Ads, Meta)' });
   assert.strictEqual(got, ID);
-  const pa = loadAgent('paid-ads');
+  const pa = loadAgent('monthly-report'); // #3794
   const pass = rows({ id: 'sheet:ads-export', ok: true, reason: r.reason, checked_at: NOW.toISOString() });
   assert.ok(!characterOf(pa, [], null, NOW, pass, {}).needs.some((n) => /ads export Sheet/.test(n)));
   const fail = rows({ id: 'sheet:ads-export', ok: false, reason: 'no Sheet id set yet', checked_at: NOW.toISOString() });

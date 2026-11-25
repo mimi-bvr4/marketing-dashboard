@@ -18,23 +18,23 @@ const ASK = `Katherine/K&M: create the ads export Sheet per the spec (${DOC}) an
 
 const adsNeed = (slug) => loadAgent(slug).character.needs.find((n) => /ads export Sheet/.test(n));
 
-test('both cards ask with the Drive link, word for word, and no tree path', () => {
-  for (const slug of ['paid-ads', 'monthly-report']) {
-    const n = adsNeed(slug);
-    assert.strictEqual(n, ASK, slug);
-    assert.ok(!n.includes(TREE), slug);
-    // Same live check as before: the matcher keys on the words, not the path.
-    assert.strictEqual(C.checkFor(n).id, 'sheet:ads-export', slug);
-  }
+// Rebased onto #3794 (Mimi 11.24.2026: the Google Ads API read replaces the
+// Sheet for the Paid Ads Auditor), so only the Monthly Report still asks for
+// the export Sheet; the Auditor's lines must carry no Sheet ask and no tree path.
+test('the Monthly Report asks with the Drive link, word for word, and no tree path', () => {
+  const n = adsNeed('monthly-report');
+  assert.strictEqual(n, ASK);
+  assert.ok(!n.includes(TREE));
+  // Same live check as before: the matcher keys on the words, not the path.
+  assert.strictEqual(C.checkFor(n).id, 'sheet:ads-export');
 });
 
-test("the Auditor's waiting-on why carries the Drive link, not the tree path", () => {
+test("the Auditor no longer asks for the export Sheet, and none of its lines carry the tree path", () => {
   const d = loadAgent('paid-ads');
-  const whys = (d.sources || []).map((s) => s.why || '').filter((w) => /export Sheet has never existed/.test(w));
-  assert.strictEqual(whys.length, 1, 'one source why names the export Sheet');
-  assert.ok(whys[0].includes(DOC), whys[0]);
-  assert.ok(!whys[0].includes(TREE), whys[0]);
-  assert.ok(whys[0].includes('(#3567), share it to the Brain, and its id goes in ADS_EXPORT_SHEET_ID; Katherine owns the ask'), whys[0]);
+  assert.strictEqual(adsNeed('paid-ads'), undefined);
+  const whys = (d.sources || []).map((s) => s.why || '');
+  assert.strictEqual(whys.filter((w) => /export Sheet has never existed/.test(w)).length, 0);
+  for (const line of [...whys, ...(d.character.needs || [])]) assert.ok(!line.includes(TREE), line);
 });
 
 test('the Sheet header the agents read names the Drive link, not the tree path', () => {

@@ -28,24 +28,23 @@ test('the Monthly Report need names the spec and uses the sheet:ads-export check
   assert.strictEqual(src.type, 'pending');
 });
 
-test('both cards resolve to the same check id and the same env name', () => {
-  const a = C.checkFor(adsNeed('paid-ads'));
+// #3794: the Auditor left the Sheet for the Google Ads API read; the Monthly
+// Report is now the one card waiting on sheet:ads-export.
+test('one check in the fleet for the Sheet, on the one env slot; the Auditor no longer waits on it', () => {
+  assert.strictEqual(adsNeed('paid-ads'), undefined);
   const m = C.checkFor(adsNeed('monthly-report'));
-  assert.strictEqual(m.id, a.id);
-  assert.strictEqual(m.env, a.env);
   assert.strictEqual(m.env, 'ADS_EXPORT_SHEET_ID');
-  // Reused, not copied: one check in the fleet list, waited on by both agents.
   const all = C.fleetChecks(listAgents().map((s) => [s, loadAgent(s)]));
   const ads = all.filter((x) => x.kind === 'ads_export_sheet');
   assert.strictEqual(ads.length, 1);
-  assert.deepStrictEqual([...ads[0].agents].sort(), ['monthly-report', 'paid-ads']);
+  assert.deepStrictEqual([...ads[0].agents].sort(), ['monthly-report']);
   assert.strictEqual(C.RULES.filter((r) => r.make({}).kind === 'ads_export_sheet').length, 1);
 });
 
-test('one passing check clears the line on both cards; a failing one shows on both', () => {
+test('a passing check clears the Monthly Report line; a failing one shows', () => {
   const pass = rows({ id: 'sheet:ads-export', ok: true, reason: 'the Brain reads the Sheet', checked_at: NOW.toISOString() });
   const fail = rows({ id: 'sheet:ads-export', ok: false, reason: 'no Sheet id set yet', checked_at: NOW.toISOString() });
-  for (const slug of ['monthly-report', 'paid-ads']) {
+  for (const slug of ['monthly-report']) {
     const d = loadAgent(slug);
     assert.ok(!characterOf(d, [], null, NOW, pass, {}).needs.some((n) => /ads export Sheet/.test(n)), `${slug} clears`);
     assert.ok(characterOf(d, [], null, NOW, fail, {}).needs.some((n) => /ads export Sheet per the spec .*\(failing: no Sheet id set yet; last checked 11\.18 15:30 CT\)/.test(n)), `${slug} fails`);
