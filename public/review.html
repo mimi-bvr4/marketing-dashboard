@@ -248,6 +248,12 @@
     if (ch.next_line) parts.push(`Next: <strong>${esc(ch.next_line)}</strong>`);
     return parts.length ? `<p class="meta chain">${parts.join(' &middot; ')}</p>` : '';
   }
+  // #3807: the Executioner's line: done (link, id, time CT), waiting, one retry, or failed and back on Review.
+  function executedHtml(c) {
+    const x = c.executed; if (!x || !x.line) return '';
+    const cls = x.state === 'done' ? 'good' : x.state === 'failed' ? 'bad' : '';
+    return `<p class="meta executed"><span class="badge ${cls}">Executioner</span> ${esc(x.line)}${x.link ? ` <a href="${esc(x.link)}" target="_blank" rel="noopener">Open it</a>` : ''}</p>`;
+  }
   function gotIt(c) { return !!(c.approve_will && c.approve_will.got_it); }
   // #3797: the ONE action line every card leads with (lib/card-action.js). It says
   // what Approve does in plain words; everything else on the card is detail.
@@ -290,6 +296,7 @@
       ${pinHtml(c)}
       ${salesHtml(c)}
       ${topicsHtml(c)}
+      ${executedHtml(c)}
       ${handoffHtml(c)}
       ${resultHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
