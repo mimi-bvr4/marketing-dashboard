@@ -30,6 +30,9 @@
       "when_flag": "PRODUCER_QUEUE",
       "label": "our pages sharing one title (moved here from Site Health)",
       "pages_per_site": 15,
+      "rotate": true,
+      "cycle_weeks": 4,
+      "max_pages_per_site": 50,
       "sites": [
         "infinityhospitalitygroup.com",
         "dreameventsandcatering.com",

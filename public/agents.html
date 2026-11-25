@@ -119,6 +119,10 @@
   .speak { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: inherit; cursor: pointer; padding: 0; margin-top: 4px; }
   .speak:hover, .speak.playing { background: #F4EFE8; }
   .speakcap { display: block; font-size: 13px; font-style: italic; color: #5b534b; margin-top: 4px; max-width: 32ch; }
+  /* #3801 the crawl rotation table */
+  table.rot { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.rot th, table.rot td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid #e6dfd6; }
+  table.rot th { font-weight: 600; }
 </style>
 </head>
 <body>
@@ -140,6 +144,7 @@
   }
   const main = document.getElementById('main');
   let agents = [];
+  let rotation = []; // #3801: who crawls what, and when (lib/crawl-plan.js ROTATION)
   let exec = false;
 
   // The drawn portrait each character has until someone uploads one.
@@ -211,6 +216,7 @@
       <div class="who">${face(a, 84)}<div class="txt">${eyebrow(a.slug, a.character.role, a.name, a.character.title_always)}${nameInput(a)}<span class="job">${esc(a.job)}</span>${V.speakerHtml(voices, a.slug, a.name, esc)}</div></div>
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span class="sched">${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
+      ${(a.crawl_limits || []).length ? `<p class="meta" data-crawl-limit><strong>Crawl limit:</strong> ${esc(a.crawl_limits[0])}${a.crawl_limits.length > 1 ? ` (+${a.crawl_limits.length - 1} more on the profile)` : ''}</p>` : ''}
       ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${boxes.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${boxes.needs.length - 1} more)</summary><ul>${boxes.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
       ${boxes.paused ? `<div class="need"><strong>Paused:</strong> ${esc(boxes.paused)}</div>` : ''}
       ${a.character.pointer ? `<p class="meta pointer"><a href="${esc(a.character.pointer.href)}">${esc(a.character.pointer.text)}</a></p>` : ''}
@@ -349,6 +355,15 @@
     box.hidden = false;
   }
 
+  // #3801: the crawl rotation, so every site and page is covered on a stated cycle.
+  function rotationHtml() {
+    if (!rotation.length) return '';
+    return `<section class="panel" data-crawl-rotation><h2 class="serif">Who crawls what, and when</h2>
+      <p class="meta">Site Health is the only agent that crawls our own pages for problems. Every other read of our pages below is named, with why it is not a second crawl.</p>
+      <div style="overflow-x:auto"><table class="rot"><thead><tr><th>Agent</th><th>Sites</th><th>When</th><th>Pages per run</th><th>Covers</th></tr></thead>
+      <tbody>${rotation.map((r) => `<tr><td>${esc(r.agent)}</td><td>${esc(r.sites)}</td><td>${esc(r.day)}</td><td>${esc(r.pages)}</td><td>${esc(r.covers)}</td></tr>`).join('')}</tbody></table></div></section>`;
+  }
+
   function rosterHtml() {
     const c = { ok: 0, part: 0, wait: 0 };
     agents.forEach((a) => { const s = status(a).cls; if (s === 's-ok') c.ok++; else if (s === 's-part') c.part++; else c.wait++; });
@@ -359,6 +374,7 @@
       ${producerHtml()}
       ${changesHtml()}
       <div class="grid">${agents.map(cardHtml).join('')}</div>
+      ${rotationHtml()}
       <p class="note">Click a name to rename someone; open a profile to change what they do. A name or portrait shows everywhere that team member appears (Review cards, the Monday digest) and saves at once. It changes nothing about what they are allowed to do.</p>`;
   }
 
@@ -435,7 +451,8 @@
     <div class="panels" data-slug="${a.slug}">
       <section class="panel"><h2 class="serif">What ${esc(a.name)} does</h2>${list(c.does, (x) => `<li>${esc(x)}</li>`)}
         <details><summary>What it reads (${a.sources.length})</summary><ul>${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="pill s-wait">not connected</span> ${esc(s.why || '')}` : ''}</li>`).join('')}</ul>
-        <p class="meta">Adding a source is a code change; ask Mimi.</p></details></section>
+        <p class="meta">Adding a source is a code change; ask Mimi.</p></details>
+        ${(a.crawl_limits || []).length ? `<div data-crawl-limit><strong>Crawl limits</strong>${list(a.crawl_limits, (x) => `<li>${esc(x)}</li>`)}<p class="meta">What a run did not reach is listed on its card in <a href="/review">Review</a>.</p></div>` : ''}</section>
       <section class="panel"><h2 class="serif">Rules</h2>${c.traits.length ? c.traits.map((t) => `<div class="rule"><strong>Can't:</strong> ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</div>`).join('') : '<p class="meta">Nothing listed.</p>'}</section>
       ${a.watch ? `<section class="panel" data-watch><h2 class="serif">Competitors to watch</h2>
         <p style="margin:0 0 6px">Watches the competitors on your IHG Competitors sheet. Add others here.</p>
@@ -495,7 +512,7 @@
     if (!a) fitNames();
   }
   async function load() {
-    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec;
+    try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; rotation = j.crawl_rotation || [];
       try { producer = await api('/api/producer'); } catch (x) { producer = null; }
       try { voices = await api('/api/agent-voices'); } catch (x) { voices = { on: false }; }
       try { changes = await api('/api/agents/changes'); } catch (x) { changes = { live: false, exec: false, changes: [] }; }

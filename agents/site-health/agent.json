@@ -9,6 +9,10 @@
       "required": true,
       "label": "crawl of our 12 sites",
       "pages_per_site": 15,
+      "rotate": true,
+      "cycle_weeks": 4,
+      "max_pages_per_site": 50,
+      "rotation_why": "ORDER #3801 (Mimi 11.24.2026): every page of every sitemap on a stated cycle. Measured 11.25.2026: 377 sitemap pages on 11 sites (dreameventsandcatering.com 162; nashvilleweddingvenue.com has no sitemap). The old first-15 cap read about 165 and never reached the rest.",
       "same_titles_to_seo_when": "PRODUCER_QUEUE",
       "sites": [
         "infinityhospitalitygroup.com",
@@ -33,7 +37,7 @@
   "character": {
     "role": "The inspector",
     "does": [
-      "Crawls all 12 sites every Monday",
+      "Crawls all 12 sites every Monday: every home page each week, and the rest of each sitemap in turns, so every page is read at least once every 4 weeks",
       "Finds down pages, 404s, off-site redirects, missing titles and descriptions, extra H1s, duplicate titles across sites",
       "Flags em dashes and AI-tell words in live page copy"
     ],
