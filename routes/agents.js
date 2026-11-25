@@ -53,7 +53,7 @@
 const express = require('express');
 const path = require('path');
 const { listAgents, loadAgent } = require('../lib/agent-runner');
-const { sourceLabel, scoutWatchList } = require('../lib/agent-sources');
+const { sourceLabel, scoutWatchList, rotationLine } = require('../lib/agent-sources');
 const { personOf } = require('./review');
 const { displayName } = require('../lib/agent-profile');
 const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
@@ -191,11 +191,17 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     if (store.checkRows) { try { checks = new Map((await store.checkRows()).map((x) => [x.id, x])); } catch (e) { checks = null; } }
     const watchers = {};
     const sheetWatch = {};
+    const watchPlan = {};
     for (const slug of listAgents()) {
       if ((loadAgent(slug).sources || []).some((x) => x.type === 'competitor_watch')) {
         watchers[slug] = store.watchlist ? await store.watchlist(slug) : [];
         // #3047: how many sheet competitors the Scout adds on top of this page's list.
-        try { sheetWatch[slug] = (await scoutWatchList(store, slug)).fromSheet; } catch (e) { sheetWatch[slug] = 0; }
+        // #3800: the whole sheet counts (every competitor is watched, some on rotation).
+        try {
+          const w = await scoutWatchList(store, slug, { now: clock() });
+          sheetWatch[slug] = w.sheetTotal || w.fromSheet;
+          watchPlan[slug] = w.sheetTotal ? rotationLine(w) : null;
+        } catch (e) { sheetWatch[slug] = 0; watchPlan[slug] = null; }
       }
     }
     let pinRows = null;
@@ -230,6 +236,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
         pinterest: pin.pinterest,
         watch: watchers[slug] || null,
         watch_sheet: watchers[slug] ? (sheetWatch[slug] || 0) : null,
+        watch_plan: watchers[slug] ? (watchPlan[slug] || null) : null,
         asks: asks.map((a) => ({ id: a.id, ask: a.ask, asked_by: a.asked_by, created_at: a.created_at, status: a.status, kind: a.kind,
           reason: a.triage ? a.triage.reason : null, instead: a.triage ? a.triage.instead : null,
           proposed: a.status === 'awaiting_exec' && a.triage ? a.triage.proposed_skill_md : null,

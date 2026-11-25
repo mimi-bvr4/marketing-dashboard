@@ -30,19 +30,30 @@ const fakeDrive = () => ({
   },
 });
 
-test('#3047 watch list: sheet tops only, our venues skipped, page entries first and win on duplicates', async () => {
+// #3800: every sheet competitor is watched now; a non-top one is read in its
+// rotation week. These #3047 checks run on a week that is NOT smallbarn's turn,
+// so they still see exactly the weekly list.
+const R = require('../lib/competitor-rotation');
+const OFF_WEEK = (() => {
+  let d = new Date('2026-11-23T18:00:00Z');
+  while (R.slotOf('smallbarn.com') === R.slotThisWeek(d)) d = new Date(d.getTime() + 7 * 86400000);
+  return d;
+})();
+
+test('#3047 watch list: sheet tops weekly, our venues skipped, page entries first and win on duplicates', async () => {
   const store = createMemoryStore({ lint });
   await store.syncCompetitors(parseSheet(TABS).competitors);
-  let w = await scoutWatchList(store, 'scout');
+  let w = await scoutWatchList(store, 'scout', { now: OFF_WEEK });
   assert.deepStrictEqual(w.list.map((x) => x.site).sort(), ['oakchapel.com', 'riverlinehall.com']);
   assert.strictEqual(w.fromSheet, 2);
   assert.strictEqual(w.fromPage, 0);
-  assert.ok(!w.list.some((x) => x.site === 'smallbarn.com'), 'one tab, not marked Top: not watched');
+  assert.ok(!w.list.some((x) => x.site === 'smallbarn.com'), 'one tab, not marked Top: not this week');
+  assert.ok(w.rotation.later.some((x) => x.site === 'smallbarn.com'), '#3800: ...but it is on the rotation, never dropped');
   assert.ok(!w.list.some((x) => x.site === 'thebridgebuilding.com'), 'our own venue is never watched');
 
   assert.ok(!(await store.addWatch('scout', 'riverlinehall.com', 'Riverline (Katherine)', 'k@x')).error);
   assert.ok(!(await store.addWatch('scout', 'newplace.com', '', 'k@x')).error);
-  w = await scoutWatchList(store, 'scout');
+  w = await scoutWatchList(store, 'scout', { now: OFF_WEEK });
   assert.strictEqual(w.fromPage, 2);
   assert.strictEqual(w.fromSheet, 1, 'riverline came from the page, so the sheet adds only oak chapel');
   const river = w.list.filter((x) => x.site === 'riverlinehall.com');
@@ -64,7 +75,7 @@ test('#3047 scout --dry --watch-list reads the sheet read-only, prints the list,
   assert.strictEqual(parseArgs(['scout', '--dry', '--watch-list']).watchList, true);
   const lines = [];
   let fetched = 0;
-  const code = await main({ argv: ['scout', '--dry', '--watch-list'], log: (l) => lines.push(l), llm: null, env: {},
+  const code = await main({ argv: ['scout', '--dry', '--watch-list'], log: (l) => lines.push(l), llm: null, env: {}, now: OFF_WEEK,
     fetchImpl: async () => { fetched++; throw new Error('no fetch in a watch-list run'); }, driveFactory: fakeDrive });
   assert.strictEqual(code, 0);
   assert.strictEqual(fetched, 0);
