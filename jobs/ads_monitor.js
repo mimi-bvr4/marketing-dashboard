@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// ORDER #3794: the hourly Google Ads monitor (read-only).
+// ORDER #3794: the hourly Google Ads monitor (read-only). Google Ads access:
+// Standard (writes disabled in code), ORDER #3819.
 //
 //   node jobs/ads_monitor.js --accounts   every account the Brain can see: customer id and name only
 //   node jobs/ads_monitor.js [--dry]      one poll: read, flag, card what is new
@@ -36,9 +37,14 @@ function writeJson(p, v) {
 
 // ORDER #3795: a Test-level Cloud project (CLOUD_PROJECT_NOT_APPROVED_FOR_PRODUCTION)
 // prints its Waiting line and exits 1, reading and writing nothing more.
+// ORDER #3819: access is Standard (writes disabled in code). If the startup check
+// or any answer reports a mutate, the poll prints one ALARM line to stderr (the
+// launchd error log), writes nothing, and exits 3, so it never looks like a pass.
 async function main(opts = {}) {
   const log = opts.log || console.log;
+  const alarm = opts.alarm || console.error;
   try { return await run({ ...opts, log }); } catch (e) {
+    if (e && e.alarm === 'MUTATE') { alarm(e.message); return 3; }
     const w = R.waitingLine(e);
     if (!w) throw e;
     log(w);
@@ -48,6 +54,7 @@ async function main(opts = {}) {
 
 async function run({ argv = process.argv.slice(2), log = console.log, env = process.env, client, store, now = new Date(), checkUrl } = {}) {
   const dry = argv.includes('--dry');
+  R.startupCheck(); // #3819: before anything, flag on or off
   if (argv.includes('--accounts')) {
     const c = client || R.createClient({ env });
     const list = await R.listAccounts(c);

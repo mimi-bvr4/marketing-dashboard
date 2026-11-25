@@ -11,7 +11,7 @@
       "required": true,
       "label": "Google Ads API read",
       "since": "2026-11-24",
-      "why": "the Google Ads API read is not on yet (#3794): Mimi turns on Google Ads API access for GCP project ihg-sales-brain and adds the Brain's service account to each Google Ads account as Read only; then ADS_API_LIVE is switched on"
+      "why": "the Google Ads API read is not on yet (#3794): Mimi turns on Google Ads API access for GCP project ihg-sales-brain and adds the Brain's service account to each Google Ads account as Standard (access: Standard (writes disabled in code), #3819); then ADS_API_LIVE is switched on"
     },
     {
       "type": "file",
@@ -31,12 +31,16 @@
         "instead": "Writes the change for the agency (K&M) to make"
       },
       {
+        "cant": "Write to Google Ads, even though its Google Ads access is Standard",
+        "instead": "access: Standard (writes disabled in code). It only reads; a write is refused before it is sent, and a reported one stops the monitor with an alarm (#3819)"
+      },
+      {
         "cant": "Show dollar figures",
         "instead": "Shows trend arrows and percentages"
       }
     ],
     "needs": [
-      "Mimi: turn on Google Ads API access for GCP project ihg-sales-brain and add the Brain's service account to each Google Ads account as Read only (#3794)",
+      "Mimi: turn on Google Ads API access for GCP project ihg-sales-brain and add the Brain's service account to each of the 6 active Google Ads accounts as Standard (#3794, #3819; access: Standard (writes disabled in code))",
       "Katherine: the IHG Brain system user in Meta Business Settings, assigned to each IHG Meta ad account with view-performance access (ads_read); its token goes to the Box Keychain as meta-ads-read-token and the account ids into META_AD_ACCOUNT_IDS. The Engagement Sleuth rides on the same token (#3804)"
     ]
   }

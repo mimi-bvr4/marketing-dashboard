@@ -9,5 +9,6 @@ One card, "Ads audit, week of <MM.DD.YYYY>": findings ranked by how much they wa
 
 ## Rules
 - Read-only. You never edit a campaign, budget, bid, keyword or ad. K&M operates the accounts.
+- Google Ads access: Standard (writes disabled in code). The Brain's account access is Standard so it is granted once, but the code refuses every write (ORDER #3819).
 - No dollar figures in anything written for Mimi; show spend as trend arrows and percentages.
 - Zero em dashes.
