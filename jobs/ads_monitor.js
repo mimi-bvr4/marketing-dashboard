@@ -34,7 +34,19 @@ function writeJson(p, v) {
   fs.renameSync(tmp, p);
 }
 
-async function main({ argv = process.argv.slice(2), log = console.log, env = process.env, client, store, now = new Date(), checkUrl } = {}) {
+// ORDER #3795: a Test-level Cloud project (CLOUD_PROJECT_NOT_APPROVED_FOR_PRODUCTION)
+// prints its Waiting line and exits 1, reading and writing nothing more.
+async function main(opts = {}) {
+  const log = opts.log || console.log;
+  try { return await run({ ...opts, log }); } catch (e) {
+    const w = R.waitingLine(e);
+    if (!w) throw e;
+    log(w);
+    return 1;
+  }
+}
+
+async function run({ argv = process.argv.slice(2), log = console.log, env = process.env, client, store, now = new Date(), checkUrl } = {}) {
   const dry = argv.includes('--dry');
   if (argv.includes('--accounts')) {
     const c = client || R.createClient({ env });
