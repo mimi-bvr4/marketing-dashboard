@@ -4,6 +4,7 @@
 //   GET  /api/review/cards?status=  draft (default) | ready | rejected | archived | reference (#2993); &agent=
 //   GET  /api/review/handover       the HANDOVER_AT line (#2993), or { on: false }
 //   GET  /api/review/runs           each agent's last run (done / failed / missing sources)
+//   GET  /api/review/today          "Today": the top 5 actions on Drafts, ranked (#3826)
 //   POST /api/review/cards/:id      { action: 'approve' | 'reject' | 'edit' | 'restore' | 'archive' (#3570), reason?, body? }
 //   POST /api/review/lint           { text } -> the AI-tells lint ("Check text")
 //   POST /api/review/detective      { text } -> the AI Tell Detective (#3008; 404 while AI_TELL_DETECTIVE is off)
@@ -30,6 +31,7 @@ const tellReview = require('../lib/ai-tell-review');
 const { approveWill } = require('../lib/approve-will');
 const handoffMap = require('../lib/handoff-map');
 const cardAction = require('../lib/card-action');
+const todayTop5 = require('../lib/today-top5');
 const fs = require('fs');
 
 const PAGE = path.join(__dirname, '..', 'public', 'review.html');
@@ -62,7 +64,30 @@ function createReviewRouter({ store }) {
     const at = handover.handoverAt();
     res.json({ on: !!at, at: at ? at.toISOString() : null, tab: handover.REFERENCE_TAB, header: handover.REFERENCE_HEADER });
   });
+  // #3826: "Today", the top 5 actions on the Drafts pile, ranked by lib/today-top5.js.
+  // Computed on every call, so a card acted on drops out and the next moves up.
+  r.get('/api/review/today', need, async (req, res) => {
+    const named = await namer();
+    res.json(todayTop5.today((await store.list({ status: 'draft', limit: 200 })).map(named)));
+  });
   r.get('/api/review/cards', need, async (req, res) => {
+    const named = await namer();
+    // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
+    // newest first. Empty while the line is unset. Each card stays openable,
+    // copyable and approvable; none of them counts.
+    if (req.query.status === 'reference') {
+      const at = handover.handoverAt();
+      const cards = at && store.referenceCards ? (await store.referenceCards()).map((c) => ({ ...named(c), reference: true })) : [];
+      return res.json({ reference: true, at: at ? at.toISOString() : null, header: handover.REFERENCE_HEADER,
+        cards, groups: handover.groupByAgent(cards).map((g) => ({ agent: g.agent, agent_name: g.agent_name, ids: g.cards.map((c) => c.id) })) });
+    }
+    const status = STATUSES.has(req.query.status) ? req.query.status : 'draft';
+    const agent = /^[a-z0-9-]+$/.test(req.query.agent || '') ? req.query.agent : undefined;
+    const cards = await store.list({ status, agent });
+    res.json({ cards: cards.map(named) });
+  });
+  // How every card reaches the page (#3826: shared by /cards and /today).
+  async function namer() {
     // #1664: show the name Katherine gave each agent, on old cards too.
     const names = new Map((store.profiles ? await store.profiles() : []).filter((p) => p.display_name).map((p) => [p.agent, p.display_name]));
     // #3003/#3012: who sends a sales card ("No salesperson set yet" for a Scout with no owner id).
@@ -87,20 +112,8 @@ function createReviewRouter({ store }) {
       const executed = require('../lib/executioner').cardLine(o); // #3807
       return { ...o, ...(w ? { approve_will: w } : {}), ...(chain ? { chain } : {}), ...(executed ? { executed } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
     };
-    // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
-    // newest first. Empty while the line is unset. Each card stays openable,
-    // copyable and approvable; none of them counts.
-    if (req.query.status === 'reference') {
-      const at = handover.handoverAt();
-      const cards = at && store.referenceCards ? (await store.referenceCards()).map((c) => ({ ...named(c), reference: true })) : [];
-      return res.json({ reference: true, at: at ? at.toISOString() : null, header: handover.REFERENCE_HEADER,
-        cards, groups: handover.groupByAgent(cards).map((g) => ({ agent: g.agent, agent_name: g.agent_name, ids: g.cards.map((c) => c.id) })) });
-    }
-    const status = STATUSES.has(req.query.status) ? req.query.status : 'draft';
-    const agent = /^[a-z0-9-]+$/.test(req.query.agent || '') ? req.query.agent : undefined;
-    const cards = await store.list({ status, agent });
-    res.json({ cards: cards.map(named) });
-  });
+    return named;
+  }
   r.get('/api/review/runs', need, async (req, res) => res.json({ runs: await store.runs() }));
   r.post('/api/review/cards/:id', need, async (req, res) => {
     const id = Number(req.params.id);
