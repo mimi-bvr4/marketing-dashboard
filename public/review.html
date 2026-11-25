@@ -240,6 +240,14 @@
     if (c.status !== 'draft' || !w || !w.line) return '';
     return `<p class="meta next">Approve will: ${esc(w.line)}</p>`;
   }
+  // The card's place in the team's chain: where it came from, who takes it next.
+  function chainHtml(c) {
+    const ch = c.chain; if (!ch) return '';
+    const parts = [];
+    if (ch.came_from) parts.push(`Came from: <strong>${esc(ch.came_from.line)}</strong>`);
+    if (ch.next_line) parts.push(`Next: <strong>${esc(ch.next_line)}</strong>`);
+    return parts.length ? `<p class="meta chain">${parts.join(' &middot; ')}</p>` : '';
+  }
   function gotIt(c) { return !!(c.approve_will && c.approve_will.got_it); }
   // #3797: the ONE action line every card leads with (lib/card-action.js). It says
   // what Approve does in plain words; everything else on the card is detail.
@@ -272,6 +280,7 @@
         ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}${c.reference ? `<span class="badge">Example, ${esc(c.status === 'ready' ? 'approved' : c.status === 'draft' ? 'not decided' : c.status)}, does not count</span>` : ''}</div>
       ${actionHtml(c)}
       <h3 style="margin:0">${esc(c.title)}</h3>
+      ${chainHtml(c)}
       ${tellsHtml(c)}
       <details class="detail"${c.action ? '' : ' open'}><summary>Details</summary>
       ${sourcesHtml(c)}
