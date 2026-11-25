@@ -1,10 +1,11 @@
 {
   "name": "PR Patty",
   "job": "press opportunities",
-  "cadence": "daily 06:00 CT (press-request emails); Mondays also a Nashville opportunity sweep",
-  "max_cards": 2,
-  "max_tokens": 9000,
+  "cadence": "daily 06:00 CT (press-request emails); Mondays also a Nashville opportunity sweep. With PATTY_EVENING_RUN on: once a day, after the 3rd HARO email or at 6:15 PM CT",
+  "max_cards": 8,
+  "max_tokens": 16000,
   "copy_prepass": true,
+  "press_cards": true,
   "seen_before": {
     "key": ["request_id_or_url"],
     "source": []
@@ -15,6 +16,7 @@
       "required": true,
       "inbox": "brain@infinityhospitality.net",
       "days": 1,
+      "today_ct": true,
       "max_messages": 25,
       "match": [
         "qwoted",
@@ -56,9 +58,10 @@
   "character": {
     "role": "The publicist",
     "does": [
-      "Every morning, reads the reporter requests from Qwoted, HARO and Be Inspired PR that reach brain@",
+      "Once a day, after the third HARO email, reads the reporter requests from Qwoted, HARO and Be Inspired PR that reach brain@",
       "Keeps only the ones we can really answer: weddings, events, venues, catering, bar, lighting and production, hospitality, Nashville",
-      "Drafts a short pitch for each, from our real venue facts, with the deadline and where to send it",
+      "Makes one action card per fit: who is asking, the story and deadline, and the pitch to send, drafted from our real venue facts",
+      "Lists every request she skipped, with the reason, in one daily summary",
       "Every Monday, searches for Nashville openings too: awards, speaking slots, media segments, submission calls and charity partners, each with a link"
     ],
     "traits": [

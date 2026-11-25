@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ORDER #3798. PR Patty's one daily run, on the 3 HARO emails:
+  jobs/patty_evening.sh -> jobs/patty_evening.js.
+
+  SHIPPED NOT LOADED, AND OFF. Each fire checks the switch PATTY_EVENING_RUN;
+  off, it logs one line and exits. Turning it on is Mimi's popup: set
+  PATTY_EVENING_RUN=on in THIS plist AND in com.infinitybrain.marketing-agents
+  (which then leaves Patty out of the 06:00 run), then load this one. On in
+  only the 06:00 plist would mean Patty never runs; on in only this one would
+  mean she runs twice.
+
+  TIME: every 15 minutes, 16:00 to 18:15 CT. Patty runs on the fire after the
+  third HARO email lands, or at 18:15 with fewer, once a day. RunAtLoad false.
+  Writes DRAFT cards to the Review tab only; nothing is sent.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.infinitybrain.pr-patty-evening</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/infinitybrain/repos/marketing-dashboard/jobs/patty_evening.sh</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TZ</key>
+		<string>America/Chicago</string>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>/Users/infinitybrain/repos/marketing-dashboard</string>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>0</integer></dict>
+		<dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>15</integer></dict>
+		<dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
+		<dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>45</integer></dict>
+		<dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
+		<dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>15</integer></dict>
+		<dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>30</integer></dict>
+		<dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>45</integer></dict>
+		<dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
+		<dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>15</integer></dict>
+	</array>
+	<key>StandardOutPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_pr_patty_evening.out</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_pr_patty_evening.err</string>
+</dict>
+</plist>

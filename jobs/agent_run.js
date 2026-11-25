@@ -90,6 +90,13 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
     slugs.splice(0, slugs.length, ...P.dueOn(ymd, cal));
     log(`producer: on; due ${ymd}: ${slugs.join(', ')}`);
   }
+  // #3798: with PATTY_EVENING_RUN on, Patty's one run is the evening HARO run
+  // (jobs/patty_evening.js), so the scheduled 06:00 run leaves her out. Off: unchanged.
+  if (args.due) {
+    const E = require('../lib/patty-evening');
+    const kept = E.withoutEveningAgents(slugs, env);
+    if (kept.length !== slugs.length) { slugs.splice(0, slugs.length, ...kept); log(`${E.SLUG}: not in this run; her one run is the evening HARO run (${E.FLAG} on)`); }
+  }
   if (args.due && !args.dry && new Date(ymd + 'T12:00:00Z').getUTCDay() === 1) {
     const { writeDigest } = require('../lib/agent-digest');
     const d = await writeDigest({ store });
@@ -133,7 +140,7 @@ async function main({ argv = process.argv.slice(2), log = console.log, pool, llm
   if (producer) {
     const maxCardsOf = (slug) => { try { return loadAgent(slug).max_cards || 3; } catch (e) { return 3; } };
     const settings = new Map(((store.allCurrentSettings ? await store.allCurrentSettings() : []) || []).map((s) => [s.agent, s]));
-    await P.runDay({ ymd, store, log, runOne, defOf: loadAgent,
+    await P.runDay({ ymd, store, log, runOne, defOf: loadAgent, env,
       maxCardsOf: (slug) => (settings.get(slug) ? settings.get(slug).max_cards : maxCardsOf(slug)) });
   } else {
     for (const slug of slugs) await runOne(slug);
