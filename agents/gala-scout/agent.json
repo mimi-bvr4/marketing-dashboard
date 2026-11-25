@@ -15,6 +15,7 @@
       "type": "gala_seed",
       "required": true,
       "seed": "gala-scout/seed/Nashville-Gala-Research-Report-11.05.2026.md",
+      "register": "gala-scout/seed/Sophisticated-Giving-2027-Register-11.25.2026.md",
       "top_leads": 50
     },
     {
