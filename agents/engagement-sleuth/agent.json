@@ -65,7 +65,7 @@
     ],
     "needs": [
       "Mimi: switch it on (AGENT_ENGAGEMENT_SLEUTH)",
-      "Mimi: Meta Business read access (ORDER #3000 lists exactly what)"
+      "Katherine: Meta read access on the SAME token as the Paid Ads Auditor (#3804): the IHG Brain system user with ads_read on IHG's Meta ad account(s); token in the Box Keychain as meta-ads-read-token. The Sleuth reads one account: META_AD_ACCOUNT_ID, the account its newly-engaged ads run in. No separate setup"
     ]
   }
 }
