@@ -227,6 +227,26 @@
     return `<p class="meta next">Approve will: ${esc(w.line)}</p>`;
   }
   function gotIt(c) { return !!(c.approve_will && c.approve_will.got_it); }
+  // #3797: the ONE action line every card leads with (lib/card-action.js). It says
+  // what Approve does in plain words; everything else on the card is detail.
+  function actionHtml(c) {
+    const a = c.action; if (!a || !a.line) return '';
+    return `<p class="action" style="font-size:1.05rem;margin:.35rem 0"><strong>${a.info_only ? 'No action' : 'Action'}:</strong> ${esc(a.line)}</p>`;
+  }
+  // #3797: "reads like AI" says WHERE and WHAT, with a suggested replacement. Never a bare count.
+  function tellsHtml(c) {
+    const t = c.tells_detail || []; if (!t.length) return '';
+    return `<details class="tells" open><summary>Reads like AI: ${t.length} spot${t.length === 1 ? '' : 's'} to fix</summary><ol style="margin:.25rem 0">${t.map((h) =>
+      `<li><span class="meta">${esc(h.where)}</span>: "${esc(h.quote)}"${h.blocks_ready ? ' <span class="badge bad">blocks ready</span>' : ''}. ${esc(h.fix)}</li>`).join('')}</ol></details>`;
+  }
+  // #3797: after a card is acted on, it shows what happened. Posts, pins and
+  // sales emails already say so (handoffHtml); every other approved card says it was filed.
+  function resultHtml(c) {
+    if (c.status !== 'ready') return '';
+    const p = c.payload || {};
+    if (p.post || p.pin || p.sales) return '';
+    return `<p class="meta result"><span class="badge good">Result</span> Filed ${fmt(c.decided_at)} as ready to use. Nothing was posted or sent from here.</p>`;
+  }
   function cardHtml(c) {
     const tells = (c.checks && c.checks.ai_tells_summary) || '';
     const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
@@ -236,14 +256,19 @@
     return `<article class="card" data-id="${c.id}" id="card-${c.id}">
       <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
         ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}${c.reference ? `<span class="badge">Example, ${esc(c.status === 'ready' ? 'approved' : c.status === 'draft' ? 'not decided' : c.status)}, does not count</span>` : ''}</div>
+      ${actionHtml(c)}
       <h3 style="margin:0">${esc(c.title)}</h3>
+      ${tellsHtml(c)}
+      <details class="detail"${c.action ? '' : ' open'}><summary>Details</summary>
       ${sourcesHtml(c)}
       <div class="body">${md(c.body)}</div>
+      </details>
       ${c.edited && c.payload && c.payload.post ? `<details open><summary>Edited post: this is what goes to WordPress</summary><div class="body">${md(c.payload.post.content_md)}</div></details>` : ''}
       ${pinHtml(c)}
       ${salesHtml(c)}
       ${topicsHtml(c)}
       ${handoffHtml(c)}
+      ${resultHtml(c)}
       ${c.status === 'rejected' ? `<p class="meta">Rejected by ${esc(c.decided_by)}: ${esc(c.reason)}</p>` : ''}
       ${c.status === 'ready' ? `<p class="meta">Ready, marked by ${esc(c.decided_by)} ${fmt(c.decided_at)}</p>` : ''}
       ${c.status === 'archived' ? `<p class="meta">Archived${c.decided_by ? ` by ${esc(c.decided_by)}` : ''} ${fmt(c.decided_at)} without a decision. Nothing was approved, rejected or deleted. Restore puts it back on Drafts.</p>` : ''}

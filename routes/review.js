@@ -28,6 +28,7 @@ const maryDesk = require('../lib/mary-desk');
 const detective = require('../lib/ai-tell-detective');
 const tellReview = require('../lib/ai-tell-review');
 const { approveWill } = require('../lib/approve-will');
+const cardAction = require('../lib/card-action');
 const fs = require('fs');
 
 const PAGE = path.join(__dirname, '..', 'public', 'review.html');
@@ -76,7 +77,11 @@ function createReviewRouter({ store }) {
       return c.payload && c.payload.sales && owners.has(c.agent) ? { ...o, sales_owner: owners.get(c.agent) } : o;
     };
     // #3570: the one line saying what Approve will do (or Got it), from the card's real next step.
-    const named = (c) => { const o = shaped(c); const w = approveWill(o); return w ? { ...o, approve_will: w } : o; };
+    // #3797: every card leads with ONE action line, and its AI tells say where and what.
+    const named = (c) => {
+      const o = shaped(c); const w = approveWill(o);
+      return { ...o, ...(w ? { approve_will: w } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
+    };
     // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
     // newest first. Empty while the line is unset. Each card stays openable,
     // copyable and approvable; none of them counts.
