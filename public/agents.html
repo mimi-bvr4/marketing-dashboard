@@ -383,6 +383,21 @@
       <p class="msg" hidden></p>
     </section>`;
   }
+  // #3807 the Executioner: does exactly what an approved card says, and reports it.
+  let executioner = null;
+  function executionerHtml() {
+    const x = executioner; if (!x) return '';
+    const list = (title, items) => items.length ? `<div><h3 style="margin:.5rem 0 .25rem;font-size:16px">${title}</h3><ul class="boardl">${items.map((i) =>
+      `<li><a href="/review#card-${i.id}"><strong>${esc(i.title)}</strong></a>${i.line ? `: ${esc(i.line)}` : ''}${i.link ? ` <a href="${esc(i.link)}" target="_blank" rel="noopener">Open it</a>` : ''}</li>`).join('')}</ul></div>` : '';
+    return `<section class="panel" data-slug="executioner" data-executioner><h2 class="serif">${esc(x.name)}</h2>
+      <p class="meta" style="margin:0">${esc(x.job)}</p>
+      <div class="pills"><span class="pill s-ok" data-ex-done>${x.done} done today</span>
+        <span class="pill ${x.failed ? 's-wait' : 's-ok'}" data-ex-failed>${x.failed} failed today</span>
+        <span class="pill ${x.waiting ? 's-part' : 's-ok'}" data-ex-waiting>${x.waiting} waiting</span>
+        <span class="pill ${x.on ? 's-ok' : 's-off'}">${x.on ? 'Sends failures back to Review' : 'Failure rules not switched on yet'}</span></div>
+      ${x.done || x.failed || x.waiting ? `<details><summary>Show them</summary>${list('Done today', x.lists.done)}${list('Failed today, back on Review', x.lists.failed)}${list('Waiting', x.lists.waiting)}</details>` : ''}
+    </section>`;
+  }
   async function moveDay(agent, from, to, el) {
     if (!to || to === from) return;
     const e = producer.calendar.find((x) => x.agent === agent);
@@ -444,6 +459,7 @@
       <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
       ${questionHtml()}
       ${producerHtml()}
+      ${executionerHtml()}
       ${changesHtml()}
       <div class="grid">${agents.map(cardHtml).join('')}</div>
       ${rotationHtml()}
@@ -586,6 +602,7 @@
   async function load() {
     try { const j = await api('/api/agents'); agents = j.agents; exec = !!j.exec; rotation = j.crawl_rotation || [];
       try { producer = await api('/api/producer'); } catch (x) { producer = null; }
+      try { executioner = await api('/api/executioner'); } catch (x) { executioner = null; }
       try { voices = await api('/api/agent-voices'); } catch (x) { voices = { on: false }; }
       try { changes = await api('/api/agents/changes'); } catch (x) { changes = { live: false, exec: false, changes: [] }; }
       render(); }

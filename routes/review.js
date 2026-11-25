@@ -84,7 +84,8 @@ function createReviewRouter({ store }) {
     const named = (c) => {
       const o = shaped(c); const w = approveWill(o);
       const chain = handoffMap.cardChain(o, { nameOf });
-      return { ...o, ...(w ? { approve_will: w } : {}), ...(chain ? { chain } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
+      const executed = require('../lib/executioner').cardLine(o); // #3807
+      return { ...o, ...(w ? { approve_will: w } : {}), ...(chain ? { chain } : {}), ...(executed ? { executed } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
     };
     // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
     // newest first. Empty while the line is unset. Each card stays openable,
