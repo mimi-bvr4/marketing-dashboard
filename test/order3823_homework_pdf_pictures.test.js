@@ -156,6 +156,16 @@ test('if the model refuses the attached files, the run answers once more with th
   assert.ok(logs.some((l) => /refused the homework files/.test(l)), logs.join('\n'));
 });
 
+test('the agents\' model client sends a block list as the user content, unchanged (stubbed fetch, nothing sent)', async () => {
+  const { createTextClient } = require('../lib/agent-llm');
+  const sent = [];
+  const client = createTextClient({ apiKey: 'test-key-not-real', model: 'm', fetchImpl: async (url, o) => { sent.push(JSON.parse(o.body)); return { ok: true, json: async () => ({ content: [{ type: 'text', text: '{}' }], stop_reason: 'end_turn' }) }; } });
+  const user = [{ type: 'text', text: 'a' }, { type: 'image', source: { type: 'base64', media_type: 'image/png', data: png(1, 1).toString('base64') } }, { type: 'text', text: 'b' }];
+  await client.complete({ system: 'S', user });
+  assert.deepStrictEqual(sent[0].messages, [{ role: 'user', content: user }]);
+  assert.strictEqual(sent[0].system, 'S');
+});
+
 test('the page counter and picture sizer read real headers', () => {
   assert.strictEqual(HW.pdfPages(pdf(3)), 3);
   assert.strictEqual(HW.pdfPages(Buffer.from('%PDF-1.7 compressed, nothing visible')), null);
