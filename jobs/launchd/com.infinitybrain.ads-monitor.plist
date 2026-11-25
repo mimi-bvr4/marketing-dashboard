@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ORDER #3794. The hourly Google Ads monitor: jobs/ads_monitor.sh.
+
+  SHIPPED NOT LOADED, and its switch ships OFF. FEATURE FLAG: ADS_API_LIVE
+  default OFF: it is not set below, so even a loaded job reads nothing. Turning
+  it on is Mimi's: add <key>ADS_API_LIVE</key><string>on</string> here (and in
+  com.infinitybrain.marketing-agents.plist, so the weekly Auditor reads the
+  snapshot), after the Brain's service account can see the accounts.
+  It reads Google Ads (GAQL SELECTs only) and writes DRAFT cards to Review; it
+  never changes a bid, budget, ad or setting, and sends nothing.
+
+  TIME: every hour. RunAtLoad is false: loading must not fire a run.
+  WHERE IT LOGS: the two paths below, red runs too.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.infinitybrain.ads-monitor</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/infinitybrain/repos/marketing-dashboard/jobs/ads_monitor.sh</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TZ</key>
+		<string>America/Chicago</string>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>/Users/infinitybrain/repos/marketing-dashboard</string>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartInterval</key>
+	<integer>3600</integer>
+	<key>StandardOutPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_ads_monitor.out</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/infinitybrain/Library/Logs/ihg_ads_monitor.err</string>
+</dict>
+</plist>
