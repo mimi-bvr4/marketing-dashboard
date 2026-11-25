@@ -185,7 +185,21 @@
       }
       return handoffSales(c, h);
     }
+    // #3799: a Google Business post shows the exact words that will be posted, then where it is.
+    const gp = c.payload && c.payload.gbp_post;
+    if (gp) return gbpPostHtml(c, h, gp);
     return handoffOther(c, h, post, pin);
+  }
+  function gbpPostHtml(c, h, gp) {
+    const box = `<div class="gbp-post" style="border:1px solid var(--line,#ddd);border-radius:10px;padding:.75rem;margin:.5rem 0">
+      <p class="meta">Google post for ${esc(gp.venue)}${gp.keyword ? `, built on "${esc(gp.keyword)}"${gp.keyword_source ? ` (${esc(gp.keyword_source)})` : ''}` : ''}:</p>
+      <p style="margin:.25rem 0;white-space:pre-wrap">${esc(gp.summary)}</p>${gp.link ? `<p class="meta">Button: Learn more, <a href="${esc(gp.link)}" target="_blank" rel="noopener">${esc(gp.link)}</a></p>` : ''}</div>`;
+    let state = '';
+    if (!h) state = c.status === 'ready' ? `<p class="meta">Waiting for the Box to post this to the ${esc(gp.venue)} Google Business Profile (it checks every 15 minutes; while posting is switched off it waits here).</p>` : '';
+    else if (h.pending) state = `<p class="meta">Being posted to ${esc(gp.venue)} on Google now.</p>`;
+    else if (h.ok) state = `<p class="meta"><span class="badge good">Posted to ${esc(h.venue || gp.venue)} on Google</span> ${h.post_url ? `<a href="${esc(h.post_url)}" target="_blank" rel="noopener">Open the live post</a>` : 'Google has not given a link yet.'}</p>`;
+    else state = `<p class="meta"><span class="badge bad">Not posted</span> ${esc(h.why)}</p>`;
+    return box + state;
   }
   function handoffSales(c, h) {
     { // (kept as the #2940 block, unchanged inside)
@@ -282,7 +296,7 @@
         <input data-f="redo" placeholder="This missed X, or redo it this way" aria-label="What to redo"><button data-a="redo">Redo</button>` : ''}
         ${c.status === 'archived' ? '<button data-a="restore">Restore to Drafts</button>' : ''}
       </div>
-      <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}${c.payload && c.payload.pin ? '<p class="meta">You are editing the pin description (what goes on Pinterest, up to 500 characters).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : (c.payload && c.payload.pin ? (c.payload.pin.description || '') : c.body))}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
+      <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}${c.payload && c.payload.pin ? '<p class="meta">You are editing the pin description (what goes on Pinterest, up to 500 characters).</p>' : ''}${c.payload && c.payload.gbp_post ? '<p class="meta">You are editing the Google post itself (what goes on Google, at most 80 words).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : (c.payload && c.payload.pin ? (c.payload.pin.description || '') : (c.payload && c.payload.gbp_post ? c.payload.gbp_post.summary : c.body)))}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
       <p class="err" hidden></p>
     </article>`;
   }

@@ -80,10 +80,11 @@ test('RED on base: with every review already drafted, the prompt still makes roo
   // The 11.22 shape: every review is listed as already drafted.
   for (const who of ['ana p', 'ben r', 'cara m']) assert.match(user, new RegExp(`reviewer=${who}\\|platform=google \\(waiting for review\\)`));
   // (a) the post idea is still asked for, every run, even when every review is drafted.
-  assert.match(system, /One profile post idea/);
-  assert.match(system, /even when every review is already drafted/i);
+  // #3799: the post is now the agent's whole job, so it is always asked for.
+  assert.match(system, /At most 3 cards, one per venue/);
+  assert.match(system, /No review work/);
   // (b) and its card has a seen shape it can satisfy.
-  assert.match(system, /"reviewer": "profile post"/);
+  assert.match(system, /"reviewer": "profile post: <keyword>"/);
   assert.match(system, /"platform": "Google post"/);
 
   // That shape keys under gbp's real spec, so the memory can track it.

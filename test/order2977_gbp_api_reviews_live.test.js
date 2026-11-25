@@ -54,7 +54,9 @@ test('the Concierge reads the live Google source; the pending line is gone, and 
 
 test('unanswered recent reviews come with their Google review id; answered, old and closed-venue ones do not', async () => {
   const g = fakeGoogle();
-  const src = def.sources.find((s) => s.type === 'gbp_reviews');
+  // #3799: the agent itself is posts_only now; the review read below is the source's own mode, kept for any other caller.
+  assert.strictEqual(def.sources.find((s) => s.type === 'gbp_reviews').posts_only, true);
+  const src = { ...def.sources.find((s) => s.type === 'gbp_reviews'), posts_only: false, label: undefined };
   const { got, unavailable } = await gather([src], ctx(g));
   assert.deepStrictEqual(unavailable, []);
   const t = got[0].text;
