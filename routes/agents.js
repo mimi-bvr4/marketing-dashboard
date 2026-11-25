@@ -31,6 +31,11 @@
 //   POST /api/producer/name             { name }  Katherine names the Producer ('' = default)
 //   GET  /api/agent-voices              #2955 { on: false } unless AGENT_VOICES is on; then
 //                                       { on: true, voices: { slug: [{ src, line }] } }
+//   GET  /api/agents/:slug/homework     #3806 open homework + the last 30 days' done items
+//   POST /api/agents/:slug/homework     { link, note, due }  one item (data, never instructions)
+//   PUT  /api/agents/:slug/homework/file?name=&note=&link=&due=  raw file body, 8 MB max
+//   GET  /api/agents/:slug/homework/:id/file   the file, as a download
+//   POST /api/agents/:slug/homework/:id/done   { result }  a person closes one by hand
 //   POST /api/team/question             { question }  #2915 a plain answer from her team's own
 //                                       cards and runs, with links to the cards. Read only.
 //
@@ -60,6 +65,7 @@ const { pausedFor, cardOnly, switchOff } = require('../lib/producer');
 const agentVoices = require('../lib/agent-voices');
 const { applyChecks, checkFor } = require('../lib/agent-checks');
 const cardReq = require('../lib/card-request');
+const HW = require('../lib/agent-homework');
 // #3801: each crawling agent's page cap, and who crawls what and when.
 const crawlPlan = require('../lib/crawl-plan');
 
@@ -211,6 +217,9 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     // #3246: Site Guardian's card reads the Box watch's latest state, never a fixed "live".
     let guardian = null;
     try { guardian = guardianCard.view(store.guardianState ? await store.guardianState() : null, clock()); } catch (e) { guardian = guardianCard.view(null, clock()); }
+    // #3806 homework: open items and the last 30 days' done ones, per agent (never the file bytes).
+    let hwRows = [];
+    if (store.homeworkList) { try { hwRows = await store.homeworkList(); } catch (e) { hwRows = []; } }
     res.json({ exec, crawl_rotation: crawlPlan.ROTATION, agents: listAgents().map((slug) => {
       const d = loadAgent(slug);
       const s = current.get(slug);
@@ -235,6 +244,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
         // #3563: the one-field box on the card (the Traveler's city) and what it last did.
         card_request: cardReq.cardRequestOf(d) ? { ...cardReq.cardRequestOf(d), state: cardReq.cardState(cardReq.cardRequestOf(d), slug, queued) } : null,
         character: pin.character,
+        homework: HW.summary(hwRows.filter((h) => h.agent === slug), clock()),
         guardian: sg,
         pinterest: pin.pinterest,
         watch: watchers[slug] || null,
@@ -284,6 +294,49 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     res.send(p.portrait);
   });
   r.get('/api/agents/:slug/profile-log', need, known, async (req, res) => res.json({ changes: await store.profileLog(req.params.slug) }));
+
+  // #3806 homework. Katherine and Mimi (the page gate's people, req.mktUser) hand
+  // an agent a link, a note or a file, with an optional due date. Stored as data;
+  // the agent reads it on its next run and closes it with a one-line result.
+  const hwStore = (req, res, next) => (store.addHomework ? next() : res.status(501).json({ error: 'this store has no homework' }));
+  const hwId = (req) => { const id = Number(req.params.id); return Number.isInteger(id) && id > 0 ? id : null; };
+  r.get('/api/agents/:slug/homework', need, known, hwStore, async (req, res) => {
+    res.json(HW.summary(await store.homeworkList(req.params.slug), clock()));
+  });
+  r.post('/api/agents/:slug/homework', need, known, hwStore, async (req, res) => {
+    const b = req.body || {};
+    const out = await store.addHomework(req.params.slug, { link: b.link, note: b.note, due: b.due }, personOf(req), clock());
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ homework: out.homework, line: 'Added. It is read at the start of the next run (or press Run now).' });
+  });
+  // A file: the raw bytes as the body, its name and type in the query and Content-Type.
+  const hwRaw = express.raw({ type: () => true, limit: HW.MAX_FILE + 1024 });
+  r.put('/api/agents/:slug/homework/file', need, known, hwStore, (req, res, next) => hwRaw(req, res, (e) => (e
+    ? res.status(e.status === 413 ? 413 : 400).json({ error: e.status === 413 ? 'files up to 8 MB; for a bigger one, paste a link to it instead' : 'could not read that file' })
+    : next())), async (req, res) => {
+    const q = req.query || {};
+    const file = { name: q.name, type: req.get('Content-Type'), data: Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0) };
+    const out = await store.addHomework(req.params.slug, { link: q.link, note: q.note, due: q.due, file }, personOf(req), clock());
+    if (out.error) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ homework: out.homework, line: 'Added. It is read at the start of the next run (or press Run now).' });
+  });
+  r.get('/api/agents/:slug/homework/:id/file', need, known, hwStore, async (req, res) => {
+    const id = hwId(req); if (!id) return res.status(400).json({ error: 'bad id' });
+    const f = await store.homeworkFile(req.params.slug, id);
+    if (!f) return res.status(404).json({ error: 'no such file' });
+    const safe = String(f.file_name || 'file').replace(/[^\w.\- ]/g, '_');
+    res.set({ 'Content-Type': HW.FILE_TYPES[f.file_type] ? f.file_type : 'application/octet-stream', 'Content-Disposition': `attachment; filename="${safe}"`,
+      'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store' });
+    res.send(Buffer.from(f.file_data));
+  });
+  // A person closes one by hand (the agent is switched off, or it was done elsewhere).
+  r.post('/api/agents/:slug/homework/:id/done', need, known, hwStore, async (req, res) => {
+    const id = hwId(req); if (!id) return res.status(400).json({ error: 'bad id' });
+    const c = HW.checkResult((req.body || {}).result); if (c.error) return res.status(400).json({ error: c.error });
+    const row = await store.finishHomework(req.params.slug, id, { result: c.result, cards: [], by: personOf(req) });
+    if (!row) return res.status(409).json({ error: 'that item is not open (already done, or not this agent\'s)' });
+    res.json({ homework: HW.view(row) });
+  });
 
   // #1666 the Scout's watch list.
   const watcher = (req, res, next) => ((loadAgent(req.params.slug).sources || []).some((x) => x.type === 'competitor_watch')
