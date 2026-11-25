@@ -74,5 +74,38 @@
     const sw = switchOf(paused);
     return { needs: sw ? list.filter((n) => switchOf(n) !== sw) : list.slice(), paused: paused || null };
   }
-  return { sameWords, showEyebrow, stuckCount, STUCK, pickClip, speakerFor, speakerHtml, NAME_STEPS, fitFontPx, switchOf, cardBoxes };
+  // ORDER #3831 (3815 follow-on): a Waiting on line or a source's why can carry
+  // a URL (the Ads Export spec's Google Doc). Escape every character the way the
+  // page's esc() does, and turn only a literal http:// or https:// run into a
+  // new-tab link. Nothing from the agent file is ever passed through as HTML,
+  // and no other scheme (javascript:, data:, mailto:) is ever linked. A bracket
+  // or full stop right after the URL stays outside the link.
+  const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  function escText(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ESC[c]); }
+  const URL_RE = /https?:\/\/[^\s<>"'`]+/gi;
+  function trimTail(u) {
+    let url = u;
+    for (;;) {
+      const last = url.slice(-1);
+      if (/[.,;:!?]/.test(last)) { url = url.slice(0, -1); continue; }
+      if (last === ')' && (url.match(/\(/g) || []).length < (url.match(/\)/g) || []).length) { url = url.slice(0, -1); continue; }
+      if (last === ']' && (url.match(/\[/g) || []).length < (url.match(/\]/g) || []).length) { url = url.slice(0, -1); continue; }
+      return url;
+    }
+  }
+  function linkText(s) {
+    const text = String(s == null ? '' : s);
+    let out = '';
+    let at = 0;
+    for (const m of text.matchAll(URL_RE)) {
+      const url = trimTail(m[0]);
+      if (!/^https?:\/\/[^/]/i.test(url)) continue;
+      out += escText(text.slice(at, m.index));
+      const e = escText(url);
+      out += `<a href="${e}" target="_blank" rel="noopener noreferrer">${e}</a>`;
+      at = m.index + url.length;
+    }
+    return out + escText(text.slice(at));
+  }
+  return { sameWords, showEyebrow, stuckCount, STUCK, pickClip, speakerFor, speakerHtml, NAME_STEPS, fitFontPx, switchOf, cardBoxes, escText, linkText };
 }));

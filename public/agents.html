@@ -220,7 +220,7 @@
       <div class="line"><span class="pill ${st.cls}">${st.label}</span><span class="sched">${esc(a.cadence)}</span></div>
       <p class="does">${esc(a.character.does[0] || '')}</p>
       ${(a.crawl_limits || []).length ? `<p class="meta" data-crawl-limit><strong>Crawl limit:</strong> ${esc(a.crawl_limits[0])}${a.crawl_limits.length > 1 ? ` (+${a.crawl_limits.length - 1} more on the profile)` : ''}</p>` : ''}
-      ${need ? `<div class="need"><strong>Waiting on:</strong> ${esc(need)}${boxes.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${boxes.needs.length - 1} more)</summary><ul>${boxes.needs.slice(1).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
+      ${need ? `<div class="need"><strong>Waiting on:</strong> ${V.linkText(need)}${boxes.needs.length > 1 ? `<details class="more" data-more="${esc(a.slug)}"><summary>(+${boxes.needs.length - 1} more)</summary><ul>${boxes.needs.slice(1).map((x) => `<li>${V.linkText(x)}</li>`).join('')}</ul></details>` : ''}</div>` : ''}
       ${boxes.paused ? `<div class="need"><strong>Paused:</strong> ${esc(boxes.paused)}</div>` : ''}
       ${a.character.pointer ? `<p class="meta pointer"><a href="${esc(a.character.pointer.href)}">${esc(a.character.pointer.text)}</a></p>` : ''}
       ${a.pinterest ? `<p class="meta">Pinterest: ${esc(a.pinterest.line)}. <a href="${esc(a.pinterest.page)}">Settings, Pinterest accounts</a></p>` : ''}
@@ -538,7 +538,7 @@
     </section>
     <div class="panels" data-slug="${a.slug}">
       <section class="panel"><h2 class="serif">What ${esc(a.name)} does</h2>${list(c.does, (x) => `<li>${esc(x)}</li>`)}
-        <details><summary>What it reads (${a.sources.length})</summary><ul>${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="pill s-wait">not connected</span> ${esc(s.why || '')}` : ''}</li>`).join('')}</ul>
+        <details><summary>What it reads (${a.sources.length})</summary><ul>${a.sources.map((s) => `<li>${esc(s.label)}${s.required ? ' (required)' : ''}${s.pending ? ` <span class="pill s-wait">not connected</span> ${V.linkText(s.why || '')}` : ''}</li>`).join('')}</ul>
         <p class="meta">Adding a source is a code change; ask Mimi.</p></details>
         ${(a.crawl_limits || []).length ? `<div data-crawl-limit><strong>Crawl limits</strong>${list(a.crawl_limits, (x) => `<li>${esc(x)}</li>`)}<p class="meta">What a run did not reach is listed on its card in <a href="/review">Review</a>.</p></div>` : ''}</section>
       <section class="panel"><h2 class="serif">Rules</h2>${c.traits.length ? c.traits.map((t) => `<div class="rule"><strong>Can't:</strong> ${esc(t.cant)}${t.instead ? `<div class="instead">Instead: ${esc(t.instead)}</div>` : ''}</div>`).join('') : '<p class="meta">Nothing listed.</p>'}</section>
@@ -548,7 +548,7 @@
         ${a.watch.length ? `<ul class="asks">${a.watch.map((w) => `<li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><strong>${esc(w.label || w.site)}</strong>${w.label ? ` <span class="meta">${esc(w.site)}</span>` : ''}</span><button class="btn ghost" style="min-height:32px;font-size:13px" data-a="unwatch" data-id="${w.id}" aria-label="Stop watching ${esc(w.site)}">Remove</button></li>`).join('')}</ul>` : (a.watch_sheet ? '<p class="meta">None added here yet. The sheet\'s top competitors are watched either way.</p>' : '<p class="meta">No competitors yet. Add the first one below.</p>')}
         <div class="row"><input type="text" data-f="wsite" placeholder="Website, e.g. example.com" aria-label="Competitor website">
           <input type="text" data-f="wlabel" placeholder="Name (optional)" aria-label="Competitor name"><button class="btn ghost" data-a="watch">Add</button></div></section>` : ''}
-      <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${esc(x)}</li>`)}${c.pointer ? `<p class="meta pointer"><a href="${esc(c.pointer.href)}">${esc(c.pointer.text)}</a></p>` : ''}</section>
+      <section class="panel"><h2 class="serif">Waiting on</h2>${list(c.needs, (x) => `<li>${V.linkText(x)}</li>`)}${c.pointer ? `<p class="meta pointer"><a href="${esc(c.pointer.href)}">${esc(c.pointer.text)}</a></p>` : ''}</section>
       <section class="panel"><h2 class="serif">Ask for a new ability</h2>
         <label class="meta" for="newask">The Box sorts it within 15 minutes: an instruction change, a build (filed to the Box), or a can't (added to the rules, with what it does instead). ${changes.live ? esc(CHANGE_COPY) : 'An instruction change waits for Mimi.'}</label>
         <textarea id="newask" data-f="newask" rows="3" placeholder="e.g. add a short FAQ to every post"></textarea>
