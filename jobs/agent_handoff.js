@@ -135,6 +135,9 @@ async function main({ env = process.env, log = console.log } = {}) {
       } catch (e) { log(`pinterest demo: not checked this run (${e.message})`); }
     }
     await handoff({ store, fetchImpl: globalThis.fetch, env, log });
+    // #3802: the Producer fires the next team member for anything approved or
+    // landed since the last pass (PRODUCER_HANDOFFS, default OFF: does nothing).
+    try { await require('../lib/handoff-map').fire({ store, env, log }); } catch (e) { log(`handoffs: not fired this run (${e.message})`); }
     return 0;
   } finally { await pool.end(); }
 }

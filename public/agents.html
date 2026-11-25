@@ -277,6 +277,17 @@
     t.setAttribute('aria-expanded', String(producerOpen)); t.textContent = producerOpen ? 'Hide the week' : 'Show the week';
   });
   const WEEK = [['mon', 'Mon'], ['tue', 'Tue'], ['wed', 'Wed'], ['thu', 'Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
+  // The handoff map: whose output is whose input, and which handoffs the
+  // Producer fires on its own. Read only; the switch is Mimi's.
+  function handoffsHtml(p) {
+    const h = p.handoffs || []; if (!h.length) return '';
+    const on = h.filter((e) => e.on).length;
+    return `<details class="handoffs" data-handoffs><summary><strong>How the team hands work to each other</strong> <span class="meta">${h.length} handoffs, ${on} running</span></summary>
+      ${p.handoffs_on ? '' : '<p class="note">The Producer does not fire the new handoffs on its own yet. Until Mimi switches it on, the ones marked off wait for a person.</p>'}
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:6px"><thead><tr style="text-align:left"><th>From</th><th></th><th>To</th><th>When</th><th>What happens</th><th>Status</th></tr></thead>
+      <tbody>${h.map((e) => `<tr data-edge="${esc(e.id)}" style="border-top:1px solid var(--line)"><td><strong>${esc(e.from_name)}</strong></td><td aria-hidden="true">&rarr;</td><td><strong>${esc(e.to_name)}</strong></td><td>${esc(e.when)}</td><td>${esc(e.what)}</td><td><span class="pill ${e.on ? 's-ok' : 's-off'}">${e.on ? 'Fires on its own' : 'Off'}</span></td></tr>`).join('')}</tbody></table>
+      <p class="meta">Every handoff only drafts. The next card still waits on the Review tab for Approve, and the Producer's hold still applies.</p></details>`;
+  }
   function producerHtml() {
     const p = producer; if (!p) return '';
     const weekly = p.calendar.filter((e) => e.movable);
@@ -297,6 +308,7 @@
           <span class="pill ${stuck ? 's-wait' : 's-ok'}" data-stuck>${stuck ? `${stuck} stuck` : 'No one stuck'}</span></div>
         <button type="button" class="btn ghost" data-pweek aria-expanded="${producerOpen}" aria-controls="pweek">${producerOpen ? 'Hide the week' : 'Show the week'}</button>
       </div>
+      ${handoffsHtml(p)}
       <div class="pweek" id="pweek" ${producerOpen ? '' : 'hidden'}>
       ${p.on ? '' : '<p class="note">Not switched on yet: the old schedule still runs. The week below is the proposed one, and your moves are kept for the day it starts.</p>'}
       <div><p class="meta" style="margin:0 0 6px">Every day: ${esc(daily.join(', '))}. Monthly: ${esc(monthly.join(', '))}. Drag a name to another day, or pick the day under it.</p>

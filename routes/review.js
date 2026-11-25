@@ -28,6 +28,7 @@ const maryDesk = require('../lib/mary-desk');
 const detective = require('../lib/ai-tell-detective');
 const tellReview = require('../lib/ai-tell-review');
 const { approveWill } = require('../lib/approve-will');
+const handoffMap = require('../lib/handoff-map');
 const cardAction = require('../lib/card-action');
 const fs = require('fs');
 
@@ -78,9 +79,12 @@ function createReviewRouter({ store }) {
     };
     // #3570: the one line saying what Approve will do (or Got it), from the card's real next step.
     // #3797: every card leads with ONE action line, and its AI tells say where and what.
+    // #3802: each card's place in the handoff chain ("Came from" and "Next").
+    const nameOf = (slug) => names.get(slug) || handoffMap.agentName(slug);
     const named = (c) => {
       const o = shaped(c); const w = approveWill(o);
-      return { ...o, ...(w ? { approve_will: w } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
+      const chain = handoffMap.cardChain(o, { nameOf });
+      return { ...o, ...(w ? { approve_will: w } : {}), ...(chain ? { chain } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
     };
     // #2993: every card made before HANDOVER_AT, any status, grouped by agent,
     // newest first. Empty while the line is unset. Each card stays openable,

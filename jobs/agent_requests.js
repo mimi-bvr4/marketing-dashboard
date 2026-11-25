@@ -25,6 +25,14 @@ async function takeAndRun({ store, runOne, log = console.log, env = process.env 
     // #3755: a notice card ("already drafted, nothing new") is returned in r.notices, not in r.cards.
     const ids = [...(r.cards || []), ...(r.notices || [])].map((c) => `#${c.id}`).join(', ');
     await store.finishRunRequest(q.id, r.ok, r.ok ? `card(s) ${ids || 'none'}` : r.error);
+    // #3802: a chain's card says where it came from ("Came from: Keyword Queen, card #12").
+    // Bookkeeping only; a failure here never fails the request.
+    if (r.ok && q.chain && store.setCameFrom && (r.cards || []).length) {
+      try {
+        const from = q.from_card ? await store.get(q.from_card) : null;
+        await store.setCameFrom(r.cards.map((c) => c.id), require('../lib/handoff-map').originOf(q, from));
+      } catch (e) { log(`request ${q.id}: came-from not recorded (${e.message})`); }
+    }
     log(`request ${q.id} (${q.agent}, by ${q.requested_by}): ${r.ok ? 'done' : 'FAILED ' + r.error}`);
   }
   return reqs.length;

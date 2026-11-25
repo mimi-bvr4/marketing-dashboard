@@ -447,6 +447,9 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
       calendar: cal.map((e) => ({ ...e, name: (defs.find((d) => d.slug === e.agent) || {}).name || e.agent, movable: P.movable(e) })),
       board: P.board({ ymd, defs, settings, history, today, cal }),
       today,
+      // #3802: the handoff map, which team member's output is whose input.
+      handoffs_on: require('../lib/handoff-map').handoffsOn(),
+      handoffs: require('../lib/handoff-map').rows({ nameOf: (slug) => (defs.find((d) => d.slug === slug) || {}).name || require('../lib/handoff-map').agentName(slug) }),
     });
   });
   r.post('/api/producer/calendar/:slug', need, async (req, res) => {
