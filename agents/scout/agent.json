@@ -3,7 +3,7 @@
   "job": "competitor and trend watch",
   "cadence": "Mondays 06:00 CT",
   "max_cards": 1,
-  "max_tokens": 6000,
+  "max_tokens": 15000,
   "sources": [
     {
       "type": "competitor_watch",

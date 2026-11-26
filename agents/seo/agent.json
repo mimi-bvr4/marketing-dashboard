@@ -3,7 +3,7 @@
   "job": "weekly search check",
   "cadence": "Mondays 06:00 CT",
   "max_cards": 3,
-  "max_tokens": 9000,
+  "max_tokens": 18000,
   "sources": [
     {
       "type": "search_console",
