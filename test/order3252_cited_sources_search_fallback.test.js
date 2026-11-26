@@ -8,7 +8,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
-const { aiCitedSourcesSource, aiAnswersSource } = require('../lib/agent-sources');
+const { aiCitedSourcesSource, aiAnswersSource, AI_ANSWER_MAX_TOKENS } = require('../lib/agent-sources'); // #3849: was a literal 1024
 
 const VENUES = [{ name: 'The Bridge Building', aliases: ['Bridge Building'] }];
 const PROMPTS = ['best event venues for rent in Nashville, TN', 'corporate event venues in Nashville'];
@@ -43,7 +43,7 @@ test('#3252 RED: web search refused (400 naming the tool): Claude retries once w
   assert.ok(r.ok, r.why);
   assert.strictEqual(log.length, 3, 'two searches + exactly one retry');
   assert.strictEqual(log.filter((b) => b.tools).length, 1, 'only the first request carried the tool');
-  assert.ok(log.every((b) => b.model && b.max_tokens === 1024 && b.messages[0].content), 'same request otherwise');
+  assert.ok(log.every((b) => b.model && b.max_tokens === AI_ANSWER_MAX_TOKENS && b.messages[0].content), 'same request otherwise');
   assert.strictEqual(r.noLiveSearch, true);
   assert.match(r.table, /no live search/i);
   assert.doesNotMatch(r.text, /answered 400/, 'the refusal is not reported as a failed answer');

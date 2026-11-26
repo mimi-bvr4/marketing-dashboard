@@ -3,7 +3,7 @@
   "job": "check before it goes out",
   "cadence": "on request (Run now with the text pasted in, or a Drive order naming the Copywriter)",
   "max_cards": 1,
-  "max_tokens": 9000,
+  "max_tokens": 18000,
   "sources": [
     {
       "type": "text_check",

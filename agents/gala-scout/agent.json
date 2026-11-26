@@ -3,7 +3,7 @@
   "job": "nonprofit galas and fundraisers in metro Nashville",
   "cadence": "Wednesdays 06:00 CT once switched on",
   "switch": "AGENT_GALA_SCOUT",  "max_cards": 2,
-  "max_tokens": 12000,
+  "max_tokens": 18000,
   "sales_fields": true,
   "copy_prepass": true,
   "seen_before": {

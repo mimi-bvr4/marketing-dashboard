@@ -3,7 +3,7 @@
   "job": "blog post to Pinterest pin",
   "cadence": "on request (Run now with a blog post link, or a Drive order naming Paul)",
   "max_cards": 1,
-  "max_tokens": 4000,
+  "max_tokens": 13000,
   "copy_prepass": true,
   "pin_fields": true,
   "sources": [
