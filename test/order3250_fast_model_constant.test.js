@@ -66,10 +66,10 @@ test('(b) FAST_MODEL set: the /api/ai/narrative call sends that value', async ()
   assert.strictEqual(bodies[0].model, TEST_MODEL);
 });
 
-test('the narrative request is otherwise unchanged: max_tokens 500, prompt + data, the first text block or the fallback', async () => {
+test('the narrative request is otherwise unchanged: max_tokens 500 (+ the Haiku 5.5 overhead, #3852), prompt + data, the first text block or the fallback', async () => {
   const { bodies, fetchImpl } = stubFetch();
   const out = await narrative().requestNarrative({ apiKey: 'stub', prompt: 'Say', data: { x: 2 }, fetchImpl });
-  assert.strictEqual(bodies[0].max_tokens, 500);
+  assert.strictEqual(bodies[0].max_tokens, 500 + require('../lib/fast-model').HAIKU_5_5_OVERHEAD_TOKENS);
   assert.deepStrictEqual(bodies[0].messages, [{ role: 'user', content: 'Say\n\nData: {"x":2}' }]);
   assert.strictEqual(out.text, '{"tags":[],"free":[]}');
   const empty = async () => ({ ok: true, status: 200, json: async () => ({}) });

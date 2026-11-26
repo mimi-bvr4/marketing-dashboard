@@ -56,11 +56,11 @@ test('a whole answer in the same batch is still tagged beside a cut-off one', as
   assert.deepStrictEqual(run.results.map((r) => r.photo.drive_id), ['b']);
 });
 
-test('KNOWN-BAD (#1789): the request asks for 1200 answer tokens by default and honours an explicit override', async () => {
+test('KNOWN-BAD (#1789): the request asks for 1200 answer tokens (+ the Haiku 5.5 overhead, #3852) by default and honours an explicit override', async () => {
   const { bodies, fetchImpl } = stubFetch(() => whole);
   await T.createClaudeClient({ apiKey: 'stub', fetchImpl }).describe(THUMB, PROMPT);
   await T.createClaudeClient({ apiKey: 'stub', fetchImpl, maxTokens: 2000 }).describe(THUMB, PROMPT);
-  assert.strictEqual(bodies[0].max_tokens, 1200);
+  assert.strictEqual(bodies[0].max_tokens, 1200 + require('../lib/fast-model').HAIKU_5_5_OVERHEAD_TOKENS);
   assert.strictEqual(bodies[1].max_tokens, 2000);
   assert.strictEqual(bodies[0].model, T.MODEL, 'the default model is unchanged');
 });
