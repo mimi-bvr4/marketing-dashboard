@@ -91,7 +91,8 @@ test('the Producer hold still applies: nothing fired or marked while drafts wait
   await approvedQueenCard(store, clock);
   const hold = require('../lib/producer').holdAt(clock());
   const drafts = [];
-  for (let i = 0; i < hold; i++) drafts.push(await store.insert({ agent: 'seo', agent_name: 'SEO', job: 'j', title: `d${i}`, body: 'b' }));
+  // #3924: action drafts; a report card (an 'seo' card with no payload) no longer counts toward the hold.
+  for (let i = 0; i < hold; i++) drafts.push(await store.insert({ agent: 'bloggy-bob', agent_name: 'Bloggy Bob', job: 'j', title: `d${i}`, body: 'b' }));
   tick();
   const held = await H.fire({ store, env: ON, now: clock });
   assert.ok(held.held && /drafts are waiting/.test(held.held));

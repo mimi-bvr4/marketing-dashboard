@@ -64,7 +64,8 @@ function dayRunner({ store, llm, env, calls }) {
 }
 
 async function waitingDrafts(store, n) {
-  for (let i = 0; i < n; i++) await store.insert({ agent: 'seo', agent_name: 'SEO', job: 'x', title: `waiting ${i}`, body: 'x' });
+  // #3924: action drafts; a report card (an 'seo' card with no payload) no longer counts toward the hold.
+  for (let i = 0; i < n; i++) await store.insert({ agent: 'bloggy-bob', agent_name: 'Bloggy Bob', job: 'x', title: `waiting ${i}`, body: 'x' });
 }
 
 test('the RED rule is the agent\'s own title mark, quoted from its SKILL', () => {
@@ -136,7 +137,7 @@ test('a held kind-review reply is not marked seen, so it is drafted once the hol
   const llm = model();
   await P.runDay({ ymd: '2026-11-03', store, maxCardsOf: () => 4, runOne: dayRunner({ store, llm, env, calls: [] }) });
   // Katherine clears the queue below 15; the next day runs in full.
-  for (const c of store.cards.filter((x) => x.agent === 'seo')) c.status = 'rejected';
+  for (const c of store.cards.filter((x) => x.agent === 'bloggy-bob')) c.status = 'rejected'; // #3924: the waitingDrafts agent
   await P.runDay({ ymd: '2026-11-04', store, maxCardsOf: () => 4, runOne: dayRunner({ store, llm, env, calls: [] }) });
   const titles = store.cards.filter((c) => c.agent === 'gbp').map((c) => c.title);
   assert.ok(titles.includes(KIND.title), 'the kind reply is drafted after the hold');

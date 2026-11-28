@@ -43,7 +43,8 @@ test('memory: a write cannot claim another department by passing one in the row'
 
 test('memory: rows of another department in the same arrays are never returned', async () => {
   const s = S.createMemoryStore({ lint });
-  const mine = await s.insert(card({ title: 'mine' }));
+  // #3924: an action agent's draft, since a report card no longer counts as waiting.
+  const mine = await s.insert(card({ title: 'mine', agent: 'bloggy-bob', agent_name: 'Bloggy Bob' }));
   s.cards.push({ ...mine, id: 99, title: 'theirs', department: 'demo' });
   s.settings.push({ id: 50, agent: 'scout', version: 9, skill_md: 'theirs', enabled: true, max_cards: 3, department: 'demo' });
   s.requests.push({ id: 50, agent: 'scout', status: 'queued', department: 'demo' });
