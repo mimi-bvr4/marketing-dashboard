@@ -55,7 +55,8 @@ function dayRunner({ store, llm, env }) {
 }
 
 async function waitingDrafts(store, n) {
-  for (let i = 0; i < n; i++) await store.insert({ agent: 'seo', agent_name: 'SEO', job: 'x', title: `waiting ${i}`, body: 'x' });
+  // #3924: action drafts; a report card (an 'seo' card with no payload) no longer counts toward the hold.
+  for (let i = 0; i < n; i++) await store.insert({ agent: 'bloggy-bob', agent_name: 'Bloggy Bob', job: 'x', title: `waiting ${i}`, body: 'x' });
 }
 
 async function boardLine(store) {

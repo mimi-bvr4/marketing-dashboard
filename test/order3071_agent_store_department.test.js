@@ -43,7 +43,8 @@ test('memory: a write cannot claim another department by passing one in the row'
 
 test('memory: rows of another department in the same arrays are never returned', async () => {
   const s = S.createMemoryStore({ lint });
-  const mine = await s.insert(card({ title: 'mine' }));
+  // #3924: an action agent's draft, since a report card no longer counts as waiting.
+  const mine = await s.insert(card({ title: 'mine', agent: 'bloggy-bob', agent_name: 'Bloggy Bob' }));
   s.cards.push({ ...mine, id: 99, title: 'theirs', department: 'demo' });
   s.settings.push({ id: 50, agent: 'scout', version: 9, skill_md: 'theirs', enabled: true, max_cards: 3, department: 'demo' });
   s.requests.push({ id: 50, agent: 'scout', status: 'queued', department: 'demo' });
@@ -183,7 +184,10 @@ pgTest('pg (a)+(b): two departments in the same tables; a read never crosses; a 
     const mkt = S.createPgStore(pool, { lint });
     const demo = S.createPgStore(pool, { lint, department: 'demo' });
     const who = 'k@x.com';
-    const a = await mkt.insert(card({ title: 'mkt card' }));
+    // #3924/#3935: an action agent's draft, since a report card (scout) no longer
+    // counts as waiting. The memory twin above was changed the same way by #3924;
+    // this pg half only runs with a database, so the branch's own run skipped it.
+    const a = await mkt.insert(card({ title: 'mkt card', agent: 'bloggy-bob', agent_name: 'Bloggy Bob' }));
     const b = await demo.insert(card({ title: 'demo card' }));
     assert.strictEqual(a.department, MKT.id);
     assert.strictEqual(b.department, 'demo');
