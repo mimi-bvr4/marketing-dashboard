@@ -486,6 +486,22 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     for (const h of (store.runHistory ? await store.runHistory(20) : [])) { const a = history.get(h.agent) || []; a.push(h); history.set(h.agent, a); }
     const today = store.producerDay ? await store.producerDay(ymd) : [];
     const me = profiles.get('producer');
+    // #3923: the visible week, each scheduled agent as a chip with its time and state.
+    // Past days of this week read the Producer's own day log (read only).
+    let week = null;
+    try {
+      const W = require('../lib/week-view');
+      const logs = new Map([[ymd, today]]);
+      const start = P.weekStart(ymd);
+      for (let i = 0; i < 7 && store.producerDay; i++) {
+        const [y, m, d] = start.split('-').map(Number);
+        const day = new Date(Date.UTC(y, m - 1, d + i)).toISOString().slice(0, 10);
+        if (day >= ymd) break;
+        logs.set(day, await store.producerDay(day));
+      }
+      const board = P.board({ ymd, defs, settings, history, today, cal });
+      week = W.weekView({ ymd, cal, board, history, logs, nameOf: (slug) => (defs.find((x) => x.slug === slug) || {}).name || slug });
+    } catch (e) { week = null; }
     // #2918: this morning's team health check (read only; agent, status and time columns only).
     let health = null;
     if (store.draftAges && store.listAsks && store.runHistory) {
@@ -493,6 +509,7 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     }
     res.json({
       health,
+      week,
       on: P.producerOn(), name: me && me.display_name ? me.display_name : 'The Producer', named_by: me && me.display_name ? me.updated_by : null,
       portrait: me && me.portrait_at ? `/api/agents/${PRODUCER}/portrait?v=${new Date(me.portrait_at).getTime()}` : null,
       waiting: store.draftsWaiting ? await store.draftsWaiting() : null, hold_at: P.holdOn(ymd),
