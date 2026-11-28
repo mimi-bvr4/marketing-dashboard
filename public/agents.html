@@ -122,6 +122,35 @@
   .speak { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: inherit; cursor: pointer; padding: 0; margin-top: 4px; }
   .speak:hover, .speak.playing { background: #F4EFE8; }
   .speakcap { display: block; font-size: 13px; font-style: italic; color: #5b534b; margin-top: 4px; max-width: 32ch; }
+  /* #3923 the week, open at the top: seven columns, today marked; one column on a phone, today first */
+  .teamweek { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+  .teamweek h2 { margin: 0; font-size: 21px; }
+  .wband h3, .wday h3 { margin: 0 0 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--rust); }
+  .wchips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .wdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+  .wday { background: #FBF7F1; border: 1px solid #E4D8C6; border-radius: 12px; padding: 8px; min-height: 84px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .wday.today { border: 2px solid var(--terra); background: #FFF8F2; }
+  .wtoday { background: var(--terra); color: #fff; border-radius: 6px; padding: 0 6px; letter-spacing: 0; text-transform: none; }
+  .wdate { color: var(--muted); letter-spacing: 0; }
+  .wnone { margin: 0; font-size: 12px; color: var(--muted); }
+  .wchip { background: #fff; border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; padding: 4px 6px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .wtop { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .wtop .face { flex: 0 0 auto; }
+  .wname { font-weight: 600; overflow-wrap: anywhere; }
+  .wmeta { font-size: 12px; color: var(--muted); }
+  .wstate { font-weight: 600; }
+  .wchip.st-ran { border-left-color: #1d6b42; } .wchip.st-ran .wstate { color: #1d6b42; }
+  .wchip.st-due { border-left-color: #34466B; } .wchip.st-due .wstate { color: #34466B; }
+  .wchip.st-paused, .wchip.st-none { border-left-color: #8B8178; } .wchip.st-paused .wstate, .wchip.st-none .wstate { color: #5b534b; }
+  .wchip.st-held, .wchip.st-waiting { border-left-color: #8a5300; } .wchip.st-held .wstate, .wchip.st-waiting .wstate { color: #8a5300; }
+  .wchip.st-failed { border-left-color: #b42318; } .wchip.st-failed .wstate { color: #b42318; }
+  .wchip .pick summary { font-size: 12px; cursor: pointer; color: var(--muted); }
+  .wchip .pick select { font: inherit; font-size: 12px; min-height: 28px; }
+  @media (max-width: 720px) {
+    .wdays { grid-template-columns: 1fr; }
+    .wday.today { order: -1; }
+    .wday.past { order: 1; }
+  }
   /* #3801 the crawl rotation table */
   table.rot { width: 100%; border-collapse: collapse; font-size: 14px; }
   table.rot th, table.rot td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid #e6dfd6; }
@@ -150,31 +179,8 @@
   let rotation = []; // #3801: who crawls what, and when (lib/crawl-plan.js ROTATION)
   let exec = false;
 
-  // The drawn portrait each character has until someone uploads one.
-  const LOOK = {
-    'bloggy-bob': ['#F3DED8', '#8A4832', 'M2 20h4L17 9l-4-4L2 16v4z M11 7l4 4'],
-    'site-health': ['#DCE6E4', '#2F5D5A', 'M9 3a6 6 0 1 0 0 12 6 6 0 0 0 0-12z M14 14l5 5'],
-    'monthly-report': ['#E1E0EE', '#46407A', 'M3 20V11 M9 20V5 M15 20v-6 M2 20h19'],
-    'citations': ['#DDE8DF', '#2F5D3F', 'M11 2l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V5l7-3z M8 11l2 2 4-4'],
-    'gbp': ['#F2E0DC', '#8A2B22', 'M4 17h14 M6 17v-3a5 5 0 0 1 10 0v3 M11 7v2 M9 5h4'],
-    'paid-ads': ['#E7E3DD', '#4D453D', 'M8 3h6v3H8z M6 4H4v16h14V4h-2 M7 11h8 M7 15h5'],
-    'seo': ['#E6EEDC', '#4A6A2A', 'M3 18l5-6 4 3 6-8 M14 7h4v4'],
-    'pr-patty': ['#F1E3EC', '#7A3A62', 'M3 10v4h3l6 4V6L6 10H3z M15 9a4 4 0 0 1 0 6 M17 6a8 8 0 0 1 0 12'],
-    'copywriter': ['#EEE6D6', '#6B5426', 'M4 20h4l10-10-4-4L4 16v4z M3 4h8 M3 8h5'],
-    'email': ['#E0EAEC', '#2F5D66', 'M3 6h18v12H3z M3 6l9 7 9-7'],
-    'convention-connector': ['#DDE3EE', '#34466B', 'M3 20V9l8-5 8 5v11 M8 20v-6h6v6 M3 9h16'],
-    'pinterest-paul': ['#F4DCDC', '#9A2A2A', 'M11 2a7 7 0 0 0-2.5 13.5L7 21 M11 2a7 7 0 0 1 0 14 M9 9a2 2 0 1 1 4 0c0 2-2 2-2 4'],
-    'scout': ['#E2E6EE', '#3B4A66', 'M2 15a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M12 15a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M10 15h2 M4 11l2-6h3l1 6 M18 11l-2-6h-3l-1 6'],
-  };
-  function face(a, size) {
-    const label = `Portrait of ${a.name}`;
-    if (a.portrait) return `<span class="face" style="width:${size}px;height:${size}px"><img src="${esc(a.portrait)}" alt="${esc(label)}" width="${size}" height="${size}"></span>`;
-    const [tint, ink, icon] = LOOK[a.slug] || ['#E7E3DD', '#4D453D', 'M6 12h10 M11 7v10'];
-    return `<svg class="face" width="${size}" height="${size}" viewBox="0 0 88 88" role="img" aria-label="${esc(label)}">
-      <circle cx="44" cy="44" r="44" fill="${tint}"/><path d="M18 78c2-14 12-22 26-22s24 8 26 22" fill="${ink}"/><circle cx="44" cy="34" r="14" fill="${ink}"/>
-      <circle cx="69" cy="67" r="17" fill="#fff" stroke="${ink}" stroke-width="2"/>
-      <g transform="translate(57 55)"><path d="${icon}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
-  }
+  // The drawn portrait each character has until someone uploads one (#3923: shared, public/agents-view.js).
+  const face = (a, size) => window.AgentsView.face(a, size);
   // #3246: a card-only member's line. Site Guardian's comes from its watch state
   // (label, sites up, flagged, and when it last checked), read from the API.
   function cardOnlyLine(a) {
@@ -334,7 +340,7 @@
     const t = e.target.closest('button[data-pweek]'); if (!t) return;
     producerOpen = !producerOpen;
     const w = main.querySelector('#pweek'); if (w) w.hidden = !producerOpen;
-    t.setAttribute('aria-expanded', String(producerOpen)); t.textContent = producerOpen ? 'Hide the week' : 'Show the week';
+    t.setAttribute('aria-expanded', String(producerOpen)); t.textContent = producerOpen ? 'Hide who is stuck' : 'Show who is stuck';
   });
   const WEEK = [['mon', 'Mon'], ['tue', 'Tue'], ['wed', 'Wed'], ['thu', 'Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
   // The handoff map: whose output is whose input, and which handoffs the
@@ -350,13 +356,9 @@
   }
   function producerHtml() {
     const p = producer; if (!p) return '';
-    const weekly = p.calendar.filter((e) => e.movable);
-    const daily = p.calendar.filter((e) => e.days && e.days.includes('daily')).map((e) => e.name);
-    const monthly = p.calendar.filter((e) => e.month_days).map((e) => `${e.name} (the ${e.month_days.join(', ')})`);
-    const chip = (e, d) => `<div class="chip" draggable="true" data-move="${e.agent}" data-from="${d}"><strong>${esc(e.name)}</strong>
-      <select data-movesel="${e.agent}" data-from="${d}" aria-label="Move ${esc(e.name)} to another day">${WEEK.map(([k, l]) => `<option value="${k}" ${k === d ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
     const stuck = V.stuckCount(p.board);
-    // #2941: collapsed to one summary row by default; "Show the week" opens the calendar and the stuck list.
+    // #2941: collapsed to one summary row by default. #3923: the week itself moved
+    // to the top of the page, open (weekHtml); this toggle opens the stuck list and the check.
     return `<section class="producer" data-slug="producer">
       <div class="psum">
         <div class="who">${face({ slug: 'producer', name: p.name, portrait: p.portrait }, 84)}<div class="txt">${eyebrow('producer', 'The producer', p.name)}
@@ -366,13 +368,10 @@
           <span class="pill ${p.week_cards >= p.cap ? 's-wait' : 's-ok'}">${p.week_cards} of ${p.cap} cards this week</span>
           <span class="pill ${p.on ? 's-ok' : 's-off'}">${p.on ? 'Running the week' : 'Not switched on yet'}</span>
           <span class="pill ${stuck ? 's-wait' : 's-ok'}" data-stuck>${stuck ? `${stuck} stuck` : 'No one stuck'}</span></div>
-        <button type="button" class="btn ghost" data-pweek aria-expanded="${producerOpen}" aria-controls="pweek">${producerOpen ? 'Hide the week' : 'Show the week'}</button>
+        <button type="button" class="btn ghost" data-pweek aria-expanded="${producerOpen}" aria-controls="pweek">${producerOpen ? 'Hide who is stuck' : 'Show who is stuck'}</button>
       </div>
       ${handoffsHtml(p)}
       <div class="pweek" id="pweek" ${producerOpen ? '' : 'hidden'}>
-      ${p.on ? '' : '<p class="note">Not switched on yet: the old schedule still runs. The week below is the proposed one, and your moves are kept for the day it starts.</p>'}
-      <div><p class="meta" style="margin:0 0 6px">Every day: ${esc(daily.join(', '))}. Monthly: ${esc(monthly.join(', '))}. Drag a name to another day, or pick the day under it.</p>
-        <div class="week">${WEEK.map(([k, l]) => `<div class="day" data-day="${k}"><h3>${l}</h3>${weekly.filter((e) => e.days.includes(k)).map((e) => chip(e, k)).join('')}</div>`).join('')}</div></div>
       <div><h2 class="serif" style="margin:0 0 6px;font-size:21px">Who is stuck</h2>
         <ul class="boardl">${p.board.map((b) => `<li class="b-${b.state}"><strong>${esc(b.name)}</strong>: ${esc(b.line)}</li>`).join('')}</ul></div>
       ${p.health ? `<div><h2 class="serif" style="margin:0 0 6px;font-size:21px">This morning's check</h2>
@@ -382,6 +381,12 @@
       </div>
       <p class="msg" hidden></p>
     </section>`;
+  }
+  // #3923 the week, open at the top: who runs when, with each run's state in words.
+  function weekHtml() {
+    if (!producer || !producer.week) return '';
+    const portraitOf = (slug) => (slug === 'producer' ? producer.portrait : ((agents.find((a) => a.slug === slug) || {}).portrait || null));
+    return V.weekHtml(producer.week, portraitOf);
   }
   // #3807 the Executioner: does exactly what an approved card says, and reports it.
   let executioner = null;
@@ -457,6 +462,7 @@
     // #2941: the band above is the page title; no second heading here.
     return `<div class="intro"><p>${agents.length} AI team members. Every piece of work lands in <a href="/review">Review</a> as a draft; nothing goes out on its own.</p>
       <div class="pills"><span class="pill s-ok">${c.ok} working</span><span class="pill s-part">${c.part} partly working</span><span class="pill s-wait">${c.wait} waiting or paused</span></div></div>
+      ${weekHtml()}
       ${questionHtml()}
       ${producerHtml()}
       ${executionerHtml()}

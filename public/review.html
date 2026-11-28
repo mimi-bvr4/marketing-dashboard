@@ -42,6 +42,28 @@
   .today ol { margin: 0; padding-left: 1.4em; display: grid; gap: var(--ihg-space-2, 8px); font-size: var(--ihg-text-sm, 14px); }
   .today .agent { font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); }
   .today .why { margin: var(--ihg-space-2, 8px) 0 0; font-size: var(--ihg-text-xs, 12px); color: var(--ihg-color-text-muted, #6d6e71); }
+  /* Cards start as one row; the row opens the full card. */
+  .tip { margin: 0; display: flex; flex-wrap: wrap; gap: var(--ihg-space-2, 8px); align-items: center; border: 1px solid var(--ihg-color-accent, #8a6d3b); border-radius: var(--ihg-radius, 6px); background: var(--ihg-color-accent-subtle, #f6efe3); padding: var(--ihg-space-2, 8px) var(--ihg-space-3, 12px); font-size: var(--ihg-text-sm, 14px); }
+  .tip[hidden] { display: none; }
+  .group { display: grid; gap: var(--ihg-space-2, 8px); }
+  .group > h2 { margin: var(--ihg-space-2, 8px) 0 0; font-size: 1.1rem; display: flex; gap: var(--ihg-space-2, 8px); align-items: center; }
+  .card.collapsed { padding: var(--ihg-space-2, 8px) var(--ihg-space-3, 12px); }
+  .row { display: flex; gap: var(--ihg-space-3, 12px); align-items: center; cursor: pointer; min-width: 0; }
+  .row:focus-visible { outline: 2px solid var(--ihg-color-accent, #8a6d3b); outline-offset: 2px; }
+  .row .face { flex: 0 0 auto; border-radius: 50%; overflow: hidden; display: inline-block; }
+  .row .face img { display: block; border-radius: 50%; }
+  .rowtxt { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+  .rowtxt .act { font-weight: var(--ihg-weight-semibold, 600); overflow-wrap: anywhere; }
+  .rowbtns { flex: 0 0 auto; display: flex; gap: var(--ihg-space-2, 8px); }
+  .word { font-weight: var(--ihg-weight-semibold, 600); }
+  .word.bad { color: #b42318; } .word.good { color: #1d6b42; }
+  .full[hidden] { display: none; }
+  .full { display: grid; gap: var(--ihg-space-3, 12px); }
+  @media (max-width: 560px) {
+    .row { flex-wrap: wrap; }
+    .rowbtns { width: 100%; }
+    .rowbtns button { flex: 1 1 0; }
+  }
 </style>
 </head>
 <body>
@@ -50,7 +72,10 @@
   <nav><a href="/">Dashboard</a> · <a href="/agents">Katherine's Team</a> · <a href="/photos">Photos</a></nav>
 </div></header>
 <main class="container wrap">
-  <p class="empty" style="margin:0">Everyone on Katherine's AI team drafts here. <strong>Approve</strong> marks a draft ready for a person to use. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong> Approve is refused on any card with an em dash, a hard venue capacity (no range or "depending on"), or an internal venue code like TBB; it says which line. Each card says what its Approve will do. <strong>Archive (no action)</strong> takes a card off your pile without approving or rejecting it: nothing is sent, the agent is not told it was a bad draft, and the card stays under Archived. Report cards show <strong>Got it</strong>, which does the same.</p>
+  <!-- #3923: the opening cut to two lines; the archive explanation is the one-time tip below. -->
+  <p class="empty intro" style="margin:0">Everyone on Katherine's AI team drafts here, and each card says what its <strong>Approve</strong> will do. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong></p>
+  <!-- #3923: shown once per browser, until dismissed. -->
+  <p class="tip" id="archiveTip" hidden><span><strong>No action (archive)</strong> takes a card off your pile. Nothing is sent, and the agent is not told it was a bad draft. You can find it again under Archived.</span> <button type="button" id="archiveTipHide" class="btn ghost">Hide this</button></p>
   <!-- #3826: "Katherine's Today", at most 5 actions, ranked. Each line jumps to its card. -->
   <section class="today" id="today" aria-labelledby="todayH">
     <h2 id="todayH">Today</h2>
@@ -72,6 +97,7 @@
   </details>
   <div id="list"></div>
 </main>
+<script src="/agents-view.js"></script>
 <script>
 (function () {
   let status = 'draft';
@@ -288,13 +314,54 @@
     if (c.action && c.action.kind === 'fix') return `<p class="meta result"><span class="badge good">Result</span> Marked done ${fmt(c.decided_at)}. The Box changed no listing; the person who approved it made the change.</p>`;
     return `<p class="meta result"><span class="badge good">Result</span> Filed ${fmt(c.decided_at)} as ready to use. Nothing was posted or sent from here.</p>`;
   }
+  // #3923: the copy check as one plain word on the card's row. The Copywriter's
+  // verdict when it ran; otherwise the AI-tell check; nothing when neither ran.
+  function copyWord(c) {
+    const cc = c.checks && c.checks.copy_check;
+    const blocks = (c.tells_detail || []).some((h) => h.blocks_ready);
+    if (blocks) return { word: 'Fix', cls: 'bad' };
+    if (cc && cc.ran) return cc.ready ? { word: 'Clean', cls: 'good' } : { word: 'Fix', cls: 'bad' };
+    const t = c.checks && c.checks.ai_tells;
+    if (t) return t.clean ? { word: 'Clean', cls: 'good' } : { word: 'Fix', cls: 'bad' };
+    return null;
+  }
+  // #3923: the agent's portrait (uploaded, or the drawn one the team page uses).
+  function faceOf(c) {
+    const V = typeof window !== 'undefined' && window.AgentsView;
+    return V ? V.face({ slug: c.agent, name: c.agent_name || c.agent, portrait: c.agent_portrait || null }, 36) : '';
+  }
+  // #3923: the one row every card starts as. Approve and No action (archive) sit
+  // on it (a report's one button, Got it); tapping the row opens the full card.
+  function rowHtml(c) {
+    const a = c.action && c.action.line ? c.action.line : c.title;
+    const w = copyWord(c);
+    const bits = [c.target ? esc(c.target) : '', fmt(c.created_at), w ? `<span class="word ${w.cls}">${w.word}</span>` : ''].filter(Boolean);
+    const btns = c.status === 'draft'
+      ? (gotIt(c) ? '<button data-a="archive">Got it</button>' : '<button data-a="approve">Approve</button><button data-a="archive">No action (archive)</button>')
+      : '';
+    return `<div class="row" data-toggle role="button" tabindex="0" aria-expanded="false" aria-controls="full-${c.id}">
+        ${faceOf(c)}<span class="rowtxt"><span class="act">${esc(a)}</span><span class="meta"><strong>${esc(c.agent_name)}</strong>${bits.map((b) => `<span>${b}</span>`).join('')}</span></span>
+        ${btns ? `<span class="rowbtns">${btns}</span>` : ''}
+      </div>`;
+  }
+  // #3923: the three groups, in order, each with its count. The group is the
+  // server's card.group (lib/review-groups.js, from the card's own action type).
+  const GROUPS = [['out', 'Will go out when you approve'], ['decide', 'For you to read and decide'], ['reports', 'Reports, nothing to do']];
+  function groupedHtml(cards) {
+    return GROUPS.map(([key, label]) => {
+      const mine = cards.filter((c) => (c.group || 'decide') === key);
+      return `<section class="group" data-group="${key}"><h2>${label} <span class="badge" data-count>${mine.length}</span></h2>${mine.length ? mine.map(cardHtml).join('') : '<p class="empty">Nothing here.</p>'}</section>`;
+    }).join('');
+  }
   function cardHtml(c) {
     const tells = (c.checks && c.checks.ai_tells_summary) || '';
     const bad = c.checks && c.checks.ai_tells && !c.checks.ai_tells.clean;
     const missing = (c.sources || []).filter((s) => !s.ok).length;
     // #1748: the Copywriter's verdict on an outbound card (the full check is in the card's "Copy check" section).
     const cc = c.checks && c.checks.copy_check;
-    return `<article class="card" data-id="${c.id}" id="card-${c.id}">
+    return `<article class="card collapsed" data-id="${c.id}" id="card-${c.id}">
+      ${rowHtml(c)}
+      <div class="full" id="full-${c.id}" hidden>
       <div class="meta"><strong>${esc(c.agent_name)}</strong><span>${esc(c.job)}</span>${c.target ? `<span>${esc(c.target)}</span>` : ''}<span>${fmt(c.created_at)}</span>
         ${tells ? `<span class="badge ${bad ? 'bad' : 'good'}">${esc(tells)}</span>` : ''}${cc ? `<span class="badge ${cc.ran && cc.ready ? 'good' : 'bad'}">${esc(cc.summary)}</span>` : ''}${missing ? `<span class="badge bad">${missing} source(s) unavailable</span>` : ''}${c.edited ? '<span class="badge">edited</span>' : ''}${c.reference ? `<span class="badge">Example, ${esc(c.status === 'ready' ? 'approved' : c.status === 'draft' ? 'not decided' : c.status)}, does not count</span>` : ''}</div>
       ${actionHtml(c)}
@@ -320,16 +387,27 @@
       ${nextHtml(c)}
       <div class="actions">
         <button data-a="copy">Copy text</button>
-        ${c.status === 'draft' ? `${gotIt(c) ? '<button data-a="archive">Got it</button>' : '<button data-a="approve">Approve</button><button data-a="archive">Archive (no action)</button>'}<button data-a="edit">Edit</button>
+        ${c.status === 'draft' ? `<button data-a="edit">Edit</button>
         <input data-f="reason" placeholder="One-line reason (needed to reject)" aria-label="Reason"><button data-a="reject">Reject</button>
         <input data-f="redo" placeholder="This missed X, or redo it this way" aria-label="What to redo"><button data-a="redo">Redo</button>` : ''}
         ${c.status === 'archived' ? '<button data-a="restore">Restore to Drafts</button>' : ''}
       </div>
       <div class="edit" hidden>${c.payload && c.payload.post ? '<p class="meta">You are editing the post itself (what goes to WordPress).</p>' : ''}${c.payload && c.payload.pin ? '<p class="meta">You are editing the pin description (what goes on Pinterest, up to 500 characters).</p>' : ''}${c.payload && c.payload.gbp_post ? '<p class="meta">You are editing the Google post itself (what goes on Google, at most 80 words).</p>' : ''}<textarea>${esc(c.payload && c.payload.post ? c.payload.post.content_md : (c.payload && c.payload.pin ? (c.payload.pin.description || '') : (c.payload && c.payload.gbp_post ? c.payload.gbp_post.summary : c.body)))}</textarea><div class="actions"><button data-a="save">Save edit</button><button data-a="cancel">Cancel</button></div></div>
+      </div>
       <p class="err" hidden></p>
     </article>`;
   }
   let cache = [];
+  // #3923: open or close a card's full view from its row.
+  function openCard(el, open) {
+    const full = el.querySelector('.full'); const row = el.querySelector('.row'); if (!full || !row) return;
+    const want = open === undefined ? full.hidden : open;
+    full.hidden = !want; el.classList.toggle('collapsed', !want); row.setAttribute('aria-expanded', String(want));
+  }
+  // #3923: the archive tip, once per browser until "Hide this".
+  const TIP_KEY = 'ihg.review.archiveTipHidden';
+  try { if (!localStorage.getItem(TIP_KEY)) $('#archiveTip').hidden = false; } catch (e) { $('#archiveTip').hidden = false; }
+  $('#archiveTipHide').addEventListener('click', () => { $('#archiveTip').hidden = true; try { localStorage.setItem(TIP_KEY, '1'); } catch (e) { /* private mode: hidden for this visit */ } });
   async function load() {
     $('#list').innerHTML = '<p class="empty">Loading…</p>';
     try {
@@ -343,10 +421,10 @@
         const when = j.at ? ` Made before ${fmt(j.at)}.` : '';
         $('#list').innerHTML = `<p class="empty" style="margin:0"><strong>${esc(j.header)}</strong>${esc(when)} Open, copy or approve any of them; approving one still works and is recorded, and it never counts.</p>`
           + (j.groups.length ? j.groups.map((g) => `<section class="ref-group"><h2 style="margin:var(--ihg-space-4, 16px) 0 var(--ihg-space-2, 8px)">${esc(g.agent_name)} <span class="badge">${g.ids.length}</span></h2>${g.ids.map((id) => cardHtml(byId.get(id))).join('')}</section>`).join('') : '<p class="empty">Nothing here.</p>');
-      } else $('#list').innerHTML = cards.length ? cards.map(cardHtml).join('') : '<p class="empty">Nothing here.</p>';
-      // #2915: a link from "Ask about your team" lands on its card.
+      } else $('#list').innerHTML = cards.length ? groupedHtml(cards) : '<p class="empty">Nothing here.</p>';
+      // #2915: a link from "Ask about your team" lands on its card (#3923: opened).
       const hit = /^#card-\d+$/.test(location.hash) && document.getElementById(location.hash.slice(1));
-      if (hit) { hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
+      if (hit) { openCard(hit, true); hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
     } catch (e) { $('#list').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
   // #3826: "Today", the top 5 actions on Drafts. Reloaded after every action on
@@ -374,13 +452,23 @@
     }
     history.replaceState(null, '', '#card-' + a.dataset.today);
     const hit = document.getElementById('card-' + a.dataset.today);
-    if (hit) { hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
+    if (hit) { openCard(hit, true); hit.scrollIntoView({ block: 'start' }); hit.style.outline = '2px solid var(--ihg-color-accent, #8a6d3b)'; }
   });
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-s]'); if (!b) return;
     status = b.dataset.s;
     document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     load();
+  });
+  // #3923: tapping a card's row (not one of its buttons) opens the full card.
+  $('#list').addEventListener('click', (e) => {
+    if (e.target.closest('button, a, input, select, textarea')) return;
+    const row = e.target.closest('.row[data-toggle]'); if (row) openCard(row.closest('.card'));
+  });
+  $('#list').addEventListener('keydown', (e) => {
+    const row = e.target.closest && e.target.closest('.row[data-toggle]');
+    if (!row || e.target !== row || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault(); openCard(row.closest('.card'));
   });
   $('#list').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-a]'); if (!b) return;

@@ -53,13 +53,14 @@ test('one title: the band, no second heading on the team page', () => {
   assert.doesNotMatch(HTML, /Katherine's marketing team/);
 });
 
-test('the Producer is collapsed by default behind "Show the week"', () => {
+test('the Producer is collapsed by default behind "Show who is stuck"', () => {
   assert.match(HTML, /let producerOpen = false;/);
   assert.match(HTML, /<div class="pweek" id="pweek" \$\{producerOpen \? '' : 'hidden'\}>/);
-  assert.match(HTML, /'Show the week'/);
-  // the calendar and the stuck list live inside the collapsed part
+  // #3923 moved the week out, open at the top of the page; the toggle now opens the stuck list.
+  assert.match(HTML, /'Show who is stuck'/);
   const start = HTML.indexOf('<div class="pweek"');
-  assert.ok(start > 0 && HTML.indexOf('<div class="week">') > start && HTML.indexOf('Who is stuck') > start);
+  assert.ok(start > 0 && HTML.indexOf('Who is stuck') > start);
+  assert.doesNotMatch(HTML, /<div class="week">/, 'no second, hidden copy of the week');
 });
 
 test('who is stuck: waiting, failed and held count; ran, ready, own and paused do not', () => {

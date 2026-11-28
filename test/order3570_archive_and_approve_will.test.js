@@ -214,7 +214,8 @@ test('a draft card shows "Approve will:" right above its buttons, and Archive (n
   assert.ok(line > 0 && line < buttons, 'the line sits above the buttons');
   assert.ok(!html.slice(line, buttons).includes('<p'), 'nothing between the line and the buttons');
   assert.match(html, /data-a="approve">Approve</);
-  assert.match(html, /data-a="archive">Archive \(no action\)</);
+  // #3923 renamed the button "No action (archive)" so Katherine finds it.
+  assert.match(html, /data-a="archive">No action \(archive\)</);
 });
 
 test('a report card shows Got it (which archives) and no Approve', () => {

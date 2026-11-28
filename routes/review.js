@@ -89,7 +89,10 @@ function createReviewRouter({ store }) {
   // How every card reaches the page (#3826: shared by /cards and /today).
   async function namer() {
     // #1664: show the name Katherine gave each agent, on old cards too.
-    const names = new Map((store.profiles ? await store.profiles() : []).filter((p) => p.display_name).map((p) => [p.agent, p.display_name]));
+    const profs = store.profiles ? await store.profiles() : [];
+    const names = new Map(profs.filter((p) => p.display_name).map((p) => [p.agent, p.display_name]));
+    // #3923: the agent's uploaded portrait for the card's one-line row (drawn face otherwise).
+    const portraits = new Map(profs.filter((p) => p.portrait_at).map((p) => [p.agent, `/api/agents/${p.agent}/portrait?v=${new Date(p.portrait_at).getTime()}`]));
     // #3003/#3012: who sends a sales card ("No salesperson set yet" for a Scout with no owner id).
     const owners = new Map();
     for (const a of [...outreach.OWNER_SETTING_AGENTS, ...Object.keys(outreach.OWNERS)]) owners.set(a, outreach.ownerLine(await outreach.salesOwner(a, { store })));
@@ -110,7 +113,10 @@ function createReviewRouter({ store }) {
       const o = shaped(c); const w = approveWill(o);
       const chain = handoffMap.cardChain(o, { nameOf });
       const executed = require('../lib/executioner').cardLine(o); // #3807
-      return { ...o, ...(w ? { approve_will: w } : {}), ...(chain ? { chain } : {}), ...(executed ? { executed } : {}), action: cardAction.actionLine(o), tells_detail: cardAction.tellsDetail(o) };
+      const action = cardAction.actionLine(o);
+      // #3923: the Review group, from the card's own action type (lib/review-groups.js).
+      const group = require('../lib/review-groups').groupOfKind(action.kind);
+      return { ...o, ...(w ? { approve_will: w } : {}), ...(chain ? { chain } : {}), ...(executed ? { executed } : {}), action, group, agent_portrait: portraits.get(c.agent) || null, tells_detail: cardAction.tellsDetail(o) };
     };
     return named;
   }
