@@ -162,14 +162,28 @@ async function main({ env = process.env, log = console.log } = {}) {
         await demo.pickDemoBoard({ store, accounts, env, log });
       } catch (e) { log(`pinterest demo: not checked this run (${e.message})`); }
     }
-    await handoff({ store, fetchImpl: globalThis.fetch, env, log });
-    // #3802: the Producer fires the next team member for anything approved or
-    // landed since the last pass (PRODUCER_HANDOFFS, default OFF: does nothing).
-    try { await require('../lib/handoff-map').fire({ store, env, log }); } catch (e) { log(`handoffs: not fired this run (${e.message})`); }
+    await passes({ store, env, fetchImpl: globalThis.fetch, log });
     return 0;
   } finally { await pool.end(); }
 }
 
+// #3948 (RULINGS_LEDGER, "MARKETING CARD HOLD UNTIL RELAUNCH"): while
+// MARKETING_RELAUNCH is off, the Executioner pass and the Producer's handoffs do
+// nothing at all; every card is left exactly as it is. On is the relaunch.
+async function passes({ store, env = process.env, fetchImpl = globalThis.fetch, log = console.log }) {
+  const hold = require('../lib/card-hold');
+  if (hold.holdOn(env)) {
+    log(`handoff: on hold until Mimi relaunches it (${hold.FLAG} off, ORDER #3948); nothing handed off, nothing fired`);
+    return { held: true, handoff: null, fired: null };
+  }
+  const r = await handoff({ store, fetchImpl, env, log });
+  let fired = null;
+  // #3802: the Producer fires the next team member for anything approved or
+  // landed since the last pass (PRODUCER_HANDOFFS, default OFF: does nothing).
+  try { fired = await require('../lib/handoff-map').fire({ store, env, log }); } catch (e) { log(`handoffs: not fired this run (${e.message})`); }
+  return { held: false, handoff: r, fired };
+}
+
 if (require.main === module) main().then((c) => process.exit(c)).catch((e) => { console.error('agent_handoff:', e.message); process.exit(1); });
 
-module.exports = { handoff, main, createMemoryStore };
+module.exports = { handoff, passes, main, createMemoryStore };

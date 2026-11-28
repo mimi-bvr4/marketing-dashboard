@@ -8,6 +8,9 @@
 // pg_guard points it at a throwaway local database. Without it those tests skip
 // and the memory-store and SQL-shape tests below still prove the rule.
 const { test } = require('node:test');
+// ORDER #3948: these tests prove the store's open path; the card hold (on while
+// MARKETING_RELAUNCH is off) is proven in order3948_card_hold.test.js.
+process.env.MARKETING_RELAUNCH = 'on';
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');

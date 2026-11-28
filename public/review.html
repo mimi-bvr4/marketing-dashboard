@@ -71,6 +71,9 @@
   <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Review</div>
   <nav><a href="/">Dashboard</a> · <a href="/agents">Katherine's Team</a> · <a href="/photos">Photos</a></nav>
 </div></header>
+<!-- #3948: the card hold's one plain line, from /api/card-hold; hidden when the team is relaunched. -->
+<div class="container" id="cardHold" hidden style="margin-top:12px;padding:10px 14px;border-left:4px solid #8a6d3b;background:#fbf6ea;font-weight:600"></div>
+<script>fetch('/api/card-hold', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (h) { if (h && h.hold && h.line) { var el = document.getElementById('cardHold'); el.textContent = h.line; el.hidden = false; } }).catch(function () {});</script>
 <main class="container wrap">
   <!-- #3923: the opening cut to two lines; the archive explanation is the one-time tip below. -->
   <p class="empty intro" style="margin:0">Everyone on Katherine's AI team drafts here, and each card says what its <strong>Approve</strong> will do. It never publishes, sends or spends, with one exception: <strong>Approve on a Pinterest Paul card pins it live on Pinterest.</strong></p>
