@@ -48,11 +48,11 @@
   .group { display: grid; gap: var(--ihg-space-2, 8px); }
   .group > h2 { margin: var(--ihg-space-2, 8px) 0 0; font-size: 1.1rem; display: flex; gap: var(--ihg-space-2, 8px); align-items: center; }
   .card.collapsed { padding: var(--ihg-space-2, 8px) var(--ihg-space-3, 12px); }
-  .row { display: flex; gap: var(--ihg-space-3, 12px); align-items: center; cursor: pointer; min-width: 0; }
+  .row { display: flex; flex-wrap: nowrap; gap: var(--ihg-space-3, 12px); align-items: center; cursor: pointer; min-width: 0; }
   .row:focus-visible { outline: 2px solid var(--ihg-color-accent, #8a6d3b); outline-offset: 2px; }
   .row .face { flex: 0 0 auto; border-radius: 50%; overflow: hidden; display: inline-block; }
   .row .face img { display: block; border-radius: 50%; }
-  .rowtxt { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+  .rowtxt { flex: 1 1 0; min-width: 0; display: grid; gap: 2px; }
   .rowtxt .act { font-weight: var(--ihg-weight-semibold, 600); overflow-wrap: anywhere; }
   .rowbtns { flex: 0 0 auto; display: flex; gap: var(--ihg-space-2, 8px); }
   .word { font-weight: var(--ihg-weight-semibold, 600); }
