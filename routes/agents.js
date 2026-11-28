@@ -526,6 +526,18 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
   // #3807 the Executioner's card: actions done today, failed today, waiting. Read only.
   // #3948: the card hold. Read only; the Team and Review pages show its one line.
   r.get('/api/card-hold', need, (req, res) => res.json(require('../lib/card-hold').status()));
+  // #3949: the readiness board, Exec only for now. Rebuilt from live reads on every open.
+  const READINESS_PAGE = path.join(__dirname, '..', 'public', 'readiness.html');
+  r.get(['/readiness', '/readiness.html'], async (req, res) => {
+    if (!(await isExec(req, identity))) return res.status(403).send('Exec only.');
+    res.sendFile(READINESS_PAGE);
+  });
+  r.get('/api/readiness', need, async (req, res) => {
+    if (!(await isExec(req, identity))) return res.status(403).json({ error: 'Exec only.' });
+    const RB = require('../lib/readiness-board');
+    const g = await RB.gather({ store, env: process.env, now: clock(), pinterestAccounts, characterOf, gapsOf });
+    res.json(RB.board(g));
+  });
   r.get('/api/executioner', need, async (req, res) => {
     const EX = require('../lib/executioner');
     const rows = store.execRows ? await store.execRows() : [];
