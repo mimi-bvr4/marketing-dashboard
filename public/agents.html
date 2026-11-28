@@ -162,6 +162,9 @@
   <div class="wordmark"><span class="brand-mark" aria-hidden="true"></span>Katherine's Team</div>
   <nav><a href="/">Dashboard</a> · <a href="/review">Review</a> · <a href="/photos">Photos</a></nav>
 </div></header>
+<!-- #3948: the card hold's one plain line, from /api/card-hold; hidden when the team is relaunched. -->
+<div class="container" id="cardHold" hidden style="margin-top:12px;padding:10px 14px;border-left:4px solid #8a6d3b;background:#fbf6ea;font-weight:600"></div>
+<script>fetch('/api/card-hold', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (h) { if (h && h.hold && h.line) { var el = document.getElementById('cardHold'); el.textContent = h.line; el.hidden = false; } }).catch(function () {});</script>
 <main class="container wrap" id="main"><p class="meta">Loading…</p></main>
 <script src="/agents-view.js"></script>
 <script>

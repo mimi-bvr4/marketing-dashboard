@@ -524,6 +524,8 @@ function createAgentsRouter({ store, identity, clock = () => new Date(), pintere
     });
   });
   // #3807 the Executioner's card: actions done today, failed today, waiting. Read only.
+  // #3948: the card hold. Read only; the Team and Review pages show its one line.
+  r.get('/api/card-hold', need, (req, res) => res.json(require('../lib/card-hold').status()));
   r.get('/api/executioner', need, async (req, res) => {
     const EX = require('../lib/executioner');
     const rows = store.execRows ? await store.execRows() : [];
