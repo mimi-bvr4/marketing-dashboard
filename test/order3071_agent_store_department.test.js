@@ -184,7 +184,10 @@ pgTest('pg (a)+(b): two departments in the same tables; a read never crosses; a 
     const mkt = S.createPgStore(pool, { lint });
     const demo = S.createPgStore(pool, { lint, department: 'demo' });
     const who = 'k@x.com';
-    const a = await mkt.insert(card({ title: 'mkt card' }));
+    // #3924/#3935: an action agent's draft, since a report card (scout) no longer
+    // counts as waiting. The memory twin above was changed the same way by #3924;
+    // this pg half only runs with a database, so the branch's own run skipped it.
+    const a = await mkt.insert(card({ title: 'mkt card', agent: 'bloggy-bob', agent_name: 'Bloggy Bob' }));
     const b = await demo.insert(card({ title: 'demo card' }));
     assert.strictEqual(a.department, MKT.id);
     assert.strictEqual(b.department, 'demo');
